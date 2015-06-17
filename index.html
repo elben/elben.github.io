@@ -1,0 +1,70 @@
+---
+layout: default
+title: Elben Shira
+---
+
+<p>Software engineer interested in programming languages, distributed systems and machine learning.</p>
+
+<ul class="projects-list simple">
+  <li><a href="https://github.com/elben/planjure/" target="_blank">Planjure</a>
+  is a path-planning <a href="/p/planjure/"
+    target="_blank">demo</a> and a study in ClojureScript, Om and core.async.
+  </li>
+  <li><a href="https://github.com/elben/k-means/"
+    target="_blank">K-means</a> demo written in Clojure.
+  </li>
+  <li><a href="https://github.com/elben/carnival/"
+    target="_blank">Carnival</a> research project for finding experts
+  in a code repository.
+  </li>
+  <li><a href="/p/curvey/"
+    target="_blank">Curvey</a> b-spline demo that doesn't suck (as
+  much).
+  </li>
+  <li><a href="http://tudu.us"
+    target="_blank">Tudu.us</a> is the app I built to learn Rails.
+  </li>
+  <li><a href="https://github.com/elben/timethis"
+    target="_blank">TimeThis</a> time your Python functions in a super
+  simple way.
+  </li>
+  <li><a href="https://github.com/jasontbradshaw/iron-tools"
+    target="_blank">Iron Tools</a> stream live HD video for conferences.</li>
+  <li><a href="https://github.com/elben/stone-tools"
+    target="_blank">Stone Tools</a> was Iron Tools Version 0.</li>
+  <li><a href="https://github.com/elben/kapal" target="_blank">Kapal</a>
+  get a robot from Point A to Point B.</li>
+</ul>
+
+<h3>Recommended</h3>
+
+<ul class="simple">
+  {% for post in site.tags.favorite %}
+    <li itemscope itemtype="http://schema.org/Article">
+      <div class="article-item">
+        <a itemprop="url" href="{{ post.url }}">{{ post.title }}</a>
+        <div class="article-metadata">
+          <span class="article-date">{{ post.date | date_to_long_string }}</span>
+        </div>
+      </div>
+    </li>
+  {% endfor %}
+</ul>
+
+<h3>Index</h3>
+
+$partial("templates/post-list.html")$
+
+<h3>Other writings</h3>
+
+<ul class="other-writings simple">
+  <li>
+    <a href="https://medium.com/@elbenshira/kilimanjaro-d65f00ef96a3" target="_blank">Kilimanjaro</a>
+    <p>My experience on summit night. January 2012.</p>
+  </li>
+</ul>
+
+<div id="footer">
+  <hr>
+  <a href="http://twitter.com/elbenshira" target="_blank">@elbenshira</a>
+</div>

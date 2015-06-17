@@ -1,0 +1,13 @@
+<ul class="posts simple">
+  $for(posts)$
+  <li itemscope itemtype="http://schema.org/Article">
+  <div class="article-item">
+    <a itemprop="url" href="$url$">$title$</a>
+    <div class="article-metadata">
+      <span class="article-date">$date$</span>
+    </div>
+  </div>
+  </li>
+  $endfor$
+</ul>
+

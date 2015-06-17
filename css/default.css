@@ -1,0 +1,392 @@
+@font-face {
+    font-family: 'charterbold_italic';
+    src: url('charter_bold_italic-webfont.eot');
+    src: url('charter_bold_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('charter_bold_italic-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+@font-face {
+    font-family: 'charterbold';
+    src: url('font/charter_bold-webfont.eot');
+    src: url('font/charter_bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('font/charter_bold-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+@font-face {
+    font-family: 'charteritalic';
+    src: url('font/charter_italic-webfont.eot');
+    src: url('font/charter_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('font/charter_italic-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+@font-face {
+    font-family: 'charterregular';
+    src: url('font/charter_regular-webfont.eot');
+    src: url('font/charter_regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('font/charter_regular-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+body {
+  color: #151311; /* Dark grey with a little of red saturation */
+  /* background: #f9f5f1; */
+  font-family: 'Charter', Georgia, sans-serif;
+
+  /* Our base font of 18px. Line-heights, margins, and paddings calculated to
+   * produce vertical rhyhtm. */
+  font-size: 18px;
+  line-height: 1.5em;
+  padding: 0;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  font-size: 1em;
+  line-height: 1.5em;
+  margin-bottom: 1em;
+}
+
+a {
+  /* color: #ff3366; */ /* red persimmon */
+  /* color: #003beb; */ /* spring blue */
+  /* color: #53912a; */ /* awesome green */
+  color: #151311; /* Same as body */
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  width: 100%;
+
+  /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
+   * baseline, so this means we have 23px left. Hence 23px margin. */
+  /* border: 3px solid #ece5dc; */
+  border: 3px solid #222;
+  margin: 23px 0;
+}
+
+/* Useful to give an image some breathing room */
+.some-padding {
+  padding: 1em 0;
+}
+
+img {
+  border: 0px;
+}
+
+img#background {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
+
+/* code is used in body (not just code blocks), so we need to be sure to handle
+ * vertical rhyhtm. Simpliest to keep font-size 1em. */
+code {
+  font-size: 0.9em;
+  font-family: Consolas, "inconsolata-1", "inconsolata-2", monospace;
+  font-weight: normal;
+  line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
+  font-weight: 400;
+
+  /* padding: 0.2em 0.2em 0.1em; */
+  /* padding: 3px 3px 1px; */
+  /* background: #eee6dd; */
+}
+
+.highlight code {
+  padding: 0;
+  background: none;
+}
+
+pre {
+  line-height: 1.3em;
+  font-family: Consolas, "inconsolata-1", "inconsolata-2", monospace;
+  /* border-left: 8px solid #ece5dc; */
+  border-left: 8px solid #e5e5e5;
+  padding: 0 1em;
+  margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
+}
+
+/*
+ * Headers
+ * 
+ * For headers, we use http://modularscale.com to produce a scale in base size
+ * 18px using the "perfect-fourth" ratio.
+ *
+ * font     font
+ * px       em      line-height (1.5 / em)
+ * =======+========+==============
+ * 56.832 | 3.157  | .475134621
+ * 42.635 | 2.369  | .633178556
+ * 31.984 | 1.777  | .844119302
+ * 23.994 | 1.333  | 1.12528132
+ * 18     | 1      | 1.5
+ * 13.503 | 0.75   | 2
+ * 10.13  | 0.563  | 2.664298401
+ *
+ *
+ * The line-height measurements above are calculated via (1.5 em / font em).
+ * This represents the line-height (and margin/padding, if applicable) needed to
+ * make each element hit the right vertical line.
+ */
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
+}
+
+h1 {
+  font-size: 1.777em;
+
+  /* This line-height calculated by pretending our base rhyhtm is at 13.5px
+   * instead of 27px (found by 18px * 1.5em).  This is done to produce some
+   * spacing between multi-lined headers.
+   *
+   * = (1.5em * 1.5) / 1.777em
+   */
+  line-height: 1.266178953em;
+
+  margin: 1.5em 0 0.8441193em 0;
+  /* margin: 0 0 0.8441193em 0; */
+  font-weight: normal;
+}
+
+h1.post-title {
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 1.333em;
+  font-weight: 600;
+
+  /* For a font size 1.333em, per our chart above, we have a line height of
+   * 1.12528132em. For "perfect" alignment, our margin-bottom should also be
+   * that number, but I'm going to go with what looks good by gut. The header
+   * should be a bit closer to the section it declares, for contextual
+   * proximity.
+   */
+  line-height: 1.12528132em;
+  margin: 2em 0 1em 0;
+  /* margin: 0 0 .28132033em 0; */
+  /* margin: 0 0 1.12528132em 0; */
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 1em;
+  margin: 1.5em 0 0em;
+}
+
+ul.simple {
+  list-style: none;
+  margin-left: -1em;
+  margin-top: 0;
+  margin-bottom: 1.5em;
+  padding-left: 1em;
+  line-height: 1.5em;
+}
+
+#structure {
+  position: relative;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1em;
+  max-width: 700px;
+}
+
+#header h1 {
+  margin-top: 0;
+  padding-top: 1.5em;
+}
+
+#header h1.small {
+  font-size: 1em;
+  line-height: 1.5em;
+  margin-bottom: 1.5em;
+  font-weight: bold;
+}
+
+#header a {
+  text-decoration: none;
+  color: #151311; /* Dark grey with a little of red saturation */
+}
+
+#footer {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+#footer a {
+  color: #222222;
+}
+
+#footer a:hover {
+  text-decoration: underline;
+  /* color: #ff3366; /1* red persimmon *1/ */
+}
+
+#email {
+  text-decoration: underline;
+}
+
+.floatleft {
+  float: left;
+  clear: left;
+  margin: 0px 15px 10px 0px;
+  border: 0px;
+  padding 5px;
+}
+
+.quote {
+  text-align: justify;
+  text-shadow: 1px 1px 0px #eee;
+  padding: 5px;
+  margin-left: auto;
+  margin-right: auto;
+  font-style: italic;
+  color: #333;
+  padding-left: 20px;
+  margin-top: -20px;
+  margin-bottom: 20px;
+}
+
+.quoter {
+}
+
+.intro {
+  padding: 20px;
+  margin-bottom: 20px;
+  background-color: #FFEC5C; /* yellow */
+  /*border: 1px solid #FFE313;*/
+  -moz-border-radius: 20px; 
+  border-radius: 20px; 
+
+}
+
+.thin {
+  width: 340px;
+}
+
+.center {
+  text-align: center;
+}
+
+.green {
+  background-color: #d6e6be;
+}
+
+.blue {
+  background-color: #d5dfeb;
+}
+
+.purple {
+  background-color: #debce3;
+  /*border: 1px solid #D679E3;*/
+}
+
+.red {
+  background-color: #ebdbd5;
+}
+
+.meta {
+  font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
+  /* color: #b3a9a6; */ /* Grey with reddish saturation */
+  color: #666260; /* Darker grey with reddish saturation */
+}
+
+.article-metadata {
+  font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
+  /* color: #b3a9a6; */ /* Grey with reddish saturation */
+  color: #666260; /* Darker grey with reddish saturation */
+  font-size: 0.75em;
+  line-height: 2em;
+}
+
+.post-content {
+  /* Hits about 80 characters per line with font size 16px */
+  max-width: 600px;
+}
+
+.post-content-end {
+  margin-top: 3em;
+}
+
+.highlight .lineno {
+  color: #999;
+  margin-left: -8px;
+  border-right: 2px solid #ece5dc;
+  /* 6px - Makes border-right align as they ought */
+  padding: 6px 12px 5px inherit;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 16px;
+  }
+
+  #header h1 {
+    padding-top: 0.5em;
+  }
+
+  pre {
+    border-left: none;
+    padding: 0;
+    margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
+  }
+
+  .highlight .lineno {
+    color: #999;
+    margin-left: 0;
+    border-right: 2px solid #ece5dc;
+    /* 6px - Makes border-right align as they ought */
+    padding: 6px 6px 5px inherit;
+  }
+
+  hr {
+    /* A bit less than max-width of a post */
+    width: auto;
+  }
+}
+
+@media print {
+  body {
+    font-size: 9pt;
+    color: #000;
+    background: none;
+  }
+
+  a {
+    color: initial;
+    text-decoration: underline;
+  }
+
+  code {
+    /* Remove padding used for background hightlight */
+    padding: 0;
+  }
+
+  @page {
+    margin: 2cm 3.5cm 2cm 3.5cm;
+  }
+
+  .post-content-end {
+    display: none;
+  }
+}
+
