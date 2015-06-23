@@ -38,17 +38,7 @@ title: Elben Shira
 
 <h3>Recommended</h3>
 
-<ul class="simple">
-  {% for post in site.tags.favorite %}
-    <li itemscope itemtype="http://schema.org/Article">
-      <div class="article-item">
-        <a itemprop="url" href="{{ post.url }}">{{ post.title }}</a>
-        <div class="article-metadata">
-          <span class="article-date">{{ post.date | date_to_long_string }}</span>
-        </div>
-      </div>
-    </li>
-  {% endfor %}
+<ul class="posts simple">
 </ul>
 
 <h3>Index</h3>

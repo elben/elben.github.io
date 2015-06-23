@@ -5,7 +5,6 @@
          url('charter_bold_italic-webfont.woff') format('woff');
     font-weight: normal;
     font-style: normal;
-
 }
 
 @font-face {
@@ -15,7 +14,6 @@
          url('font/charter_bold-webfont.woff') format('woff');
     font-weight: normal;
     font-style: normal;
-
 }
 
 @font-face {
@@ -25,7 +23,6 @@
          url('font/charter_italic-webfont.woff') format('woff');
     font-weight: normal;
     font-style: normal;
-
 }
 
 @font-face {
@@ -35,7 +32,6 @@
          url('font/charter_regular-webfont.woff') format('woff');
     font-weight: normal;
     font-style: normal;
-
 }
 
 body {
@@ -161,18 +157,16 @@ h1 {
    */
   line-height: 1.266178953em;
 
-  margin: 1.5em 0 0.8441193em 0;
-  /* margin: 0 0 0.8441193em 0; */
-  font-weight: normal;
+  margin: 0 0 0.8441193em 0;
+  font-weight: bold;
 }
 
 h1.post-title {
-  margin-top: 0;
+  margin-bottom: 0.1em;
 }
 
 h2 {
   font-size: 1.333em;
-  font-weight: 600;
 
   /* For a font size 1.333em, per our chart above, we have a line height of
    * 1.12528132em. For "perfect" alignment, our margin-bottom should also be
@@ -304,13 +298,19 @@ ul.simple {
   background-color: #ebdbd5;
 }
 
-.meta {
+.post-metadata {
+  font-size: 0.75em;
   font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
   /* color: #b3a9a6; */ /* Grey with reddish saturation */
   color: #666260; /* Darker grey with reddish saturation */
+  padding-bottom: 1em;
 }
 
-.article-metadata {
+.post-metadata a {
+  color: #666260; /* Darker grey with reddish saturation */
+}
+
+.post-list-metadata {
   font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
   /* color: #b3a9a6; */ /* Grey with reddish saturation */
   color: #666260; /* Darker grey with reddish saturation */
