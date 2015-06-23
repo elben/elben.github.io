@@ -1,13 +1,6 @@
 <ul class="posts simple">
   $for(posts)$
-  <li itemscope itemtype="http://schema.org/Article">
-  <div class="post-list-item">
-    <a itemprop="url" href="$url$">$title$</a>
-    <div class="post-list-metadata">
-      <span class="post-list-date">$date$</span>
-    </div>
-  </div>
-  </li>
+    $partial("templates/post-list-item.html")$
   $endfor$
 </ul>
 

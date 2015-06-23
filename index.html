@@ -39,6 +39,9 @@ title: Elben Shira
 <h3>Recommended</h3>
 
 <ul class="posts simple">
+  $for(recommendedPosts)$
+    $partial("templates/post-list-item.html")$
+  $endfor$
 </ul>
 
 <h3>Index</h3>

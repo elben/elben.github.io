@@ -1,9 +1,8 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.Monoid (mappend)
-import           Data.List (isSuffixOf)
+import           Data.List (isSuffixOf, find)
 import           Hakyll
-import           Debug.Trace
 
 ------------------------
 -- Overview
@@ -117,10 +116,14 @@ main = hakyll $ do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
+
+            recommendedPosts <- recentFirst =<< loadAll (filterByTag tags "recommended")
+
             let indexCtx =
-                    listField "posts" postContext (return posts) `mappend`
-                    constField "title" "Elben Shira"         `mappend`
-                    defContext
+                    listField "posts" postContext (return posts)       `mappend`
+                    listField "recommendedPosts" postContext (return recommendedPosts) `mappend`
+                    constField "title" "Elben Shira"                   `mappend`
+                    homeContext
             getResourceBody
                 >>= applyAsTemplate indexCtx
                 >>= loadAndApplyTemplate "templates/default.html" indexCtx
@@ -152,9 +155,11 @@ defContext :: Context String
 defContext =
   constField "site_header_class" "small" `mappend` defaultContext
 
-filterByTag :: String -> [Item String] -> Compiler [Item String]
+filterByTag :: Tags -> String -> Pattern
 -- filterByTag tag items = return $ filter (\item -> getTags (itemIdentifier item) >>= (\s -> True)) items
-filterByTag tag items = return items
+filterByTag tags tag = case (find (\(tag', _) -> tag' == tag) (tagsMap tags)) of
+                         Just (_, identifiers) -> fromList identifiers
+                         Nothing               -> fromList []
 
 -- TODO fix to do better
 -- From "posts/yyyy-mm-dd-post-title.markdown" to "blog/post-title/index.html"

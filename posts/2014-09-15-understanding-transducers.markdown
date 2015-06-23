@@ -2,7 +2,7 @@
 layout: post
 title:  Understanding Transducers
 categories: blog
-tags: clojure, favorite
+tags: clojure, recommended
 ---
 
 What are transducers? Using transducers is easy enough—but how do they work underneath the hood?
@@ -274,7 +274,7 @@ It may be difficult to understand why the `xform` transducer works because it's 
 
 (def xform
   (comp
-    (filtering even?) 
+    (filtering even?)
     (filtering #(< % 10))
     (mapping square)
     (mapping inc)))

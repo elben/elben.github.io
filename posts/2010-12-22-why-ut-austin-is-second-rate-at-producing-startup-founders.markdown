@@ -3,7 +3,7 @@ layout: post
 title: Why UT Austin is second-rate at producing startup founders
 date:   2010-12-22 10:25:00
 categories: blog
-tags: startups, favorite
+tags: startups, recommended
 ---
 
 _The author is a fourth-year student doing a Bachelor's and Master's in CS at the
