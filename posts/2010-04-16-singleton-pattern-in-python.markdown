@@ -12,19 +12,19 @@ Ever. This way of programming is often referred to as the singleton pattern.
 In languages like Java, the singleton pattern is often implemented by using a
 class static variable as the single object:
 
-{% highlight java %}
+```java
 class OneOnly {
   private static final OneOnly the_one = new OneOnly();
-  
+
   private OneOnly() { ... }
 
   public static get() {
     return the_one;
   }
- 
+
   ...
 }
-{% endhighlight %}
+```
 
 In the snippet above, the default constructor is set as private so to prevent
 the user from instantiating a `OneOnly` object. Instead, the user must use
@@ -38,7 +38,7 @@ entry on the singleton pattern [1] presents a clever way of doing it in Python.
 I reproduced Wikipedia's Python example below and added some more code to
 explain what's going on under the hood.
 
-{% highlight python linenos %}
+```{.python .numberLines}
 def singleton(cls):
     instances = {}
     def getinstance():
@@ -46,17 +46,17 @@ def singleton(cls):
             instances[cls] = cls()
         return instances[cls]
     return getinstance
- 
+
 class Counter:
     def __init__(self):
         self.count = 0
     def inc(self):
         self.count += 1
- 
+
 print type(Counter)    # <type 'classobj'>
 Counter = singleton(Counter)
 print type(Counter)    # <type 'function'>
-{% endhighlight %}
+```
 
 In the snippet above, `singleton()` is a function that takes a class and returns a
 function. I created a simple `Counter` class. Line 15 shows that `Counter` is a
@@ -85,10 +85,10 @@ as a dictionary or a list.
 
 Let us test our singleton object:
 
-{% highlight python linenos %}
+```{.python}
 >>> print Counter() is Counter()
 True
-{% endhighlight %}
+```
 
 As you can see, every call to `Counter()` returns the same `Counter` instance.
 Great! We now have a very powerful construct to build classes that adhere to the
@@ -104,16 +104,16 @@ for what we did when we wrote `Counter = singleton(Counter)`, which can look a b
 ugly. We can prettify this by adding a `@singleton` before our `Counter` class
 definition:
 
-{% highlight python %}
+```python
 @singleton
 class Counter:
     def __init__(self):
         self.count = 0
     def inc(self):
         self.count += 1
- 
+
 print type(Counter) # <type 'function'>
-{% endhighlight %}
+```
 
 If you haven't seen decorators before, you should now realize that a decorator
 `@singleton` will simply set the class name (in our case, `Counter`) to the

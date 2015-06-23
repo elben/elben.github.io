@@ -8,31 +8,31 @@ tags: python
 
 Is Python magical? Consider the trivial unit test below:
 
-{% highlight python %}
+```python
 import unittest
- 
+
 class TestSomething(unittest.TestCase):
   def test1(self):
     self.assert_(True)
- 
+
 if __name__ == '__main__':
   unittest.main()
-{% endhighlight %}
+```
 
 Unless you're a Python guru, I'm sure you've wondered how `unittest.main()`
 found and ran `TestSomething` and `TestSomething.test1`. If you look at the
 `unittest` source code, you find a nice trick:
 
-{% highlight python %}
+```python
 # unittest.py
- 
+
 class TestProgram:
   def __init__(...):
     ...
     self.runTests()
- 
+
 main = TestProgram
-{% endhighlight %}
+```
 
 Ah, `unittest.main` isn't a function, it's a class! So `unittest.main()` creates
 a new `TestProgram` object, whose initializer then goes ahead and runs the unit

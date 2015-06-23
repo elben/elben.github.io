@@ -18,7 +18,7 @@ fix, we may see a method vulnerable for refactoring. So we refactor it.
 But can we do better? Yes. With the `--patch` option, we can precisely choose
 which hunks of code we want to add into the staging environment:
 
-{% highlight bash %}
+```bash
 $ git add -p
 diff --git a/README b/README
 index 9938af1..88f41c4 100644
@@ -28,11 +28,11 @@ index 9938af1..88f41c4 100644
 +Version 1.2
 -Version 1.1
 Stage this hunk [y,n,q,a,d,/,e,?]? 
-{% endhighlight %}
+```
 
 Not surprisingly, the `--patch` option works for other git commands like git-checkout, which would allow us to precisely choose which hunks of code we want to discard from our working directory.
 So use `--patch` and make your commits precise.
- 
+
 ### Archived comments; imported from Posterous
 
 2143 views and 4 responses

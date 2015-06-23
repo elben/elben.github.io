@@ -23,18 +23,18 @@ With Haskell’s type inferencer, I can convert thought to code quickly; the typ
 
 For example, in the image below, I check the type of `v`, which is a String:
 
-<div class="some-padding"><img src="{{ site.url }}/images/the-best-introduction-to-haskell/type-check-0.png"/></div>
+<div class="some-padding"><img src="/images/the-best-introduction-to-haskell/type-check-0.png"/></div>
 
 Then I check the type of `mapping`, which is a map of Strings to Integers:
 
-<div class="some-padding"><img src="{{ site.url }}/images/the-best-introduction-to-haskell/type-check-1.png"/></div>
+<div class="some-padding"><img src="/images/the-best-introduction-to-haskell/type-check-1.png"/></div>
 
 I then view the type of the `lookup` function, which reveals the argument order:
 
-<div class="some-padding"><img src="{{ site.url }}/images/the-best-introduction-to-haskell/type-check-2.png"/></div>
+<div class="some-padding"><img src="/images/the-best-introduction-to-haskell/type-check-2.png"/></div>
 
 And finally, I can verify the whole expression:
 
-<div class="some-padding"><img src="{{ site.url }}/images/the-best-introduction-to-haskell/type-check-3.png"/></div>
+<div class="some-padding"><img src="/images/the-best-introduction-to-haskell/type-check-3.png"/></div>
 
 Even though the code is terse, there’s a lot of metadata and context to help you out. They’re called types!

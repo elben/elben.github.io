@@ -9,7 +9,7 @@ I've found core.async to be versatile for many workflows. One that I've used on 
 
 Say we want to process a lot of data coming in from a single source (e.g. stdin) and then output the results to a single destination (e.g. stdout). We can think of this as a producer-consumer problem.
 
-<div class="some-padding"><img src="{{ site.url }}/images/core-async-pattern/core-async-1.png"/></div>
+<div class="some-padding"><img src="/images/core-async-pattern/core-async-1.png"/></div>
 
 A naive solution may look like this:
 
@@ -38,7 +38,7 @@ It's apparent that our program isn't taking advantage of our CPU—we're only us
 
 A simple alternative is to use core.async. Using core.async's `thread` macro, we can create consumers that take data from an input channel, process the data, and put the result to an output channel.
 
-<div class="some-padding"><img src="{{ site.url }}/images/core-async-pattern/core-async-2.png" width="100%"/></div>
+<div class="some-padding"><img src="/images/core-async-pattern/core-async-2.png" width="100%"/></div>
 
 To do this, we'll first create our two channels:
 
