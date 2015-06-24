@@ -25,7 +25,7 @@ run:	build
 deploy:
 	echo ${CNAME} > _site/CNAME
 	rm -rf _site/.git
-	cd _site $$ echo "general:\n  branches:\n    ignore:\n      - master" > circle.yml
+	cd _site && echo "general:\n  branches:\n    ignore:\n      - master" > circle.yml
 	cd _site && git init && git add .
 	cd _site && git config user.email "nobody@circleci.com"
 	cd _site && git config user.name CircleCI
