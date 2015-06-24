@@ -1,4 +1,4 @@
-CNAME := www.elbenshira.com
+CNAME := elbenshira.com
 REPO := git@github.com:elben/elben.github.io.git
 
 EXE := dist/build/site/site
