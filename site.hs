@@ -78,7 +78,7 @@ main = hakyll $ do
     --
     -- `pattern` is list of posts with the given `tag`.
     tagsRules tags $ \tag pattern -> do
-        let title = "Posts tagged \"" ++ tag ++ "\""
+        let title = "Posts tagged with \"" ++ tag ++ "\""
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll pattern
