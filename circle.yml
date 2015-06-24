@@ -16,3 +16,9 @@ deployment:
     branch: source
     commands:
     - "make deploy"
+
+general:
+  branches:
+    ignore:
+      # Don't build master since that's for GitHub pages
+      - master
