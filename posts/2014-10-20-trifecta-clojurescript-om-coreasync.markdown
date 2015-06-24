@@ -8,7 +8,7 @@ tags: clojure
 *This post is an adaptation of my lighting talk given at Austin JS and Austin Clojure Meetup.*
 
 - Introduction
-- [Taking back control of your state](#taking-back-control)
+- [Taking back control of your state](#taking-back-control-of-your-state)
 - [Om and React](#om-and-react)
 - [How to communicate](#how-to-communicate)
 
@@ -18,7 +18,7 @@ Our application state becomes difficult to reason about; they are barraged by as
 
 But who is to blame? Naturally, ourselves. Laziness, ignorance, hurriedness, insipidness. With enough dedication, skill and discipline we can learn to build graceful systems. But I don’t think the fault is completely ours. Given the complexity of asynchronous user interfaces and the need to orchestrate state between many components, it may be that tools we have are unfit for the job. Perhaps we need better tools.
 
-Is there something better? Can we take back control of our state, erase the fragility of DOM manipulation and restrain ad-hoc, asynchronous messages? 
+Is there something better? Can we take back control of our state, erase the fragility of DOM manipulation and restrain ad-hoc, asynchronous messages?
 
 I think we can, through these means:
 
@@ -29,8 +29,6 @@ I think we can, through these means:
 With ClojureScript, Om and core.async, we can do all three.
 
 I am not prophetic enough to declare that what I’m presenting here is *the* solution; it is never that easy. But I do think that the ideas brought by Clojure, Om (via React) and core.async are game changers. Their ideas are so good that it would be a shame for anyone to miss out on it.
-
-<a id="taking-back-control"></a>
 
 ## Taking back control of your state
 
@@ -140,23 +138,21 @@ The conclusion is simple:
 1. Immutability prevents you from doing stupid things.
 2. Immutability frees you to do the correct thing.
 
-<a id="om-and-react"></a>
-
 ## Om and React
 
 Given a page number of a book, you know that the contents will be the same *every single time*. Books are immutable. If you take the page number as your input, and your fingers flipping to the page as your function, you get:
 
-$$\mathit{fingers}(\mathit{page}) \Rightarrow \mathit{contents}$$
+%%%\\mathit{fingers}(\\mathit{page}) \\Rightarrow \\mathit{contents}%%%
 
 Can we do the same with our programs? Can we pass in a state and get the UI at that given state?
 
 With Om, you can.
 
-Om is a ClojureScript library for React. While there are a lot of good [articles](http://blog.getprismatic.com/om-sweet-om-high-functional-frontend-engineering-with-clojurescript-and-react/) and [videos](https://www.youtube.com/watch?v=DMtwq3QtddY) that explain [Om](http://swannodette.github.io/2013/12/17/the-future-of-javascript-mvcs/) and [React](http://2013.jsconf.eu/speakers/pete-hunt-react-rethinking-best-practices.html), I like to think of an Om application as a function $f$ that takes your global application state $s$ and returns a $DOM$.
+Om is a ClojureScript library for React. While there are a lot of good [articles](http://blog.getprismatic.com/om-sweet-om-high-functional-frontend-engineering-with-clojurescript-and-react/) and [videos](https://www.youtube.com/watch?v=DMtwq3QtddY) that explain [Om](http://swannodette.github.io/2013/12/17/the-future-of-javascript-mvcs/) and [React](http://2013.jsconf.eu/speakers/pete-hunt-react-rethinking-best-practices.html), I like to think of an Om application as a function %%f%% that takes your global application state %%s%% and returns a %%DOM%%.
 
-$$f(s) \Rightarrow DOM$$
+%%%f(s) \\Rightarrow DOM%%%
 
-Your application state $s$ is one giant, immutable map that contains all the necessary data for your UI to render. But naturally our UI needs to transition state at some point (e.g. when a user clicks something, or when an AJAX request comes back). To do this, we enclose our immutable map in a Clojure `atom`, like this:
+Your application state %%s%% is one giant, immutable map that contains all the necessary data for your UI to render. But naturally our UI needs to transition state at some point (e.g. when a user clicks something, or when an AJAX request comes back). To do this, we enclose our immutable map in a Clojure `atom`, like this:
 
 ```clojure
 (def my-state (atom {:my-data {} :users [] :foo 0}))
@@ -225,23 +221,21 @@ David Nolen's [article](http://swannodette.github.io/2013/12/17/the-future-of-ja
 
 As your program's state changes over time, Om automatically re-renders the components that depend on the changed state, producing the DOM represented by your state. We can think of it like this:
 
-$$f(s\_0) \Rightarrow \mathit{DOM}\_0$$
+%%%f(s\_0) \\Rightarrow \\mathit{DOM}\_0%%%
 
-$$f(s\_1) \Rightarrow \mathit{DOM}\_1$$
+%%%f(s\_1) \\Rightarrow \\mathit{DOM}\_1%%%
 
-$$f(s\_2) \Rightarrow \mathit{DOM}\_2$$
+%%%f(s\_2) \\Rightarrow \\mathit{DOM}\_2%%%
 
 What a refreshing way of thinking!
 
-Other than a marvelous elegance, you also get features like snapshots for free. The famous example is this: say we save a snapshot of our states over time, $[s\_0, s\_1, s\_2, …]$. Then choose any state, pass that into your program, and *bam* your UI is rendered as expected.
+Other than a marvelous elegance, you also get features like snapshots for free. The famous example is this: say we save a snapshot of our states over time, %%[s\_0, s\_1, s\_2, …]%%. Then choose any state, pass that into your program, and *bam* your UI is rendered as expected.
 
 This makes [time travel](http://swannodette.github.io/2013/12/31/time-travel/) (e.g. undo/redo) easy. [Planjure](http://elbenshira.com/p/planjure/), Om [TodoMVC](http://swannodette.github.io/todomvc/labs/architecture-examples/om-undo/index.html) and [Goya](http://jackschaedler.github.io/goya/) are three example apps that implement undo/redo, all with just a few lines of code.
 
 With Om, the complexity of state management, writing error-prone code to make sure that component A knows that component B knows that component C got a mouse click and is waiting for an AJAX response—all of that goes away. You find yourself astonished, really, at how simple everything can be.
 
 I don't mean, of course, that your programs will be bug or frustration free. But I do think that Om obliterates the state monster and leads you towards the better path.
-
-<a id="how-to-communicate"></a>
 
 ## How to communicate
 
@@ -333,7 +327,10 @@ At the end, we know that UI development is messy, and often times broken. We wan
 
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)'], ['%%', '%%']],
+    displayMath: [['$$','$$'], ["\\[","\\]"], ['%%%', '%%%']]
+  }
 });
 </script>
 <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">

@@ -72,7 +72,7 @@ main = hakyll $ do
     -- `(fromCapture ...)` expression returns function that fills in the `*` in the
     -- capture, given a string.
     --
-    tags <- buildTags "posts/*" (fromCapture "tags/*.html")
+    tags <- buildTags "posts/*" (fromCapture "blog/tags/*.html")
 
     -- Generate a page for each tag in the Rules monad.
     --
@@ -94,11 +94,15 @@ main = hakyll $ do
     match "posts/*" $ do
         route $ customRoute formatFilename
         compile $ pandocCompiler
+            -- Render just the post body first, so that I can `saveSnapshot`
+            -- just the body for the Atom feed.
+            >>= loadAndApplyTemplate "templates/post-body.html"    (postContextWithTags tags)
+            >>= saveSnapshot postContentSnapshot
             >>= loadAndApplyTemplate "templates/post.html"    (postContextWithTags tags)
             >>= loadAndApplyTemplate "templates/default.html" (postContextWithTags tags)
             >>= processUrls
 
-    create ["archive.html"] $ do
+    create ["blog/index.html"] $ do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
@@ -112,6 +116,14 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= processUrls
 
+    create ["blog/atom.xml"] $ do
+        route idRoute
+        compile $ renderAtomFeedForPattern "posts/*"
+
+    create ["blog/tags/clojure.xml"] $ do
+        route idRoute
+        compile $ renderAtomFeedForPattern (filterByTag tags "clojure")
+
     match "index.html" $ do
         route idRoute
         compile $ do
@@ -122,7 +134,7 @@ main = hakyll $ do
             let indexCtx =
                     listField "posts" postContext (return posts)       `mappend`
                     listField "recommendedPosts" postContext (return recommendedPosts) `mappend`
-                    constField "title" "Elben Shira"                   `mappend`
+                    constField "title" websiteTitle                    `mappend`
                     homeContext
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -131,8 +143,24 @@ main = hakyll $ do
 
     match "templates/*" $ compile templateCompiler
 
+websiteTitle :: String
+websiteTitle = "Elben Shira"
 
---------------------------------------------------------------------------------
+-- Name for snapshop that contains only the blog post body, without title or
+-- other metadata.
+postContentSnapshot :: String
+postContentSnapshot = "content"
+
+-- Render Atom feed for the pattern of posts.
+renderAtomFeedForPattern :: Pattern -> Compiler (Item String)
+renderAtomFeedForPattern pattern = do
+    posts <- fmap (take 10) (recentFirst =<< loadAllSnapshots pattern postContentSnapshot)
+    renderAtom atomFeedConfiguration feedContext posts
+
+-- Use the body of the post in the 'description' field.
+feedContext :: Context String
+feedContext = postContext `mappend` bodyField "description"
+
 postContext :: Context String
 postContext =
     dateField "date" "%e %B %Y"            `mappend`
@@ -155,9 +183,10 @@ defContext :: Context String
 defContext =
   constField "site_header_class" "small" `mappend` defaultContext
 
+-- Given the retrieved Tags and a tag, find all posts that contain the tag.
+-- Returns a Pattern list of posts.
 filterByTag :: Tags -> String -> Pattern
--- filterByTag tag items = return $ filter (\item -> getTags (itemIdentifier item) >>= (\s -> True)) items
-filterByTag tags tag = case (find (\(tag', _) -> tag' == tag) (tagsMap tags)) of
+filterByTag tags tag = case find (\(tag', _) -> tag' == tag) (tagsMap tags) of
                          Just (_, identifiers) -> fromList identifiers
                          Nothing               -> fromList []
 
@@ -179,4 +208,13 @@ cleanIndexUrls = return . fmap (withUrls clean)
     clean url
         | idx `isSuffixOf` url && (not . isExternal) url = take (length url - length idx) url
         | otherwise = url
+
+atomFeedConfiguration :: FeedConfiguration
+atomFeedConfiguration = FeedConfiguration
+    { feedTitle       = websiteTitle
+    , feedDescription = ""
+    , feedAuthorName  = "Elben Shira"
+    , feedAuthorEmail = "elbenshira@gmail.com"
+    , feedRoot        = "http://elbenshira.com"
+    }
 

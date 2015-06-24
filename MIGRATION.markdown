@@ -20,10 +20,6 @@
 
       Need to have a new itemData with style dsString, probably.
 
-- [ ] Tags
-
-- [ ] clojure atom feed equivalent.
-
 # DONE
 
 - [x] Look at [hakyll-convert](https://hackage.haskell.org/package/hakyll-convert),
@@ -40,4 +36,10 @@
 
       - [x] Figure out how to make like /blog/utf8-for-jruby-and-mysql/
       - [x] Links to blog posts should NOT include the .html at the end.
+
+- [x] Tags
+
+- [x] clojure atom feed equivalent.
+
+- [x] Does mathjax work?
 
