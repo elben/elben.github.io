@@ -8,7 +8,7 @@ Whether you write compilers, web services or Django admin panels, you probably u
 
 Specifically, the only hash you need is this one:
 
-`UniversalHash = Hash[String|Int, UniversalHash|String]`.
+`UniversalHash = Hash[String|Int, UniversalHash|String]`
 
 (If you’re not one of those Haskell or Scalaz guys, the complicated expression above tells us that a "universal hash" is a hash where the keys are either strings and integers, and the values are either universal hashes or strings.)
 
