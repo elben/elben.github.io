@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.Monoid (mappend)
 import           Data.List (isSuffixOf, find)
-import           Control.Monad (filterM)
+import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
 import           Hakyll
 
@@ -39,9 +39,8 @@ import           Hakyll
 --------------------------------------------------------------------------------
 main :: IO ()
 main = do
-  loadDraftsEnv <- (lookupEnv "LOAD_DRAFTS")
-  let loadDrafts = shouldLoadDrafts loadDraftsEnv
-  print loadDrafts
+  loadDraftsEnv <- lookupEnv "LOAD_DRAFTS"
+  let loadDrafts = maybe False (=="true") loadDraftsEnv
   hakyll $ do
     ------------------------
     -- Static
@@ -67,6 +66,12 @@ main = do
     -- Dynamic
     ------------------------
 
+    -- Load all posts. If the environemnt specifies, filter out draft posts.
+    -- Create [Identifier] and Pattern, since functions differ on which one they
+    -- use.
+    postIds <- findAllPostIds loadDrafts
+    let postsPattern = fromList postIds
+
     -- `Tags` contains:
     -- * tagsMap    - A list of tag strings paired with Identifiers it was found on
     -- * tagsMakeId - A function to convert a tag (String) to an Identifier
@@ -77,7 +82,7 @@ main = do
     -- `(fromCapture ...)` expression returns function that fills in the `*` in the
     -- capture, given a string.
     --
-    tags <- buildTags "posts/*" (fromCapture "blog/tags/*.html")
+    tags <- buildTags postsPattern (fromCapture "blog/tags/*.html")
 
     -- Generate a page for each tag in the Rules monad.
     --
@@ -96,7 +101,7 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" ctx
                 >>= relativizeUrls
 
-    match "posts/*" $ do
+    match postsPattern $ do
         route $ customRoute formatFilename
         compile $ pandocCompiler
             -- Render just the post body first, so that I can `saveSnapshot`
@@ -110,7 +115,7 @@ main = do
     create ["blog/index.html"] $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAllPosts loadDrafts
+            posts <- recentFirst =<< loadAllIds postIds
             let archiveCtx =
                     listField "posts" postContext (return posts) `mappend`
                     constField "title" "Archives"            `mappend`
@@ -123,7 +128,7 @@ main = do
 
     create ["blog/atom.xml"] $ do
         route idRoute
-        compile $ renderAtomFeedForPattern "posts/*"
+        compile $ renderAtomFeedForPattern postsPattern
 
     create ["blog/tags/clojure.xml"] $ do
         route idRoute
@@ -132,7 +137,7 @@ main = do
     match "index.html" $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAllPosts loadDrafts
+            posts <- recentFirst =<< loadAllIds postIds
 
             recommendedPosts <- recentFirst =<< loadAll (filterByTag tags "recommended")
 
@@ -195,27 +200,23 @@ filterByTag tags tag = case find (\(tag', _) -> tag' == tag) (tagsMap tags) of
                          Just (_, identifiers) -> fromList identifiers
                          Nothing               -> fromList []
 
-shouldLoadDrafts :: Maybe String -> Bool
-shouldLoadDrafts (Just "true") = True
-shouldLoadDrafts _ = False
+-- liftM promotes the `maybe ...` function into the MonadMetadata monad.
+-- liftM :: Monad m => (a1 -> r) -> (m a1 -> m r)
+isNotDraft :: MonadMetadata m => Identifier -> m Bool
+isNotDraft i = liftM (maybe True (/= "true")) (getMetadataField i "draft")
+-- Equivalent:
+-- isNotDraft i = getMetadataField i "draft" >>= return . (maybe True (/="true"))
 
-isNotDraft :: Identifier -> Compiler Bool
-isNotDraft i = maybe True (/="true") `fmap` getMetadataField i "draft"
-
--- TODO how do we do this? ATOM feed is still rendered with just a pattern,
--- without taking into consideration posts.
-postsPatternWithDraftsOption :: Bool -> Pattern
-postsPatternWithDraftsOption True = "posts/*"
-postsPatternWithDraftsOption False = "posts/*"
-
-loadAllPosts ::
-  Bool
-  -- ^ Include drafts if true.
-  -> Compiler [Item String]
-loadAllPosts includeDrafts = do
+findAllPostIds :: MonadMetadata m
+               => Bool
+               -- ^ Include drafts if true.
+               -> m [Identifier]
+findAllPostIds includeDrafts = do
   ids <- getMatches "posts/*"
-  filteredIds <- if includeDrafts then return ids else filterM isNotDraft ids
-  mapM load filteredIds
+  if includeDrafts then return ids else filterM isNotDraft ids
+
+loadAllIds :: [Identifier] -> Compiler [Item String]
+loadAllIds = mapM load
 
 -- TODO fix to do better
 -- From "posts/yyyy-mm-dd-post-title.markdown" to "blog/post-title/index.html"
