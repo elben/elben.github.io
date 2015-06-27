@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.Monoid (mappend)
 import           Data.List (isSuffixOf, find)
+import           Control.Monad (filterM)
+import           System.Environment (lookupEnv)
 import           Hakyll
 
 ------------------------
@@ -36,8 +38,11 @@ import           Hakyll
 
 --------------------------------------------------------------------------------
 main :: IO ()
-main = hakyll $ do
-
+main = do
+  loadDraftsEnv <- (lookupEnv "LOAD_DRAFTS")
+  let loadDrafts = shouldLoadDrafts loadDraftsEnv
+  print loadDrafts
+  hakyll $ do
     ------------------------
     -- Static
     ------------------------
@@ -105,7 +110,7 @@ main = hakyll $ do
     create ["blog/index.html"] $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
+            posts <- recentFirst =<< loadAllPosts loadDrafts
             let archiveCtx =
                     listField "posts" postContext (return posts) `mappend`
                     constField "title" "Archives"            `mappend`
@@ -127,7 +132,7 @@ main = hakyll $ do
     match "index.html" $ do
         route idRoute
         compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
+            posts <- recentFirst =<< loadAllPosts loadDrafts
 
             recommendedPosts <- recentFirst =<< loadAll (filterByTag tags "recommended")
 
@@ -189,6 +194,28 @@ filterByTag :: Tags -> String -> Pattern
 filterByTag tags tag = case find (\(tag', _) -> tag' == tag) (tagsMap tags) of
                          Just (_, identifiers) -> fromList identifiers
                          Nothing               -> fromList []
+
+shouldLoadDrafts :: Maybe String -> Bool
+shouldLoadDrafts (Just "true") = True
+shouldLoadDrafts _ = False
+
+isNotDraft :: Identifier -> Compiler Bool
+isNotDraft i = maybe True (/="true") `fmap` getMetadataField i "draft"
+
+-- TODO how do we do this? ATOM feed is still rendered with just a pattern,
+-- without taking into consideration posts.
+postsPatternWithDraftsOption :: Bool -> Pattern
+postsPatternWithDraftsOption True = "posts/*"
+postsPatternWithDraftsOption False = "posts/*"
+
+loadAllPosts ::
+  Bool
+  -- ^ Include drafts if true.
+  -> Compiler [Item String]
+loadAllPosts includeDrafts = do
+  ids <- getMatches "posts/*"
+  filteredIds <- if includeDrafts then return ids else filterM isNotDraft ids
+  mapM load filteredIds
 
 -- TODO fix to do better
 -- From "posts/yyyy-mm-dd-post-title.markdown" to "blog/post-title/index.html"
