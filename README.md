@@ -2,12 +2,13 @@ See [elbenshira.com](http://elbenshira.com).
 
 # Development
 
-Currently operating on GHC 7.8.3 and Hakyll 4.7.0.0 on a Cabal sandbox.
+Currently operating on GHC 7.8.4 and Stackage lts-2.15.
 
-To install:
+To install, download stack from here: https://www.stackage.org/
 
 ```bash
-cabal install hakyll
+cd ~/code/elben.github.io
+cabal install --only-dep
 ```
 
 To build:
