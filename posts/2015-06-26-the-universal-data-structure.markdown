@@ -84,7 +84,7 @@ OK, you’re all-in on the idea that a hash is the most useful data structure ma
 
 I usually try to avoid the rigorous thinking type of articles because why should we water down good analogies with rigor? Why spend hours working through difficult exercises when I can just show you a comic of a caterpillar eating a spider to describe some abstract concept? Let’s all admit that most of the time, the caterpillar analogies are sufficient, and we render LaTeX only to play Mathematician.
 
-But I’m going to risk some academic stuff because I think it's important enough to delve into the theory. And for once, not too much work. It’s a proof for the common programmer, not just those ivy tower theorists.
+But I’m going to risk some academic stuff because I think it's important enough to delve into the theory. And for once, it's not too much work. It’s a proof for the common programmer, not just those ivy tower theorists.
 
 The proof is so easy it’s a snore.
 
@@ -116,7 +116,7 @@ Most famous is JavaScript’s implementation of arrays, which erases a litany of
 
 **Linked list**
 
-Linked lists have an O(n) look up. I don’t know why you would ever use this over an array (or a hash), but you can implement it via a `UniversalHash`. Here’s a linked list of two elements:
+Linked lists suffer an O(n) look up. I don’t know why you would ever use this over an array (or a hash), but you can implement it via a `UniversalHash`. Here’s a linked list of two elements:
 
 ```
 {
@@ -153,7 +153,7 @@ A tree is a node, where a node is just a value paired with an array of nodes.
 
 I am so sick and tired of this question: "why don’t you just use Postgres?" The answer is the same chorus: because everything ends up being a hash anyways!
 
-Remember when everyone used tables to lay out their HTML? Well, that proved to be a horrible way to do things, because tables are inherently inflexible. It’s strictly a *geometric* constraint. Now we all use `div`s and CSS, because we get a much-more flexible CSS engine to define our layout. Postgres and her SQL friends are all table based, just like the `<table>` of 1999. Don’t be 1999.
+Remember when everyone used tables to lay out their HTML? Well, that proved to be a horrible way to do things, because tables are inherently inflexible. It’s a strictly *geometric* constraint. Now we all use `div`s and CSS, because we get a much-more flexible CSS engine to define our layout. Postgres and her SQL friends are all table based, just like the `<table>` of 1999. Don’t be 1999.
 
 **JSON**
 
@@ -179,7 +179,7 @@ We can represent this like this:
 
 Now, our program can just read the `tag` and know what to do with the string value. In fact, this is what compiler writers have to do, since everything is just a bunch of bytes at the end of the day.
 
-And check it out, we’re implementing hashes with hashes.
+And to blow your minds even more, note that we’re implementing hashes with hashes.
 
 (Some of you may question how we got the first implementation of a hash to begin with. When you type `{}`, the compiler surely puts that in a hash. But where did the *compiler’s* hash come from? This is where *mathematical induction* comes in. It’s a big math word that basically means that if you can prove that the bottom rung of your ladder exists, and you can get from rung *n* to rung *(n-1)*, then you'll eventually get off the ladder. Well, we know main memory is really just a `Hash[Int, String]`. And since we can implement hashes with hashes, this means that a hash can be implemented.)
 
