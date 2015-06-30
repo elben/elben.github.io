@@ -1,7 +1,7 @@
 ---
 title: The Universal Data Structure
 categories: blog
-tags: theory
+tags: bad-theory
 ---
 
 Whether you write compilers, web services or Django admin panels, you probably use **hash maps** more than all other data structures combined. In fact, you may not remember the last time you used anything else. This is not a coincidence: **any conceivable data structure can be implemented with a hash map; therefore, there is no need to use any other data structure**.
@@ -181,21 +181,14 @@ Now, our program can just read the `tag` and know what to do with the string val
 
 And check it out, we’re implementing hashes with hashes.
 
-(Some of you may question how we got the first implementation of a hash to begin with. When you type `{}`, the compiler surely puts that in a hash. But where did the *compiler’s* hash come from? This is where *mathematical induction* comes in. It’s a big math word that basically means that if you can prove a base case and that one step of your recursive argument is true, then the rest of the steps are. Well, we know main memory is really just a `Hash[Int, String]`. And since we can implement hashes with hashes, this means that a hash can be implemented.)
+(Some of you may question how we got the first implementation of a hash to begin with. When you type `{}`, the compiler surely puts that in a hash. But where did the *compiler’s* hash come from? This is where *mathematical induction* comes in. It’s a big math word that basically means that if you can prove that the bottom rung of your ladder exists, and you can get from rung *n* to rung *(n-1)*, then you'll eventually get off the ladder. Well, we know main memory is really just a `Hash[Int, String]`. And since we can implement hashes with hashes, this means that a hash can be implemented.)
 
 ## Practical implications
 
-Unlike most academic work that has little to no practical implications, I think the stuff here will prove to be useful for a better understanding of our craft.
+Unlike most academic work that has little to no practical implications, I think blindly following the stuff here will prove to be incalculably beneficial for you.
 
-When, for example, your interviewee stuffs something into a hash that looks suspiciously like a tree, remind yourself that it’s OK—everything is just a hash. Plus, remember that hashes are faster.
+When a co-worker or interviewee stuffs some data into a hash even though it looks suspiciously like a tree, remind yourself that it’s OK—everything is just a hash. Plus, hashes are faster.
 
-Or when you're writing something that looks suspiciously like a list of things or a tree, pause. Breath. Choose the universal hash.
-
-And when you’re picking database technology, I recommend that you choose databases that are flexible by nature. That is, databases that use the *hash* as the standard unit of storage, instead of rows or nodes or what-not. This is why a company like MongoDB can confidently declare this in their newsletter:
-
-> On a deadline? Ship more code with MongoDB.
->
-> MongoDB’s flexible schema [UniversalHash] and idiomatic drivers let you ship your apps on time and get back to coding.
+And when you’re picking database technology, I recommend that you choose databases that are flexible by nature. That is, databases that use the *hash* as the standard unit of storage, instead of rows or what-not.
 
 I hope you’re convinced. A hash is simple. A hash is fast. A hash is all you need.
-
