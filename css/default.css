@@ -377,10 +377,7 @@ ul.simple {
     font-weight: 400; /* normal */
     font-style: normal;
     font-stretch: normal;
-    src: url('fonts/source-code-pro/EOT/SourceCodePro-Regular.eot') format('embedded-opentype'),
-         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.ttf.woff2') format('woff2'),
-         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Regular.otf.woff') format('woff'),
-         url('fonts/source-code-pro/OTF/SourceCodePro-Regular.otf') format('opentype'),
+    src: url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Regular.otf.woff') format('woff'),
          url('fonts/source-code-pro/TTF/SourceCodePro-Regular.ttf') format('truetype');
 }
 
@@ -389,10 +386,7 @@ ul.simple {
     font-weight: 400; /* normal */
     font-style: italic;
     font-stretch: normal;
-    src: url('fonts/source-code-pro/EOT/SourceCodePro-It.eot') format('embedded-opentype'),
-         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-It.ttf.woff2') format('woff2'),
-         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-It.otf.woff') format('woff'),
-         url('fonts/source-code-pro/OTF/SourceCodePro-It.otf') format('opentype'),
+    src: url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-It.otf.woff') format('woff'),
          url('fonts/source-code-pro/TTF/SourceCodePro-It.ttf') format('truetype');
 }
 
@@ -401,10 +395,7 @@ ul.simple {
     font-weight: 600; /* semi-bold */
     font-style: normal;
     font-stretch: normal;
-    src: url('fonts/source-code-pro/EOT/SourceCodePro-Semibold.eot') format('embedded-opentype'),
-         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-Semibold.ttf.woff2') format('woff2'),
-         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Semibold.otf.woff') format('woff'),
-         url('fonts/source-code-pro/OTF/SourceCodePro-Semibold.otf') format('opentype'),
+    src: url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Semibold.otf.woff') format('woff'),
          url('fonts/source-code-pro/TTF/SourceCodePro-Semibold.ttf') format('truetype');
 }
 
@@ -413,10 +404,7 @@ ul.simple {
     font-weight: 600; /* semi-bold */
     font-style: italic;
     font-stretch: normal;
-    src: url('fonts/source-code-pro/EOT/SourceCodePro-SemiboldIt.eot') format('embedded-opentype'),
-         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-SemiboldIt.ttf.woff2') format('woff2'),
-         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-SemiboldIt.otf.woff') format('woff'),
-         url('fonts/source-code-pro/OTF/SourceCodePro-SemiboldIt.otf') format('opentype'),
+    src: url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-SemiboldIt.otf.woff') format('woff'),
          url('fonts/source-code-pro/TTF/SourceCodePro-SemiboldIt.ttf') format('truetype');
 }
 
@@ -428,7 +416,6 @@ ul.simple {
     font-family: 'Charter';
     font-weight: normal;
     font-style: normal;
-    src: url('fonts/charter/charter_regular-webfont.eot');
     src: url('fonts/charter/charter_regular-webfont.eot?#iefix') format('embedded-opentype'),
          url('fonts/charter/charter_regular-webfont.woff') format('woff');
 }
@@ -437,7 +424,6 @@ ul.simple {
     font-family: 'Charter';
     font-weight: normal;
     font-style: italic;
-    src: url('fonts/charter/charter_italic-webfont.eot');
     src: url('fonts/charter/charter_italic-webfont.eot?#iefix') format('embedded-opentype'),
          url('fonts/charter/charter_italic-webfont.woff') format('woff');
 }
@@ -446,7 +432,6 @@ ul.simple {
     font-family: 'Charter';
     font-weight: bold;
     font-style: normal;
-    src: url('fonts/charter/charter_bold-webfont.eot');
     src: url('fonts/charter/charter_bold-webfont.eot?#iefix') format('embedded-opentype'),
          url('fonts/charter/charter_bold-webfont.woff') format('woff');
 }
@@ -455,7 +440,6 @@ ul.simple {
     font-family: 'Charter';
     font-weight: bold;
     font-style: italic;
-    src: url('fonts/charter/charter_bold_italic-webfont.eot');
     src: url('fonts/charter/charter_bold_italic-webfont.eot?#iefix') format('embedded-opentype'),
          url('fonts/charter/charter_bold_italic-webfont.woff') format('woff');
 }
