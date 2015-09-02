@@ -1,43 +1,7 @@
-@font-face {
-    font-family: 'charterbold_italic';
-    src: url('charter_bold_italic-webfont.eot');
-    src: url('charter_bold_italic-webfont.eot?#iefix') format('embedded-opentype'),
-         url('charter_bold_italic-webfont.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'charterbold';
-    src: url('font/charter_bold-webfont.eot');
-    src: url('font/charter_bold-webfont.eot?#iefix') format('embedded-opentype'),
-         url('font/charter_bold-webfont.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'charteritalic';
-    src: url('font/charter_italic-webfont.eot');
-    src: url('font/charter_italic-webfont.eot?#iefix') format('embedded-opentype'),
-         url('font/charter_italic-webfont.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'charterregular';
-    src: url('font/charter_regular-webfont.eot');
-    src: url('font/charter_regular-webfont.eot?#iefix') format('embedded-opentype'),
-         url('font/charter_regular-webfont.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-
 body {
   color: #151311; /* Dark grey with a little of red saturation */
   /* background: #f9f5f1; */
-  font-family: 'Charter', Georgia, sans-serif;
+  font-family: 'Charter', Georgia, serif;
 
   /* Our base font of 18px. Line-heights, margins, and paddings calculated to
    * produce vertical rhyhtm. */
@@ -95,7 +59,7 @@ img#background {
  * vertical rhyhtm. Simpliest to keep font-size 1em. */
 code {
   font-size: 0.9em;
-  font-family: Consolas, "inconsolata-1", "inconsolata-2", monospace;
+  font-family: "Source Code Pro", monospace;
   font-weight: normal;
   line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
   font-weight: 400;
@@ -112,7 +76,7 @@ code {
 
 pre {
   line-height: 1.3em;
-  font-family: Consolas, "inconsolata-1", "inconsolata-2", monospace;
+  font-family: "Source Code Pro", monospace;
   /* border-left: 8px solid #ece5dc; */
   border-left: 8px solid #e5e5e5;
   padding: 0 1em;
@@ -340,6 +304,10 @@ ul.simple {
     font-size: 16px;
   }
 
+  #structure {
+    padding: 0 0.5em;
+  }
+
   #header h1 {
     padding-top: 0.5em;
   }
@@ -388,5 +356,107 @@ ul.simple {
   .post-content-end {
     display: none;
   }
+}
+
+/**
+ * Fonts
+ *
+ * Why so many srcs?
+ *
+ *   http://stackoverflow.com/questions/11002820/why-should-we-include-ttf-eot-woff-svg-in-a-font-face
+ *   https://css-tricks.com/snippets/css/using-font-face/
+ *
+ **/
+
+/**
+ * Source Code Pro
+ **/
+
+@font-face {
+    font-family: 'Source Code Pro';
+    font-weight: 400; /* normal */
+    font-style: normal;
+    font-stretch: normal;
+    src: url('fonts/source-code-pro/EOT/SourceCodePro-Regular.eot') format('embedded-opentype'),
+         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-Regular.ttf.woff2') format('woff2'),
+         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Regular.otf.woff') format('woff'),
+         url('fonts/source-code-pro/OTF/SourceCodePro-Regular.otf') format('opentype'),
+         url('fonts/source-code-pro/TTF/SourceCodePro-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Source Code Pro';
+    font-weight: 400; /* normal */
+    font-style: italic;
+    font-stretch: normal;
+    src: url('fonts/source-code-pro/EOT/SourceCodePro-It.eot') format('embedded-opentype'),
+         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-It.ttf.woff2') format('woff2'),
+         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-It.otf.woff') format('woff'),
+         url('fonts/source-code-pro/OTF/SourceCodePro-It.otf') format('opentype'),
+         url('fonts/source-code-pro/TTF/SourceCodePro-It.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Source Code Pro';
+    font-weight: 600; /* semi-bold */
+    font-style: normal;
+    font-stretch: normal;
+    src: url('fonts/source-code-pro/EOT/SourceCodePro-Semibold.eot') format('embedded-opentype'),
+         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-Semibold.ttf.woff2') format('woff2'),
+         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-Semibold.otf.woff') format('woff'),
+         url('fonts/source-code-pro/OTF/SourceCodePro-Semibold.otf') format('opentype'),
+         url('fonts/source-code-pro/TTF/SourceCodePro-Semibold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Source Code Pro';
+    font-weight: 600; /* semi-bold */
+    font-style: italic;
+    font-stretch: normal;
+    src: url('fonts/source-code-pro/EOT/SourceCodePro-SemiboldIt.eot') format('embedded-opentype'),
+         url('fonts/source-code-pro/WOFF2/OTF/SourceCodePro-SemiboldIt.ttf.woff2') format('woff2'),
+         url('fonts/source-code-pro/WOFF/OTF/SourceCodePro-SemiboldIt.otf.woff') format('woff'),
+         url('fonts/source-code-pro/OTF/SourceCodePro-SemiboldIt.otf') format('opentype'),
+         url('fonts/source-code-pro/TTF/SourceCodePro-SemiboldIt.ttf') format('truetype');
+}
+
+/**
+ * Charter
+ **/
+
+@font-face {
+    font-family: 'Charter';
+    font-weight: normal;
+    font-style: normal;
+    src: url('fonts/charter/charter_regular-webfont.eot');
+    src: url('fonts/charter/charter_regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url('fonts/charter/charter_regular-webfont.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Charter';
+    font-weight: normal;
+    font-style: italic;
+    src: url('fonts/charter/charter_italic-webfont.eot');
+    src: url('fonts/charter/charter_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('fonts/charter/charter_italic-webfont.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Charter';
+    font-weight: bold;
+    font-style: normal;
+    src: url('fonts/charter/charter_bold-webfont.eot');
+    src: url('fonts/charter/charter_bold-webfont.eot?#iefix') format('embedded-opentype'),
+         url('fonts/charter/charter_bold-webfont.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Charter';
+    font-weight: bold;
+    font-style: italic;
+    src: url('fonts/charter/charter_bold_italic-webfont.eot');
+    src: url('fonts/charter/charter_bold_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url('fonts/charter/charter_bold_italic-webfont.woff') format('woff');
 }
 
