@@ -1,3 +1,15 @@
+
+/**************************
+ *
+ * Syntax highlighting
+ *
+ * Notes:
+ *
+ * - For 'Source Code Pro' font, we are not downloading italic fonts. So don't
+ * use italics!
+ *
+ **************************/
+
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode, table.sourceCode pre
    { margin: 0; padding: 0; border: 0; vertical-align: baseline; border: none; }
 
@@ -37,7 +49,7 @@ code.sourceCode span.bn { } /* Literal.Number.Hex */
 code.sourceCode span.fl { } /* Literal.Number.Float */
 code.sourceCode span.ch { } /* Literal.String.Char */
 code.sourceCode span.st { } /* Literal.String */
-code.sourceCode span.co { color: #9C9C9C; font-style: italic } /* Comment */
+code.sourceCode span.co { } /* Comment */
 code.sourceCode span.ot { color: #999988 } /* Comment.Preproc */
 code.sourceCode span.al { color: #E43636 } /* Generic.Error */
 code.sourceCode span.fu { color: #000000 } /* Name.Function */
