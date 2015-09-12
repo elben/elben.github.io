@@ -20,28 +20,39 @@ table.sourceCode {
 td.lineNumbers pre {
   /* Non-td `pre` uses line-height 1.3em and `code` uses font-size 0.9em. So to
    * make line numbers' heights consistent with the code lines, we need a
-   * line-height of 1.3/0.9 = 1.44em.
+   * line-height of 1.3/0.95 = 1.368421053em.
+   *
+   * Use !important! to overwrite the !important in `pre`.
    */
-  line-height: 1.44em;
+  line-height: 1.368421053em !important;
 }
 
 td.lineNumbers {
-  font-size: 0.9em;
+  font-size: 0.95em;
 
   margin-left: -8px;
   /* 6px - Makes border-right align as they ought */
-  padding: 6px 12px 5px 0.9em;
+  padding: 6px 12px 5px 0;
 
   text-align: right;
   background-color: none;
-  color: #999;
-  border-left: 8px solid #e5e5e5;
-  border-right: 2px solid #e5e5e5;
+  color: #AAAAAA;
+  border-right: 8px solid #e5e5e5;
+  /* border-right: 2px solid #e5e5e5; */
 }
-td.sourceCode { padding-left: 5px; }
+td.sourceCode { padding-left: 1em; }
+
+@media (max-width: 640px) {
+  td.lineNumbers {
+    padding: 6px 0.5em 5px 0;
+    border-right: 2px solid #e5e5e5;
+  }
+  td.sourceCode { padding-left: 0.25em; }
+}
+
 code.sourceCode { }
-pre.sourceCode { line-height: 1.25em; }
-td.nums pre { line-height: 1.25em; }
+pre.sourceCode { }
+td.nums pre { }
 code.sourceCode span.kw { font-weight: 600; } /* Keyword */
 code.sourceCode span.dt { } /* Keyword.Type */
 code.sourceCode span.dv { } /* Literal.Number.Integer */
@@ -49,7 +60,7 @@ code.sourceCode span.bn { } /* Literal.Number.Hex */
 code.sourceCode span.fl { } /* Literal.Number.Float */
 code.sourceCode span.ch { } /* Literal.String.Char */
 code.sourceCode span.st { } /* Literal.String */
-code.sourceCode span.co { color: #9C9C9C; } /* Comment */
+code.sourceCode span.co { color: #AAAAAA; } /* Comment */
 code.sourceCode span.ot { } /* Comment.Preproc */
 code.sourceCode span.al { color: #E43636 } /* Generic.Error */
 code.sourceCode span.fu { } /* Name.Function */

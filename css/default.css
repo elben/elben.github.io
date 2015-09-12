@@ -35,7 +35,6 @@ hr {
 
   /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
    * baseline, so this means we have 23px left. Hence 23px margin. */
-  /* border: 3px solid #ece5dc; */
   border: 3px solid #222;
   margin: 23px 0;
 }
@@ -55,10 +54,11 @@ img#background {
   right: 0;
 }
 
-/* code is used in body (not just code blocks), so we need to be sure to handle
- * vertical rhyhtm. Simpliest to keep font-size 1em. */
+/* Code is used in body (not just code blocks), so we need to be sure to handle
+ * vertical rhyhtm. Simpliest to keep font-size 1em.
+ */
 code {
-  font-size: 0.9em;
+  font-size: 0.95em;
   font-family: "Source Code Pro", monospace;
   font-weight: normal;
   line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
@@ -69,15 +69,12 @@ code {
   /* background: #eee6dd; */
 }
 
-.highlight code {
-  padding: 0;
-  background: none;
-}
-
 pre {
-  line-height: 1.3em;
+  /* This number affects .lineNumbers in syntax.css. */
+  /* Use !important to overwrite the inner `code` line height */
+  line-height: 1.3em !important;
+
   font-family: "Source Code Pro", monospace;
-  /* border-left: 8px solid #ece5dc; */
   border-left: 8px solid #e5e5e5;
   padding: 0 1em;
   margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
@@ -85,7 +82,7 @@ pre {
 
 /*
  * Headers
- * 
+ *
  * For headers, we use http://modularscale.com to produce a scale in base size
  * 18px using the "perfect-fourth" ratio.
  *
@@ -291,14 +288,6 @@ ul.simple {
   margin-top: 3em;
 }
 
-.highlight .lineno {
-  color: #999;
-  margin-left: -8px;
-  border-right: 2px solid #ece5dc;
-  /* 6px - Makes border-right align as they ought */
-  padding: 6px 12px 5px inherit;
-}
-
 @media (max-width: 640px) {
   body {
     font-size: 16px;
@@ -316,14 +305,6 @@ ul.simple {
     border-left: none;
     padding: 0;
     margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
-  }
-
-  .highlight .lineno {
-    color: #999;
-    margin-left: 0;
-    border-right: 2px solid #ece5dc;
-    /* 6px - Makes border-right align as they ought */
-    padding: 6px 6px 5px inherit;
   }
 
   hr {
