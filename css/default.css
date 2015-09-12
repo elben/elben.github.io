@@ -330,6 +330,10 @@ ul.simple {
     /* A bit less than max-width of a post */
     width: auto;
   }
+
+  ul.simple li {
+   margin-bottom: 1em;
+  }
 }
 
 @media print {
