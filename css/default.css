@@ -331,8 +331,8 @@ ul.simple {
     width: auto;
   }
 
-  ul.simple li {
-   margin-bottom: 1em;
+  ul.projects-list li {
+   margin-bottom: 0.5em;
   }
 }
 
