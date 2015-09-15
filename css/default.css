@@ -134,11 +134,13 @@ h2 {
    * that number, but I'm going to go with what looks good by gut. The header
    * should be a bit closer to the section it declares, for contextual
    * proximity.
+   *
+   * x = 1.12528132
+   * margin-top    = x * 1.5
+   * margin-bottom = x / 2
    */
   line-height: 1.12528132em;
-  margin: 2em 0 1em 0;
-  /* margin: 0 0 .28132033em 0; */
-  /* margin: 0 0 1.12528132em 0; */
+  margin: 1.68792198em 0 0.56264066em 0;
 }
 
 h3 {

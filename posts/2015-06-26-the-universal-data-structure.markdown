@@ -108,13 +108,13 @@ The theorem above proved that every data structure is just a hash. In this secti
 
 (By the way, a *theorem* is academic lingo for a truth backed by a *proof*, which is academic lingo for an irrefutable argument using our God-given logic, other proven theorems and a couple of God-given *axioms*, which is academic lingo for a *truth* we accept purely by our God-given logic, like: if something is not true then it is false, something cannot exist in an empty set, something logical is logical.)
 
-**Array**
+### Array
 
 As seen before, an array is just a hash where the keys are indices to the array.
 
 Most famous is JavaScript’s implementation of arrays, which erases a litany of bugs by  returning `undefined` if the provided index is out of bounds. Universal values like `undefined` and `null` are useful values to return if you want to indicate system failure, out of memory error, user error, invalid memory location, timeout, nothing, something, anything.
 
-**Linked list**
+### Linked list
 
 Linked lists suffer an O(n) look up. I don’t know why you would ever use this over an array (or a hash), but you can implement it via a `UniversalHash`. Here’s a linked list of two elements:
 
@@ -132,7 +132,7 @@ Linked lists suffer an O(n) look up. I don’t know why you would ever use this 
 }
 ```
 
-**Tree**
+### Tree
 
 A tree is a node, where a node is just a value paired with an array of nodes.
 
@@ -149,13 +149,13 @@ A tree is a node, where a node is just a value paired with an array of nodes.
 }
 ```
 
-**Postgres**
+### Postgres
 
 I am so sick and tired of this question: "why don’t you just use Postgres?" The answer is the same chorus: because everything ends up being a hash anyways!
 
 Remember when everyone used tables to lay out their HTML? Well, that proved to be a horrible way to do things, because tables are inherently inflexible. It’s a strictly *geometric* constraint. Now we all use `div`s and CSS, because we get a much-more flexible CSS engine to define our layout. Postgres and her SQL friends are all table based, just like the `<table>` of 1999. Don’t be 1999.
 
-**JSON**
+### JSON
 
 JSON support things like booleans, floating points, integers, etc. How can we support these types if we only have a `UniversalHash = Hash[String|Int, UniversalHash|String]`? There’s a simple solution that the bookmarking company [del.icio.us](https://delicious.com/) heralded: just tag stuff. For example, say our JSON looks like this:
 
