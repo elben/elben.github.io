@@ -1,7 +1,18 @@
+html {
+  font-family: Georgia, serif;
+}
+
+html.fonts-loaded {
+  font-family: 'Charter', Georgia, serif;
+}
+
+.code-fonts-loaded code,pre {
+  font-family: "Source Code Pro", monospace;
+}
+
 body {
   color: #151311; /* Dark grey with a little of red saturation */
   /* background: #f9f5f1; */
-  font-family: 'Charter', Georgia, serif;
 
   /* Our base font of 18px. Line-heights, margins, and paddings calculated to
    * produce vertical rhyhtm. */
@@ -59,7 +70,7 @@ img#background {
  */
 code {
   font-size: 0.95em;
-  font-family: "Source Code Pro", monospace;
+  font-family: monospace;
   font-weight: normal;
   line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
   font-weight: 400;
@@ -74,7 +85,7 @@ pre {
   /* Use !important to overwrite the inner `code` line height */
   line-height: 1.3em !important;
 
-  font-family: "Source Code Pro", monospace;
+  font-family: monospace;
   border-left: 8px solid #e5e5e5;
   padding: 0 1em;
   margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
