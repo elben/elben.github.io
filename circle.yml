@@ -10,7 +10,8 @@ dependencies:
     - sudo mv /tmp/stack /usr/bin/stack
   override:
     - stack setup
-    - stack build # build `site` exec
+    - stack build: # build `site` exec
+        timeout: 3000
 
 
 # Compile pages during the test stage
