@@ -11,12 +11,11 @@ dependencies:
   override:
     - stack setup
     - stack build: # build `site` exec
-        timeout: 3000
-
+        timeout: 300
 
 # Compile pages during the test stage
 test:
-  post:
+  override:
     # See Makefile
     - make
 
