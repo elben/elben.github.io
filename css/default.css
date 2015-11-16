@@ -175,7 +175,7 @@ ul.simple {
   margin-left: auto;
   margin-right: auto;
   padding: 0 1em;
-  max-width: 800px;
+  max-width: 700px;
 }
 
 #header h1 {
@@ -293,7 +293,8 @@ ul.simple {
 }
 
 .post-content {
-  max-width: 700px;
+  /* Hits about 80 characters per line with font size 16px */
+  max-width: 600px;
 }
 
 .post-content-end {
