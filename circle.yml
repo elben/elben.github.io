@@ -1,21 +1,29 @@
 # This is the configuration file for circleci.com (CI which builds the site)
 
-# Manually install to avoid install conflicts
-# cf. https://github.com/jaspervdj/hakyll/issues/340#issuecomment-96101869
+# https://gist.github.com/dbp/bef96402ea07001dfed2
 dependencies:
+  cache_directories:
+    - "~/.stack"
+  pre:
+    - wget https://github.com/commercialhaskell/stack/releases/download/v0.1.2.0/stack-0.1.2.0-x86_64-linux.gz -O /tmp/stack.gz
+    - gunzip /tmp/stack.gz && chmod +x /tmp/stack
+    - sudo mv /tmp/stack /usr/bin/stack
   override:
-    - cabal update
-    - cabal install --dependencies-only --avoid-reinstalls
+    - stack setup
+    - stack build # build `site` exec
+
 
 # Compile pages during the test stage
 test:
   post:
+    # See Makefile
     - make
 
 deployment:
   production:
     branch: source
     commands:
+    # See Makefile
     - "make deploy"
 
 general:

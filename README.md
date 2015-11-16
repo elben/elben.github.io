@@ -14,10 +14,11 @@ cabal install --only-dep
 To build:
 
 ```bash
-cabal build && dist/build/site/site clean
-dist/build/site/site watch
+stack build
+stack exec site clean
+stack exec site watch
 
-cabal repl
+stack ghci
 ```
 
 

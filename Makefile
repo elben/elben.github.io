@@ -1,13 +1,13 @@
 CNAME := elbenshira.com
 REPO := git@github.com:elben/elben.github.io.git
 
-EXE := dist/build/site/site
+EXE := stack exec site
 
 all:	build
 	@true
 
 ${EXE}:	site.hs
-	cabal build
+	stack build
 	${EXE} clean
 
 build:	${EXE}
