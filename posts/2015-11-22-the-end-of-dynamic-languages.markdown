@@ -1,5 +1,5 @@
 ---
-title: The Age of Dynamic Languages is Over
+title: The End of Dynamic Languages
 categories: blog
 tags: pl, recommended
 ---
@@ -160,12 +160,14 @@ Let's be clear: I am not suggesting that you and your team will start writing be
 
 ## The end of an era
 
-This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Instead, we will see a flourishing of languages that *feel* like you’re writing in a Clojure, but strongly typed, with modern type inference and powerful tools that help us write better programs.
+This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We've learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. We've learned that we want our languages to be, above all, enjoyable.
 
-To do this, we need to inform our tools of our intent. We need to restrict our space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages, not less.
+But it's time to move on. Instead, we will see a flourishing of languages that *feel* like you’re writing in a Clojure, but strongly-typed. Included will be a suite of powerful tools that we've never seen before, tools that will help us write better programs.
+
+To do this, we need to inform our tools of our intent. We need to restrict our space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages like these.
 
 We think we have seen everything under the sun, that there are no new ideas worth learning. Worse yet, we refuse to learn anything unfamiliar. (Yuck, look at that syntax!) But remember how *hard* it was when we first learned to code? Was it not worth the effort? We should not be afraid to embark on that familiar journey once again.
 
 The Christian theologian Gerhardus Vos described the tension of this life as "already but not yet." That is, a Christian is at once made into a new creation by their faith, but at the same time still carries the burdens and sorrows of this life.
 
-What an apt description of where we are today. From far away, we can envision what productive, empowering and confident languages would look and feel like. Many that exist today is on its way. But we are not there yet. Surely we can do better.
+What an apt description of where we are today. From a distance, we can envision what productive, empowering and confident languages would look and feel like. Many that exist today is on its way, but we are not there yet. Surely we can do better.
