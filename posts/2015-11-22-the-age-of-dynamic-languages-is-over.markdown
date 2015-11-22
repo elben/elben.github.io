@@ -1,7 +1,7 @@
 ---
 title: The Age of Dynamic Languages is Over
 categories: blog
-tags: pl
+tags: pl, recommended
 ---
 
 For the past several months, I’ve been programming almost exclusively in Scala (for work) and Haskell (for pleasure). But this week, I was also saturated in Ruby (for work) and Clojure (for pleasure).
