@@ -36,10 +36,10 @@ It went something like this:
 
 This uncertainty wrecks productivity. Every library function you call, unless you have it memorized, requires hunting down the source or test files for examples on how to use it. Every map you get back requires a `println` to know what it contains.
 
-Clojure, you see, is powerful. But all that power is given to the programmer without any support to help us wield that power.
+Yes, Clojure is powerful. But power without support, without someone showing us how to wield that power, can only corrupt. I'm not talking about human philosophy here—just code. Which one of us has not suffered from Ruby's metaprogramming, or Clojure's maps? We are both inflictor and victim.
 
-### Do DSLs empower or confuse?
-Let's talk about DSLs. Clojurians (and all Lisp programmers) love DSLs, and Clojure data structures lend itself well to be used as a DSL.
+### An example: do DSLs empower or confuse?
+Let's talk about the corrupting power of Clojure DSLs. Clojurians love DSLs, and Clojure data structures lend itself well to be used in that way.
 
 But I think there is something wrong with this.
 
@@ -100,7 +100,7 @@ After several `Ctrl-F`s in the README, a close reading of the source code, lots 
                      :post {"" :update-handler}}}}])
 ```
 
-I’m sure there’s a pattern in there somewhere, but do you see it? Will we remember to type it exactly right, or will we resort to REPLing our routes to death?
+I’m sure there’s a pattern in there somewhere, but do you see it? Will you remember to type it exactly right, or will you resort to REPLing our routes to death?
 
 I have a feeling that REPL is going to get a *lot* of use.
 
@@ -130,7 +130,7 @@ I'm afraid they are not. Unit and property tests are of most value when they tes
 
 Linters for dynamic languages are crippled to the point of being more about vanity and less about quality. If your argument for using your linter is that it finds whitespace issues, I'm not sure that's solving important problems.
 
-Using Haskell's `hlint`, however, is like programming in the future. Because Haskell is a strongly-typed language, the linter knows a lot more about your program than just syntax. So `hlint` is able to suggest not just syntactical problems, but also *structural* ones. It can tell me:
+Using Haskell's `hlint`, however, is like programming in the future. Because Haskell is a strongly-typed language, the linter knows a lot more about your program than just syntax. It can find *structural* problems too, like:
 
 - When two equivalent anonymous functions that can be extracted out
 - When a library method already exists for an expression
@@ -144,7 +144,7 @@ Does that sound like something you want?
 
 OK, enough ranting. Let's pause. Here is a story of how we used our *programming language* to help us eradicate a certain class of bugs from a production code base.
 
-Last week, I was frustrated at this Scala code base because it was so easy to write difficult-to-catch runtime bugs that wrote wrong values into a Solr search cluster. For example, not writing a boolean value into a boolean field (which Solr allows, but we didn't want to). I spent a week refactoring that messy, bug-prone monolith into smaller, composible chunks that passed around immutable data structures ala Clojure. At first I thought it was great work. The new code was nice-to-read and well-tested. Yet as I began to use it, I found myself writing the same runtime bugs I was writing before. One involved breaking our porn filter (quick, what do you do when `isItPorn` returns `null`?).
+Last week, I was frustrated at a particular Scala code base because it was so easy to write bugs that wrote wrong values into a Solr search cluster. For example, Solr silently allows `null` to be written to a boolean field. I spent a week refactoring that messy, bug-prone monolith into small, composible chunks that passed around immutable data structures ala Clojure. At first I thought it was great work. The new code was nice-to-read and well-tested. Yet I found myself writing the same runtime bugs I was writing before. One even involved breaking our porn filter (quick, what do you do when `isItPorn` returns `null`?).
 
 So my co-worker Adam and I set a goal: **turn all these runtime bugs into compiler errors.** We wanted a big, fat FAILED TO COMPILE message if we tried to insert `null` into a boolean field.
 
@@ -160,11 +160,11 @@ Let's be clear: I am not suggesting that you and your team will start writing be
 
 ## The end of an era
 
-This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We've learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. We've learned that we want our languages to be, above all, enjoyable.
+This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We've learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. And above all, we've learned that we want our languages to be enjoyable.
 
-But it's time to move on. Instead, we will see a flourishing of languages that *feel* like you’re writing in a Clojure, but strongly-typed. Included will be a suite of powerful tools that we've never seen before, tools that will help us write better programs.
+But it's time to move on. We will see a flourishing of languages that *feel* like you’re writing in a Clojure, but strongly-typed. Included will be a suite of powerful tools that we've never seen before, tools so convincing that only ascetics will ignore.
 
-To do this, we need to inform our tools of our intent. We need to restrict our space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages like these.
+To do this, we need to feed our tools the information they need to help us; a psychologist cannot help the silent patient. We begin by adding types, by restricting the space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages like these.
 
 We think we have seen everything under the sun, that there are no new ideas worth learning. Worse yet, we refuse to learn anything unfamiliar. (Yuck, look at that syntax!) But remember how *hard* it was when we first learned to code? Was it not worth the effort? We should not be afraid to embark on that familiar journey once again.
 
