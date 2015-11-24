@@ -105,7 +105,7 @@ I’m sure there’s a pattern in there somewhere, but do you see it? Will you r
 I have a feeling that REPL is going to get a *lot* of use.
 
 ## The problem with uncertainty
-Now, don’t get me wrong, negative feelings do arise when writing in strongly-typed languages like Haskell and Scala. Confusion, frustration, hopelessness. But uncertainty is perhaps worse than all the others. You can resolve all the others by sitting down and learning the thing. But how does one resolve *uncertainty*? Only with more certainty. But what if the language does not provide a way to make certain of the uncertain?
+Now, don’t get me wrong, negative feelings do arise when writing in typed languages like Haskell and Scala. Confusion, frustration, hopelessness. But uncertainty is perhaps worse than all the others. You can resolve all the others by sitting down and learning the thing. But how does one resolve *uncertainty*? Only with more certainty. But what if the language does not provide a way to make certain of the uncertain?
 
 Let's examine some current attempts.
 
@@ -130,7 +130,7 @@ I'm afraid they are not. Unit and property tests are of most value when they tes
 
 Linters for dynamic languages are crippled to the point of being more about vanity and less about quality. If your argument for using your linter is that it finds whitespace issues, I'm not sure that's solving important problems.
 
-Using Haskell's `hlint`, however, is like programming in the future. Because Haskell is a strongly-typed language, the linter knows a lot more about your program than just syntax. It can find *structural* problems too, like:
+Using Haskell's `hlint`, however, is like programming in the future. Because Haskell is a typed language, the linter knows a lot more about your program than just syntax. It can find *structural* problems too, like:
 
 - When two equivalent anonymous functions that can be extracted out
 - When a library method already exists for an expression
@@ -162,7 +162,7 @@ Let's be clear: I am not suggesting that you and your team will start writing be
 
 This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We've learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. And above all, we've learned that we want our languages to be enjoyable.
 
-But it's time to move on. We will see a flourishing of languages that *feel* like you’re writing in a Clojure, but strongly-typed. Included will be a suite of powerful tools that we've never seen before, tools so convincing that only ascetics will ignore.
+But it's time to move on. We will see a flourishing of languages that *feel* like you’re writing in a Clojure, but typed. Included will be a suite of powerful tools that we've never seen before, tools so convincing that only ascetics will ignore.
 
 To do this, we need to feed our tools the information they need to help us; a psychologist cannot help the silent patient. We begin by adding types, by restricting the space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages like these.
 
