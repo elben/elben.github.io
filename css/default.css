@@ -74,10 +74,6 @@ code {
   font-weight: normal;
   line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
   font-weight: 400;
-
-  /* padding: 0.2em 0.2em 0.1em; */
-  /* padding: 3px 3px 1px; */
-  /* background: #eee6dd; */
 }
 
 pre {
@@ -89,6 +85,8 @@ pre {
   border-left: 8px solid #e5e5e5;
   padding: 0 1em;
   margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
+
+  overflow-x: auto;
 }
 
 /*
@@ -134,7 +132,7 @@ h1 {
 }
 
 h1.post-title {
-  margin: 0 0 0 0.1em;
+  margin: 0;
 }
 
 h2 {
@@ -304,15 +302,19 @@ ul.simple {
 
 @media (max-width: 640px) {
   body {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   #structure {
-    padding: 0 0.5em;
+    padding: 0 0.75em;
   }
 
   #header h1 {
     padding-top: 0.5em;
+  }
+
+  #header h1.small {
+    margin-bottom: 1em;
   }
 
   pre {
