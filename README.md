@@ -2,8 +2,6 @@ See [elbenshira.com](http://elbenshira.com).
 
 # Development
 
-Currently operating on GHC 7.8.4 and Stackage lts-2.15.
-
 To install, download stack from here: https://www.stackage.org/
 
 ```bash
