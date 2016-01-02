@@ -12,7 +12,6 @@ html.fonts-loaded {
 
 body {
   color: #151311; /* Dark grey with a little of red saturation */
-  /* background: #f9f5f1; */
 
   /* Our base font of 18px. Line-heights, margins, and paddings calculated to
    * produce vertical rhyhtm. */
@@ -33,7 +32,7 @@ a {
   /* color: #ff3366; */ /* red persimmon */
   /* color: #003beb; */ /* spring blue */
   /* color: #53912a; */ /* awesome green */
-  color: #151311; /* Same as body */
+  color: inherit; /* Same as body */
   text-decoration: underline;
 }
 
@@ -42,8 +41,6 @@ a:hover {
 }
 
 hr {
-  width: 100%;
-
   /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
    * baseline, so this means we have 23px left. Hence 23px margin. */
   border: 3px solid #222;
@@ -173,7 +170,8 @@ ul.simple {
   margin-left: auto;
   margin-right: auto;
   padding: 0 1em;
-  max-width: 700px;
+  /* Hits about 80 characters per line with font size 16px */
+  max-width: 600px;
 }
 
 #header h1 {
@@ -190,25 +188,11 @@ ul.simple {
 
 #header a {
   text-decoration: none;
-  color: #151311; /* Dark grey with a little of red saturation */
 }
 
 #footer {
   margin-top: 2em;
   margin-bottom: 2em;
-}
-
-#footer a {
-  color: #222222;
-}
-
-#footer a:hover {
-  text-decoration: underline;
-  /* color: #ff3366; /1* red persimmon *1/ */
-}
-
-#email {
-  text-decoration: underline;
 }
 
 .floatleft {
@@ -232,9 +216,6 @@ ul.simple {
   margin-bottom: 20px;
 }
 
-.quoter {
-}
-
 .intro {
   padding: 20px;
   margin-bottom: 20px;
@@ -243,31 +224,6 @@ ul.simple {
   -moz-border-radius: 20px; 
   border-radius: 20px; 
 
-}
-
-.thin {
-  width: 340px;
-}
-
-.center {
-  text-align: center;
-}
-
-.green {
-  background-color: #d6e6be;
-}
-
-.blue {
-  background-color: #d5dfeb;
-}
-
-.purple {
-  background-color: #debce3;
-  /*border: 1px solid #D679E3;*/
-}
-
-.red {
-  background-color: #ebdbd5;
 }
 
 .post-metadata {
@@ -290,42 +246,21 @@ ul.simple {
   line-height: 2em;
 }
 
-.post-content {
-  /* Hits about 80 characters per line with font size 16px */
-  max-width: 600px;
-}
-
 .post-content-end {
   margin-top: 1em;
   margin-bottom: 3em;
 }
 
 @media (max-width: 640px) {
-  body {
-    font-size: 18px;
-  }
-
-  #structure {
-    padding: 0 0.75em;
-  }
-
-  #header h1 {
-    padding-top: 0.5em;
-  }
-
   #header h1.small {
-    margin-bottom: 1em;
+    padding-top: 0.5em;
+    margin-bottom: 0.5em;
   }
 
   pre {
     border-left: none;
     padding: 0;
     margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
-  }
-
-  hr {
-    /* A bit less than max-width of a post */
-    width: auto;
   }
 
   ul.projects-list li {
@@ -341,7 +276,7 @@ ul.simple {
   }
 
   a {
-    color: initial;
+    color: #000;
     text-decoration: underline;
   }
 

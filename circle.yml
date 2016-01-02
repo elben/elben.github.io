@@ -12,7 +12,7 @@ dependencies:
     - stack setup
     - stack build: # build `site` exec
         # Longer timeout for downloading packages
-        timeout: 300
+        timeout: 3000
 
 # Compile pages during the test stage
 test:
