@@ -6,7 +6,6 @@ dependencies:
     - "~/.stack"
   pre:
     - wget https://github.com/commercialhaskell/stack/releases/download/v1.1.2/stack-1.1.2-linux-x86_64.tar.gz -O /tmp/stack.tar.gz
-    - gunzip /tmp/stack.gz && chmod +x /tmp/stack
     - tar -xzf /tmp/stack.tar.gz
     - sudo mv /tmp/stack-1.1.2-linux-x86_64/stack /usr/bin/stack
   override:
