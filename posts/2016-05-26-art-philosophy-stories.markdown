@@ -1,5 +1,5 @@
 ---
-title: Art, Philosophy and Stories: As it relates to Programming
+title: "Art, Philosophy and Stories: As it relates to Programming"
 categories: blog
 draft: true
 ---

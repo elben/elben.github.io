@@ -1,7 +1,7 @@
 ---
 layout: post
-title: Git for Humans: Patching Your Commits
-date:   2011-11-21 11:16:00
+title: "Git for Humans: Patching Your Commits"
+date: "2011-11-21 11:16:00"
 categories: blog
 tags: git
 ---
