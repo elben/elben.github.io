@@ -19,6 +19,24 @@ stack exec site watch
 stack ghci
 ```
 
+# Drafts
+
+To set a post as a draft, add this to its metadata:
+
+```
+---
+title: The Post Title
+categories: blog
+draft: true
+---
+```
+
+By default this is published in dev mode, but not in production. To *not* publish drafts locally:
+
+```
+stack exec site clean
+LOAD_DRAFTS=false stack exec site watch
+```
 
 # Deploying
 

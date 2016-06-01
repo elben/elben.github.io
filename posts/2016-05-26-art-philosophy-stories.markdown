@@ -1,6 +1,7 @@
 ---
 title: Art, Philosophy and Stories: As it relates to Programming
 categories: blog
+draft: true
 ---
 
 What is the reason for art? What can we learn from philosophy, from stories?
