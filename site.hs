@@ -130,6 +130,7 @@ main = do
         route idRoute
         compile $ renderAtomFeedForPattern postsPattern
 
+    -- For http://planet.clojure.in/, which subscribes to my feed
     create ["blog/tags/clojure.xml"] $ do
         route idRoute
         compile $ renderAtomFeedForPattern (filterByTag tags "clojure")
