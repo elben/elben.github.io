@@ -1,6 +1,5 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
 import           Data.List (isSuffixOf, find)
 import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
@@ -14,27 +13,42 @@ import           Hakyll
 --
 -- Identifier - In essence, a file path (e.g. posts/123.html, index). Can be
 --              actual (the file posts/123.html exists) or virtual (you create
---              the file 'index').
+--              the file myblogpost.html from myblogpost.markdown).
 --
 -- Metadata   - Map String String. Get Metadata from an Identifier.
 --
--- Item       - Some kind of content and its Identifier. Has Identifier so that
---              you can get the metadata.
+-- Item       - Some kind of content (of a file) and its Identifier. Has
+--              Identifier so that you can get the metadata from the file.
 --
--- Context    - In essence, a mapping of String keys to content. These are the
---              variables in the template.
+--              For our custom Items (project items), we can ignore the
+--              Identifier (use a fake one), since the Context we would use
+--              doesn't need to actually load a file (none exists).
 --
---              Contexts by themselves are not paired with Items. This happens
---              later when we need the field values. Check out how the `field`
---              function, which constructs a new field in the Context, takes a
---              function of (Item a -> Compiler String):
+-- Context    - Hakyll templates uses variables like $title$ as placeholders.
+--              A Context describes *how* to get the value of a field.
+--
+--              For example, a `Context a` is in essence, a mapping of String
+--              keys to a function takes an `Item a` and returns a Compiler for
+--              type `a`.
+--
+--              Mostly you see `Context String`. But we have, for the projects
+--              listing, a `Context CustomProjectDataType`, which knows how to
+--              look into a CustomProjectDataType to find the fields it needs to
+--              inject into `Item CustomProjectDataType`s.
+--
+--              At the end of the day, a Context + Item is applied to a template
+--              via methods like applyTemplate.
+--
+--              Check out how the `field` function, which constructs a new field
+--              in the Context, takes a function of (Item a -> Compiler String):
 --              http://jaspervdj.be/hakyll/reference/src/Hakyll-Web-Template-Context.html#field
 --
--- Rules      - Monad DSL for declaring routes and compliers.
+-- Rules      - Monad DSL for declaring routes and compliers. What the `hakyll`
+--              function works in.
 --
 -- Resources:
 --
--- http://jaspervdj.be/hakyll/tutorials/a-guide-to-the-hakyll-module-zoo.html
+-- https://jaspervdj.be/hakyll/tutorials/a-guide-to-the-hakyll-module-zoo.html
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -111,6 +125,19 @@ main = do
             >>= loadAndApplyTemplate "templates/post.html"    (postContextWithTags tags)
             >>= loadAndApplyTemplate "templates/default.html" (postContextWithTags tags)
             >>= processUrls
+
+    create ["proj.html"] $ do
+        route idRoute
+        compile $ do
+            -- Create a list of project items ([Item (String,String,String)])
+            let fakeId = fromFilePath "fake"
+            let items = map (\p -> Item { itemIdentifier = fakeId, itemBody = p }) projects
+
+            -- The `projCtx` context knows how to query into a project tuple.
+            let ctx = listField "projects" projCtx (return items)
+
+            template <- loadBody "templates/projects-list.html"
+            makeItem ("" :: String) >>= applyTemplate template ctx
 
     create ["blog/index.html"] $ do
         route idRoute
@@ -252,4 +279,31 @@ atomFeedConfiguration = FeedConfiguration
     , feedAuthorEmail = "elbenshira@gmail.com"
     , feedRoot        = "http://elbenshira.com"
     }
+
+projects :: [(String, String, String)]
+projects =
+  [ ("My project", "https://github.com/elben/", "This is my sweet project")
+  , ("My project second", "https://github.com/elben/", "This is my sweet project second one")
+  ]
+
+projNameCtx :: Context (String,a,b)
+projNameCtx = field "name" $ \item -> do
+    let (name, _, _) = itemBody item
+    return name
+
+projUrlCtx :: Context (a,String,b)
+projUrlCtx = field "url" $ \item -> do
+    let (_, url, _) = itemBody item
+    return url
+
+projDescriptionCtx :: Context (a,b,String)
+projDescriptionCtx = field "description" $ \item -> do
+    let (_, _, description) = itemBody item
+    return description
+
+-- A context that knows how to query into the project tuple. So if the context
+-- is paired with an Item (String,String,String), it can grab the elements it
+-- needs out of the tuple.
+projCtx :: Context (String,String,String)
+projCtx = projNameCtx `mappend` projUrlCtx `mappend` projDescriptionCtx
 
