@@ -35,11 +35,19 @@
     <body>
       <div id="structure">
         <div id="header" itemscope temtype="http://schema.org/Person">
-          <h1 itemprop="name" class="$site_header_class$"><a href="/">Elben Shira</a></h1>
+          <h1 itemprop="name"><a href="/">Elben Shira</a></h1>
           <span itemprop="additionalName" style="display: none;">Elbin Shira</span>
+          <span id="navigation">
+            <a href="/blog/">Blog</a>
+            <a href="/projects/">Projects</a>
+          </span>
+
+          <hr>
         </div>
 
-        $body$
+        <div id="content">
+          $body$
+        </div>
 
       </div>
 

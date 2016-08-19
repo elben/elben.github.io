@@ -94,7 +94,7 @@ main = do
             posts <- recentFirst =<< loadAll pattern
             let ctx = constField "title" title `mappend`
                       listField "posts" postContext (return posts) `mappend`
-                      defContext
+                      defaultContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/tag.html" ctx
@@ -118,8 +118,8 @@ main = do
             posts <- recentFirst =<< loadAllIds postIds
             let archiveCtx =
                     listField "posts" postContext (return posts) `mappend`
-                    constField "title" "Archives"            `mappend`
-                    defContext
+                    constField "title" "Elben Shira - Blog Archives"            `mappend`
+                    defaultContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
@@ -135,18 +135,31 @@ main = do
         route idRoute
         compile $ renderAtomFeedForPattern (filterByTag tags "clojure")
 
+    -- Handle projects/index.html, which already exists
+    create ["projects/index.html"] $ do
+        -- Route final generated file to the same path as above
+        route idRoute
+
+        compile $ do
+            let ctx = defaultContext
+
+            getResourceBody
+                >>= applyAsTemplate ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+
     match "index.html" $ do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAllIds postIds
 
-            recommendedPosts <- recentFirst =<< loadAll (filterByTag tags "recommended")
+            recPosts <- recentFirst =<< loadAll (filterByTag tags "recommended")
 
+            -- Build context for the template (set template variable values)
             let indexCtx =
-                    listField "posts" postContext (return posts)       `mappend`
-                    listField "recommendedPosts" postContext (return recommendedPosts) `mappend`
-                    constField "title" websiteTitle                    `mappend`
-                    homeContext
+                    listField "posts" postContext (return posts)               `mappend`
+                    listField "recommendedPosts" postContext (return recPosts) `mappend`
+                    constField "title" websiteTitle                            `mappend`
+                    defaultContext
             getResourceBody
                 >>= applyAsTemplate indexCtx
                 >>= loadAndApplyTemplate "templates/default.html" indexCtx
@@ -175,7 +188,7 @@ feedContext = postContext `mappend` bodyField "description"
 postContext :: Context String
 postContext =
     dateField "date" "%e %B %Y"            `mappend`
-    defContext
+    defaultContext
 
 -- `tagsField` renders tags with links. Puts it in the "tags" field context.
 --
@@ -186,13 +199,6 @@ postContext =
 --
 postContextWithTags :: Tags -> Context String
 postContextWithTags tags = tagsField "tags" tags `mappend` postContext
-
-homeContext :: Context String
-homeContext = constField "site_header_class" "" `mappend` defContext
-
-defContext :: Context String
-defContext =
-  constField "site_header_class" "small" `mappend` defaultContext
 
 -- Given the retrieved Tags and a tag, find all posts that contain the tag.
 -- Returns a Pattern list of posts.

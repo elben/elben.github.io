@@ -47,6 +47,11 @@ hr {
   margin: 23px 0;
 }
 
+#header hr {
+  margin: 1em 0;
+  display: block;
+}
+
 /* Useful to give an image some breathing room */
 .some-padding {
   padding: 1em 0;
@@ -124,7 +129,7 @@ h1 {
    */
   line-height: 1.266178953em;
 
-  margin: 1.5em 0 0.8441193em 0;
+  margin: 0 0 0.8441193em 0;
   font-weight: bold;
 }
 
@@ -170,23 +175,44 @@ ul.simple {
   margin-left: auto;
   margin-right: auto;
   padding: 0 1em;
-  /* Hits about 80 characters per line with font size 16px */
-  max-width: 600px;
+  max-width: 640px;
 }
 
-#header h1 {
+#navigation {
+  font-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
+  float: right;
+}
+
+#navigation a {
+  margin-left: 1em;
+}
+
+/* Don't give margin-left to left-most navigation element, since there's nothing
+ * to the left of it. In mobile mode, this helps navigation stay aligned to the
+ * left side. */
+#navigation a:first-child {
+  margin-left: 0;
+}
+
+#content {
+  /* Hits about 80 characters per line with font size 16px */
+  max-width: 640px;
+}
+
+#header {
   margin-top: 0;
   padding-top: 1.5em;
 }
 
-#header h1.small {
+#header h1 {
+  display: inline;
+
   font-size: 1em;
   line-height: 1.5em;
-  margin-bottom: 1.5em;
   font-weight: bold;
 }
 
-#header a {
+#header h1 a {
   text-decoration: none;
 }
 
@@ -221,8 +247,8 @@ ul.simple {
   margin-bottom: 20px;
   background-color: #FFEC5C; /* yellow */
   /*border: 1px solid #FFE313;*/
-  -moz-border-radius: 20px; 
-  border-radius: 20px; 
+  -moz-border-radius: 20px;
+  border-radius: 20px;
 
 }
 
@@ -252,7 +278,7 @@ ul.simple {
 }
 
 @media (max-width: 640px) {
-  #header h1.small {
+  #header h1 {
     padding-top: 0.5em;
     margin-bottom: 0.5em;
   }
@@ -265,6 +291,13 @@ ul.simple {
 
   ul.projects-list li {
    margin-bottom: 0.5em;
+  }
+}
+
+@media (max-width: 460px) {
+  #navigation {
+    display: block;
+    float: none;
   }
 }
 
