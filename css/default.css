@@ -289,7 +289,7 @@ ul.simple {
     margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
   }
 
-  ul.projects-list li {
+  ul.project-list li {
    margin-bottom: 0.5em;
   }
 }

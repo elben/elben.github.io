@@ -4,6 +4,7 @@ import           Data.List (isSuffixOf, find)
 import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
 import           Hakyll
+import           Data.Monoid ((<>))
 
 ------------------------
 -- Overview
@@ -126,18 +127,21 @@ main = do
             >>= loadAndApplyTemplate "templates/default.html" (postContextWithTags tags)
             >>= processUrls
 
-    create ["proj.html"] $ do
+    create ["projects/index.html"] $ do
         route idRoute
         compile $ do
-            -- Create a list of project items ([Item (String,String,String)])
-            let fakeId = fromFilePath "fake"
-            let items = map (\p -> Item { itemIdentifier = fakeId, itemBody = p }) projects
+            -- The `projCtx` context knows how to query into a Project
+            let ctx = listField "projects" projCtx (return projectItems) <> constField "title" "Elben Shira - Projects"
 
-            -- The `projCtx` context knows how to query into a project tuple.
-            let ctx = listField "projects" projCtx (return items)
+            template <- loadBody "templates/projects.html"
 
-            template <- loadBody "templates/projects-list.html"
-            makeItem ("" :: String) >>= applyTemplate template ctx
+            -- Need to start with an empty string Item, then apply the project
+            -- list template with our built project context, then put all of
+            -- that HTML into the default template.
+            makeItem ("" :: String)
+              >>= applyTemplate template ctx
+              >>= loadAndApplyTemplate "templates/default.html" (ctx <> defaultContext)
+              >>= processUrls
 
     create ["blog/index.html"] $ do
         route idRoute
@@ -280,30 +284,96 @@ atomFeedConfiguration = FeedConfiguration
     , feedRoot        = "http://elbenshira.com"
     }
 
-projects :: [(String, String, String)]
+data Project = Project {
+  projName      :: String,
+  projSourceUrl :: String,
+  projPageUrl   :: Maybe String,
+  projDesc      :: String
+} deriving (Eq, Show)
+
+-- Project description
+--
+-- Note, the projDesc field supports Markdown
+projects :: [Project]
 projects =
-  [ ("My project", "https://github.com/elben/", "This is my sweet project")
-  , ("My project second", "https://github.com/elben/", "This is my sweet project second one")
+  [ Project "Neblen" "https://github.com/elben/neblen" Nothing
+      "A programming language that focuses on type safety with Lisp simplicity. In essence, the typed lambda calculus, with some added features like polymorphic type variables and algebraic data types. Includes a parser, type checker, and interpreter. For educational purposes."
+
+  , Project "SAT" "https://github.com/elben/sat" Nothing
+      "Boolean satisfiability Haskell library to help you solve those NP-hard problems."
+
+  , Project "True Cost" "https://github.com/true-cost/" Nothing
+      "Calculates the true cost of your spending. Written in Elm."
+
+  , Project "Planjure" "https://github.com/elben/planjure" (Just "/p/planjure")
+      "Path-planning demo running Dijkstra and A*. A study in ClojureScript, Om and core.async."
+
+  , Project "K-means" "https://github.com/elben/k-means" Nothing
+      "A demo of the k-means clustering algorithm written in Clojure and Quill."
+
+  , Project "Curvey" "https://github.com/elben/curvey" (Just "/p/curvey")
+      "B-spline editor and demo that doesn't suck (as much)."
+
+  , Project "Iron Tools" "https://github.com/jasontbradshaw/iron-tools" Nothing
+      "Stream live HD video for conferences."
+
+  , Project "Kapal" "https://github.com/elben/kapal" Nothing
+      "Get a robot from Point A to Point B. Path-planning library in Python."
+
+  , Project "See more on GitHub" "https://github.com/elben?tab=repositories" Nothing ""
   ]
 
-projNameCtx :: Context (String,a,b)
-projNameCtx = field "name" $ \item -> do
-    let (name, _, _) = itemBody item
-    return name
+projectItems :: [Item Project]
+projectItems = map (\p -> Item { itemIdentifier = fromFilePath "fake", itemBody = p }) projects
 
-projUrlCtx :: Context (a,String,b)
-projUrlCtx = field "url" $ \item -> do
-    let (_, url, _) = itemBody item
-    return url
+projNameCtx :: Context Project
+projNameCtx = field "name" $ \item -> return $ projName $ itemBody item
 
-projDescriptionCtx :: Context (a,b,String)
-projDescriptionCtx = field "description" $ \item -> do
-    let (_, _, description) = itemBody item
-    return description
+-- Primary URL for project.
+--
+-- Defaults to the source code URL. But if a page URL also exists, use the
+-- page URL instead.
+--
+projMainUrlCtx :: Context Project
+projMainUrlCtx = field "url" $ \item -> do
+  let proj = itemBody item
+  case projPageUrl proj of
+    Just url -> return url
+    Nothing  -> return $ projSourceUrl proj
+
+-- Secondary source URL.
+--
+-- Return the source code URL for projects that have both a page URl and a
+-- source code URL. For projects that only have a source code URL, return an
+-- empty URl for this one, because this is considered the secondary URL.
+--
+projOptSrcUrlCtx :: Context Project
+projOptSrcUrlCtx = field "source_url" $ \item -> do
+  let proj = itemBody item
+  case projPageUrl proj of
+    Just _  -> return $ projSourceUrl proj
+    Nothing ->
+      -- Compiler is a Monad and it implements `fail`. A (bad) way of telling
+      -- the compiler that this field is unwanted. This is so that the template
+      -- does not see a $source_url$ field, and thus we can use $if(source_url_$
+      -- in the template.
+      --
+      -- https://github.com/jaspervdj/hakyll/blob/b810fe38cf2eddb67b8fa9e56434ce5dbde4f22e/src/Hakyll/Core/Compiler/Internal.hs#L145
+      fail "We don't want a secondary source URL"
+
+-- Project description.
+--
+-- TODO: compile using markdown compiler. Probably will need to call Pandoc's
+-- readMarkdown directly. The Hakyll pandocCompiler works with Compiler (Item
+-- String) (because it needs to read the item's file extension to know which
+-- parser to use), not Compiler String.
+projDescriptionCtx :: Context Project
+projDescriptionCtx = field "description" $ \item ->
+    return $ projDesc $ itemBody item
 
 -- A context that knows how to query into the project tuple. So if the context
--- is paired with an Item (String,String,String), it can grab the elements it
--- needs out of the tuple.
-projCtx :: Context (String,String,String)
-projCtx = projNameCtx `mappend` projUrlCtx `mappend` projDescriptionCtx
+-- is paired with an Item Project, it can grab the elements it needs out of the
+-- Project.
+projCtx :: Context Project
+projCtx = projNameCtx <> projMainUrlCtx <> projDescriptionCtx <> projOptSrcUrlCtx
 

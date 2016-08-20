@@ -1,4 +1,12 @@
 <div>
-  <h3><a href="$url$">$name$</a></h3>
-  <div>$description$</div>
+  <h3>
+    <a href="$url$">$name$</a>
+    $if(source_url)$
+      (<a href="$source_url$">source</a>)
+    $endif$
+  </h3>
+  <div>
+    $description$
+
+  </div>
 </div>
