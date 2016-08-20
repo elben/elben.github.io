@@ -130,8 +130,30 @@ main = do
     create ["projects/index.html"] $ do
         route idRoute
         compile $ do
+            -- Make to make it seem as if the Item was loaded from a Markdown
+            -- file. This is because the Pandoc compiler checks the extension to
+            -- choose which convertor to use.
+            let makeMarkdownItem :: String -> Item String
+                makeMarkdownItem = Item (fromFilePath "fake.markdown")
+
+            -- Compiles a Project through the Pandoc compiler. This allows
+            -- Markdown inside of Project descriptions.
+            let projectCompiler :: Item Project -> Compiler (Item Project)
+                projectCompiler item =
+                  let project = itemBody item
+                  in renderPandoc (makeMarkdownItem $ projDesc project)
+                     -- ^ Create a temporary Item so that we can run it through
+                     -- the Pandoc convertor
+                     >>= (\i -> return $ projectToItem $ project { projDesc = itemBody i })
+                     -- ^ Extract the Pandoc-generated HTML and put it back into
+                     -- the Project
+
+            let projectsCompiler :: [Item Project] -> Compiler [Item Project]
+                projectsCompiler = mapM projectCompiler
+
             -- The `projCtx` context knows how to query into a Project
-            let ctx = listField "projects" projCtx (return projectItems) <> constField "title" "Elben Shira - Projects"
+            let ctx :: Context String
+                ctx = listField "projects" projCtx (projectsCompiler projectItems) <> constField "title" "Elben Shira - Projects"
 
             template <- loadBody "templates/projects.html"
 
@@ -288,12 +310,13 @@ data Project = Project {
   projName      :: String,
   projSourceUrl :: String,
   projPageUrl   :: Maybe String,
-  projDesc      :: String
+  projDesc      :: String -- Has Markdown support
 } deriving (Eq, Show)
 
 -- Project description
 --
--- Note, the projDesc field supports Markdown
+-- Note, the projDesc field supports Markdown.
+--
 projects :: [Project]
 projects =
   [ Project "Neblen" "https://github.com/elben/neblen" Nothing
@@ -323,8 +346,11 @@ projects =
   , Project "See more on GitHub" "https://github.com/elben?tab=repositories" Nothing ""
   ]
 
+projectToItem :: Project -> Item Project
+projectToItem p = Item { itemIdentifier = fromFilePath "fake", itemBody = p }
+
 projectItems :: [Item Project]
-projectItems = map (\p -> Item { itemIdentifier = fromFilePath "fake", itemBody = p }) projects
+projectItems = map projectToItem projects
 
 projNameCtx :: Context Project
 projNameCtx = field "name" $ \item -> return $ projName $ itemBody item
