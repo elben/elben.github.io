@@ -325,7 +325,7 @@ projects =
   , Project "SAT" "https://github.com/elben/sat" Nothing
       "Boolean satisfiability Haskell library to help you solve those NP-hard problems."
 
-  , Project "True Cost" "https://github.com/true-cost/" Nothing
+  , Project "True Cost" "https://github.com/elben/true-cost/" Nothing
       "Calculates the true cost of your spending. Written in Elm."
 
   , Project "Planjure" "https://github.com/elben/planjure" (Just "/p/planjure")
