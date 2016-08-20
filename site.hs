@@ -5,6 +5,7 @@ import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
 import           Hakyll
 import           Data.Monoid ((<>))
+--               ^ (a <> b) = a `mappend` b
 
 ------------------------
 -- Overview
@@ -107,14 +108,14 @@ main = do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll pattern
-            let ctx = constField "title" title `mappend`
-                      listField "posts" postContext (return posts) `mappend`
+            let ctx = constField "title" title <>
+                      listField "posts" postContext (return posts) <>
                       defaultContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/tag.html" ctx
                 >>= loadAndApplyTemplate "templates/default.html" ctx
-                >>= relativizeUrls
+                >>= processUrls
 
     match postsPattern $ do
         route $ customRoute formatFilename
@@ -148,12 +149,12 @@ main = do
                      -- ^ Extract the Pandoc-generated HTML and put it back into
                      -- the Project
 
-            let projectsCompiler :: [Item Project] -> Compiler [Item Project]
-                projectsCompiler = mapM projectCompiler
-
             -- The `projCtx` context knows how to query into a Project
             let ctx :: Context String
-                ctx = listField "projects" projCtx (projectsCompiler projectItems) <> constField "title" "Elben Shira - Projects"
+                ctx = listField "projects"
+                        projCtx
+                        (mapM projectCompiler projectItems) -- Build a Compiler [Item Project]
+                      <> constField "title" "Elben Shira - Projects"
 
             template <- loadBody "templates/projects.html"
 
@@ -170,8 +171,8 @@ main = do
         compile $ do
             posts <- recentFirst =<< loadAllIds postIds
             let archiveCtx =
-                    listField "posts" postContext (return posts) `mappend`
-                    constField "title" "Elben Shira - Blog Archives"            `mappend`
+                    listField "posts" postContext (return posts) <>
+                    constField "title" "Elben Shira - Blog Archives" <>
                     defaultContext
 
             makeItem ""
@@ -209,9 +210,9 @@ main = do
 
             -- Build context for the template (set template variable values)
             let indexCtx =
-                    listField "posts" postContext (return posts)               `mappend`
-                    listField "recommendedPosts" postContext (return recPosts) `mappend`
-                    constField "title" websiteTitle                            `mappend`
+                    listField "posts" postContext (return posts)               <>
+                    listField "recommendedPosts" postContext (return recPosts) <>
+                    constField "title" websiteTitle                            <>
                     defaultContext
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -236,12 +237,11 @@ renderAtomFeedForPattern pattern = do
 
 -- Use the body of the post in the 'description' field.
 feedContext :: Context String
-feedContext = postContext `mappend` bodyField "description"
+feedContext = postContext <> bodyField "description"
 
 postContext :: Context String
 postContext =
-    dateField "date" "%e %B %Y"            `mappend`
-    defaultContext
+    dateField "date" "%e %B %Y" <> defaultContext
 
 -- `tagsField` renders tags with links. Puts it in the "tags" field context.
 --
@@ -251,7 +251,7 @@ postContext =
 -- http://jaspervdj.be/hakyll/reference/src/Hakyll-Web-Tags.html#tagsFieldWith
 --
 postContextWithTags :: Tags -> Context String
-postContextWithTags tags = tagsField "tags" tags `mappend` postContext
+postContextWithTags tags = tagsField "tags" tags <> postContext
 
 -- Given the retrieved Tags and a tag, find all posts that contain the tag.
 -- Returns a Pattern list of posts.
@@ -283,6 +283,9 @@ loadAllIds = mapM load
 formatFilename :: Identifier -> String
 formatFilename ident = "blog/" ++ takeWhile (/= '.') (drop 17 (toFilePath ident)) ++ "/index.html"
 
+-- Strips "index.html" from internal URLs (/foo/index.html -> /foo/).
+-- Make URLs relative to the root of the site.
+--
 processUrls :: Item String -> Compiler (Item String)
 processUrls i = relativizeUrls i >>= cleanIndexUrls
 

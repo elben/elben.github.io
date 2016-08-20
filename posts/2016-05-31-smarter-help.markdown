@@ -1,6 +1,7 @@
 ---
 title: "Smarter Help: Our Programming Tools"
 categories: blog
+tags: programming-languages
 ---
 
 In [The End of Dynamic Languages](http://elbenshira.com/blog/the-end-of-dynamic-languages/), I argued that one of the gains of statically-typed languages is superior tooling.

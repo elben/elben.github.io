@@ -1,7 +1,7 @@
 ---
 title: The End of Dynamic Languages
 categories: blog
-tags: pl, recommended
+tags: programming-languages, recommended
 ---
 
 For the past several months, I’ve been programming almost exclusively in Scala (for work) and Haskell (for pleasure). But this week, I was also saturated in Ruby (for work) and Clojure (for pleasure).

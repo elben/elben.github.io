@@ -2,7 +2,7 @@
 layout: post
 title:  The Best Introduction to Haskell
 categories: blog
-tags: haskell
+tags: haskell, programming-languages
 ---
 
 When I mention that I’m learning Haskell, many people reference Learn You a Haskell. It’s a fine book, but I found it too slow for an experienced programmer. And the cute cartoons and verbose style got in the way.
