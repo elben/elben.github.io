@@ -7,6 +7,10 @@ To install, download stack from here: https://www.stackage.org/
 ```bash
 cd ~/code/elben.github.io
 cabal install --only-dep
+
+# Install SCSS compiler
+# Set the version in circle.yml to be the same
+gem install sass --version=3.4.22
 ```
 
 To build:

@@ -4,8 +4,8 @@ import           Data.List (isSuffixOf, find)
 import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
 import           Hakyll
+--               (a <> b) = a `mappend` b
 import           Data.Monoid ((<>))
---               ^ (a <> b) = a `mappend` b
 
 ------------------------
 -- Overview
@@ -62,6 +62,8 @@ main = do
     -- Static
     ------------------------
 
+    match "templates/*" $ compile templateCompiler
+
     match "images/**" $ do
         route   idRoute
         compile copyFileCompiler
@@ -74,12 +76,18 @@ main = do
         route   idRoute
         compile copyFileCompiler
 
-    match "css/*" $ do
+    match "css/*.css" $ do
         route   idRoute
         compile compressCssCompiler
 
+    match "css/*.scss" $ do
+        route $ setExtension "css"
+        compile $ getResourceString >>=
+            withItemBody (unixFilter "sass" ["-s", "--scss", "--load-path", "css/"]) >>=
+            \i -> return $ fmap compressCss i
+
     ------------------------
-    -- Dynamic
+    -- Blog posts
     ------------------------
 
     -- Load all posts. If the environemnt specifies, filter out draft posts.
@@ -117,6 +125,7 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" ctx
                 >>= processUrls
 
+    -- Generate individual blog posts
     match postsPattern $ do
         route $ customRoute formatFilename
         compile $ pandocCompiler
@@ -127,6 +136,33 @@ main = do
             >>= loadAndApplyTemplate "templates/post.html"    (postContextWithTags tags)
             >>= loadAndApplyTemplate "templates/default.html" (postContextWithTags tags)
             >>= processUrls
+
+    create ["blog/index.html"] $ do
+        route idRoute
+        compile $ do
+            posts <- recentFirst =<< loadAllIds postIds
+            let archiveCtx =
+                    listField "posts" postContext (return posts) <>
+                    constField "title" "Elben Shira - Blog Archives" <>
+                    defaultContext
+
+            makeItem ""
+                >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
+                >>= loadAndApplyTemplate "templates/default.html" archiveCtx
+                >>= processUrls
+
+    create ["blog/atom.xml"] $ do
+        route idRoute
+        compile $ renderAtomFeedForPattern postsPattern
+
+    -- For http://planet.clojure.in/, which subscribes to my feed
+    create ["blog/tags/clojure.xml"] $ do
+        route idRoute
+        compile $ renderAtomFeedForPattern (filterByTag tags "clojure")
+
+    ------------------------
+    -- Projects page
+    ------------------------
 
     create ["projects/index.html"] $ do
         route idRoute
@@ -166,40 +202,9 @@ main = do
               >>= loadAndApplyTemplate "templates/default.html" (ctx <> defaultContext)
               >>= processUrls
 
-    create ["blog/index.html"] $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAllIds postIds
-            let archiveCtx =
-                    listField "posts" postContext (return posts) <>
-                    constField "title" "Elben Shira - Blog Archives" <>
-                    defaultContext
-
-            makeItem ""
-                >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
-                >>= loadAndApplyTemplate "templates/default.html" archiveCtx
-                >>= processUrls
-
-    create ["blog/atom.xml"] $ do
-        route idRoute
-        compile $ renderAtomFeedForPattern postsPattern
-
-    -- For http://planet.clojure.in/, which subscribes to my feed
-    create ["blog/tags/clojure.xml"] $ do
-        route idRoute
-        compile $ renderAtomFeedForPattern (filterByTag tags "clojure")
-
-    -- Handle projects/index.html, which already exists
-    create ["projects/index.html"] $ do
-        -- Route final generated file to the same path as above
-        route idRoute
-
-        compile $ do
-            let ctx = defaultContext
-
-            getResourceBody
-                >>= applyAsTemplate ctx
-                >>= loadAndApplyTemplate "templates/default.html" ctx
+    ------------------------
+    -- Home page
+    ------------------------
 
     match "index.html" $ do
         route idRoute

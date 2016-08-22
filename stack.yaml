@@ -13,6 +13,10 @@ extra-deps: []
 # Override default flag values for local packages and extra-deps
 flags: {}
 
+ghc-options:
+  # Warn all on all packages
+  "*": -Wall
+
 # Control whether we use the GHC we find on the path
 # system-ghc: true
 

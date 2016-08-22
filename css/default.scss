@@ -175,6 +175,8 @@ ul.simple {
   margin-left: auto;
   margin-right: auto;
   padding: 0 1em;
+
+  /* Hits about 80 characters per line with font size 16px */
   max-width: 640px;
 }
 
@@ -194,10 +196,6 @@ ul.simple {
   margin-left: 0;
 }
 
-#content {
-  /* Hits about 80 characters per line with font size 16px */
-  max-width: 640px;
-}
 
 #header {
   margin-top: 0;
@@ -226,7 +224,7 @@ ul.simple {
   clear: left;
   margin: 0px 15px 10px 0px;
   border: 0px;
-  padding 5px;
+  padding: 5px;
 }
 
 .quote {
