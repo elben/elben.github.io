@@ -1,5 +1,6 @@
 ---
 title: Second part
+chapterNum: 2
 ---
 
 <div class="text">

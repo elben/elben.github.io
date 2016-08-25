@@ -143,7 +143,7 @@ main = do
             posts <- recentFirst =<< loadAllIds postIds
             let archiveCtx =
                     listField "posts" postContext (return posts) <>
-                    constField "title" "Elben Shira - Blog Archives" <>
+                    constField "title" "Elben Shira - Blog Archive" <>
                     defaultContext
 
             makeItem ""
@@ -190,7 +190,7 @@ main = do
                 ctx = listField "projects"
                         projCtx
                         (mapM projectCompiler projectItems) -- Build a Compiler [Item Project]
-                      <> constField "title" "Elben Shira - Projects"
+                      <> constField "title" "Elben Shira - Programming Projects"
 
             template <- loadBody "templates/projects.html"
 
@@ -225,20 +225,28 @@ main = do
                 >>= processUrls
 
     ------------------------
-    -- Travel Serial
+    -- Travel Writing: Serial
     ------------------------
+
+    serialIds <- getMatches "writing/serial/*.markdown"
 
     create ["writing/serial/index.html"] $ do
         route idRoute
-        compile $ getResourceBody
-            >>= loadAndApplyTemplate "templates/travel.html" defaultContext
-            >>= processUrls
 
-    serialIds <- getMatches "writing/serial/*.markdown"
+        compile $ do
+            serialPosts <- loadAllIds serialIds
+            let ctx = (constField "title" "Whatttttt") <> (listField "posts" defaultContext (return serialPosts)) <> defaultContext
+
+            makeItem ""
+                >>= loadAndApplyTemplate "templates/travel-post-list.html" ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+                >>= processUrls
+
     match (fromList serialIds) $ do
         route $ customRoute stripExtensionForIndexFile
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/travel.html" defaultContext
+            >>= loadAndApplyTemplate "templates/travel-post.html" defaultContext
+            >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= processUrls
 
 websiteTitle :: String
