@@ -224,7 +224,22 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" indexCtx
                 >>= processUrls
 
-    match "templates/*" $ compile templateCompiler
+    ------------------------
+    -- Travel Serial
+    ------------------------
+
+    create ["writing/serial/index.html"] $ do
+        route idRoute
+        compile $ getResourceBody
+            >>= loadAndApplyTemplate "templates/travel.html" defaultContext
+            >>= processUrls
+
+    serialIds <- getMatches "writing/serial/*.markdown"
+    match (fromList serialIds) $ do
+        route $ customRoute stripExtensionForIndexFile
+        compile $ pandocCompiler
+            >>= loadAndApplyTemplate "templates/travel.html" defaultContext
+            >>= processUrls
 
 websiteTitle :: String
 websiteTitle = "Elben Shira"
@@ -287,6 +302,15 @@ loadAllIds = mapM load
 -- From "posts/yyyy-mm-dd-post-title.markdown" to "blog/post-title/index.html"
 formatFilename :: Identifier -> String
 formatFilename ident = "blog/" ++ takeWhile (/= '.') (drop 17 (toFilePath ident)) ++ "/index.html"
+
+-- Strip the existing extension from the filename and add a "/index.html"
+--
+-- Example:
+--   writing/serial/03-foo-bar.markdown -> writing/serial/00-foo-bar/index.html
+--
+stripExtensionForIndexFile :: Identifier -> String
+stripExtensionForIndexFile idfier =
+  takeWhile (/= '.') (toFilePath idfier) ++ "/index.html"
 
 -- Strips "index.html" from internal URLs (/foo/index.html -> /foo/).
 -- Make URLs relative to the root of the site.

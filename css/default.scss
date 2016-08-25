@@ -44,7 +44,7 @@ hr {
   /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
    * baseline, so this means we have 23px left. Hence 23px margin. */
   border: 3px solid #222;
-  margin: 23px 0;
+  margin-top: 23px 0;
 }
 
 #header hr {
@@ -134,7 +134,8 @@ h1 {
 }
 
 h1.post-title {
-  margin: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 h2 {
