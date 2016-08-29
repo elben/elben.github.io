@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.List (isSuffixOf, find)
+import           Data.List.Split (splitOn)
 import           Control.Monad (filterM, liftM)
 import           System.Environment (lookupEnv)
 import           Hakyll
@@ -231,13 +232,18 @@ main = do
     ------------------------
 
     serialIds <- getMatches "writing/serial/*.markdown"
+    serialIdsPart1 <- filterM (isPartOf 1) serialIds
+    serialIdsPart2 <- filterM (isPartOf 2) serialIds
 
     create ["writing/serial/index.html"] $ do
         route idRoute
 
         compile $ do
             let serialPostCtx = itemChapterContext <> defaultContext
-            let ctx = constField "title" "Elben Shira — Serial" <> listField "postsPart1" serialPostCtx (loadAllIds serialIds) <> defaultContext
+            let ctx = constField "title" "Elben Shira — Serial" <>
+                      listField "postsPart1" serialPostCtx (loadAllIds serialIdsPart1) <>
+                      listField "postsPart2" serialPostCtx (loadAllIds serialIdsPart2) <>
+                      defaultContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/travel-post-list.html" ctx
@@ -295,6 +301,15 @@ isNotDraft :: MonadMetadata m => Identifier -> m Bool
 isNotDraft i = liftM (maybe True (/= "true")) (getMetadataField i "draft")
 -- Equivalent:
 -- isNotDraft i = getMetadataField i "draft" >>= return . (maybe True (/="true"))
+
+-- | Used to filter Identifiers between Part 1 and Part 2 of the Serial. Checks
+-- if the given Identifier (assumed to be in the p-xx-mytitle.md format) has a
+-- part @p@ equal to the given @part@.
+isPartOf :: MonadMetadata m => Int -> Identifier -> m Bool
+isPartOf part ident =
+  let fileName = last $ splitDirectories (toFilePath ident)
+      partNum = read $ head $ splitOn "-" fileName :: Int
+  in return $ part == partNum
 
 findAllPostIds :: MonadMetadata m
                => Bool
@@ -452,11 +467,12 @@ itemChapterContext = field "chapter" $ \item -> do
   return $ show chapter
 
 -- | Gets the chapter number from the Identifier. File name is expected to be
--- in the format "XX-mytitle.markdown", where XX is the double-digit chapter
--- number.
+-- in the format "P-XX-mytitle.markdown", where P is the part number, and XX is
+-- the double-digit chapter number.
 getItemChapter :: MonadMetadata m => Identifier -> m Int
 getItemChapter ident = do
     let fileName = last $ splitDirectories (toFilePath ident)
-        chapterNum = (read $ take 2 fileName) :: Int -- take first two out of "xx-chapter-title.markdown"
+        -- take 'xx' out of "p-xx-chapter-title.markdown"
+        chapterNum = read (splitOn "-" fileName !! 1) :: Int
     return chapterNum
 
