@@ -279,6 +279,11 @@ ul.simple {
   margin-bottom: 3em;
 }
 
+div.chapter-num {
+ width: 1.5em;
+ float: left;
+}
+
 @media (max-width: 640px) {
   #header h1 {
     padding-top: 0.5em;

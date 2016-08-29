@@ -6,6 +6,8 @@ import           System.Environment (lookupEnv)
 import           Hakyll
 --               (a <> b) = a `mappend` b
 import           Data.Monoid ((<>))
+import           System.FilePath (splitDirectories)
+
 
 ------------------------
 -- Overview
@@ -234,8 +236,8 @@ main = do
         route idRoute
 
         compile $ do
-            serialPosts <- loadAllIds serialIds
-            let ctx = (constField "title" "Whatttttt") <> (listField "posts" defaultContext (return serialPosts)) <> defaultContext
+            let serialPostCtx = itemChapterContext <> defaultContext
+            let ctx = constField "title" "Elben Shira — Serial" <> listField "postsPart1" serialPostCtx (loadAllIds serialIds) <> defaultContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/travel-post-list.html" ctx
@@ -245,7 +247,7 @@ main = do
     match (fromList serialIds) $ do
         route $ customRoute stripExtensionForIndexFile
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/travel-post.html" defaultContext
+            >>= loadAndApplyTemplate "templates/travel-post.html" (itemChapterContext <> defaultContext)
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= processUrls
 
@@ -268,8 +270,7 @@ feedContext :: Context String
 feedContext = postContext <> bodyField "description"
 
 postContext :: Context String
-postContext =
-    dateField "date" "%e %B %Y" <> defaultContext
+postContext = dateField "date" "%e %B %Y" <> defaultContext
 
 -- `tagsField` renders tags with links. Puts it in the "tags" field context.
 --
@@ -442,4 +443,20 @@ projDescriptionCtx = field "description" $ \item ->
 -- Project.
 projCtx :: Context Project
 projCtx = projNameCtx <> projMainUrlCtx <> projDescriptionCtx <> projOptSrcUrlCtx
+
+-- | The "chapter" context for the travel writing Serial posts. Extracts the
+-- chapter number from the filename.
+itemChapterContext :: Context a
+itemChapterContext = field "chapter" $ \item -> do
+  chapter <- getItemChapter (itemIdentifier item)
+  return $ show chapter
+
+-- | Gets the chapter number from the Identifier. File name is expected to be
+-- in the format "XX-mytitle.markdown", where XX is the double-digit chapter
+-- number.
+getItemChapter :: MonadMetadata m => Identifier -> m Int
+getItemChapter ident = do
+    let fileName = last $ splitDirectories (toFilePath ident)
+        chapterNum = (read $ take 2 fileName) :: Int -- take first two out of "xx-chapter-title.markdown"
+    return chapterNum
 

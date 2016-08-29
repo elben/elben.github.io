@@ -1,9 +1,25 @@
 <h1>Serial: Europe to South Africa</h2>
 
-This is a list of writings.
+<em>I’m writing from a desolate *backpackers* lodge in Franschhoek, a small town
+  in the wine-producing region of South Africa. It’s the dark of night, with the
+  wind howling across the farmlands as pounding rain pelts our roof. The fire is
+  almost too hot, its wet wood crackling and popping, shifting unevenly in the
+  blackened hearth. We had been traveling for a month now, a few weeks in Europe
+  and now in South Africa. And in the worsening rain, bunkered in for the night
+  with nothing to do, I began to write.</em>
+
+<h2>Part I</h2>
 
 <ul class="posts simple">
-  $for(posts)$
+  $for(postsPart1)$
+    $partial("templates/travel-post-list-item.html")$
+  $endfor$
+</ul>
+
+<h2>Part II</h2>
+
+<ul class="posts simple">
+  $for(postsPart1)$
     $partial("templates/travel-post-list-item.html")$
   $endfor$
 </ul>
