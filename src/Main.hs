@@ -257,6 +257,16 @@ main = do
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= processUrls
 
+    ------------------------
+    -- Photography
+    ------------------------
+
+    create ["photography/index.html"] $ do
+        route idRoute
+        compile $ getResourceBody
+            >>= loadAndApplyTemplate "templates/photos.html" defaultContext
+            >>= processUrls
+
 websiteTitle :: String
 websiteTitle = "Elben Shira"
 

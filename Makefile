@@ -6,7 +6,7 @@ EXE := stack exec site
 all:	build
 	@true
 
-${EXE}:	site.hs
+${EXE}:	src/Main.hs
 	stack build
 	${EXE} clean
 
