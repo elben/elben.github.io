@@ -1,0 +1,77 @@
+@import 'default';
+
+$site-wider: 900px;
+
+$album-cover-width: $site-wider / 2 - 16px;
+
+.caption {
+  font-size: 0.85em;
+  font-style: italic;
+  padding-top: 0em;
+  margin-top: 0em;
+  margin-bottom: 2em;
+}
+
+.vertical-image {
+  text-align: center;
+  margin: 0;
+  padding: 0;
+
+  img {
+    max-height: 600px;
+  }
+}
+
+img {
+  border: 0px;
+  max-width: 100%;
+  padding: 0;
+}
+
+#header {
+  padding-top: 0.5em;
+}
+
+#structure {
+  position: relative;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1em;
+
+  max-width: $site-wider;
+}
+
+
+#header hr {
+  margin: 0.5em 0;
+  max-width: 100%;
+}
+
+.photo-album {
+  float: left;
+  padding-top: 8px;
+
+  &:nth-child(1) {
+    padding-right: 16px;
+  }
+
+  width: 49%;
+
+  a {
+    color: #fff;
+  }
+
+  .photo-album-title {
+    font-family: $sans-serif-family;
+    position: relative;
+    top: 1.5em;
+    text-align: center;
+    line-height: 0; // don't take any height in the box
+  }
+
+  img {
+  }
+}
+
+

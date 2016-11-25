@@ -261,9 +261,19 @@ main = do
     -- Photography
     ------------------------
 
+    match "photography/**/images/**" $ do
+        route   idRoute
+        compile copyFileCompiler
+
     create ["photography/index.html"] $ do
         route idRoute
         compile $ getResourceBody
+            >>= loadAndApplyTemplate "templates/photos.html" defaultContext
+            >>= processUrls
+
+    create ["photography/away/index.markdown"] $ do
+        route (setExtension ".html")
+        compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/photos.html" defaultContext
             >>= processUrls
 
