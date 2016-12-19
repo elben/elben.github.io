@@ -1,5 +1,5 @@
 ---
-title: "Art and Philosophy in Programming"
+postTitle: "Art and Philosophy in Programming"
 categories: blog
 ---
 

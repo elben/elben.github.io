@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  The Best Introduction to Haskell
+postTitle:  The Best Introduction to Haskell
 categories: blog
 tags: haskell, programming-languages
 ---

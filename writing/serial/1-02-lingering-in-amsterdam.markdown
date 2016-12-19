@@ -1,5 +1,5 @@
 ---
-title: "Lingering in Amsterdam"
+postTitle: "Lingering in Amsterdam"
 ---
 
 It was still dark, but the birds were yapping with lucid fervor. Awake at 4:30 AM and restlessly waiting for the sun, I read for three hours before heading out to hunt for breakfast. It was our first morning in Europe.

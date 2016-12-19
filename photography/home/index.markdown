@@ -1,5 +1,5 @@
 ---
-title: Pictures from home
+postTitle: Pictures from home
 ---
 
 # Around the house

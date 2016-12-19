@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  Understanding Transducers
+postTitle:  Understanding Transducers
 categories: blog
 tags: clojure, recommended
 ---

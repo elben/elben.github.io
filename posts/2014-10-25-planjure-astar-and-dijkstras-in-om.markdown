@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Planjure: A* and Dijkstra's in Om"
+postTitle: "Planjure: A* and Dijkstra's in Om"
 categories: blog
 tags: clojure
 ---

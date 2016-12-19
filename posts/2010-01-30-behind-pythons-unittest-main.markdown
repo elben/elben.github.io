@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  Behind Python's unittest.main()
+postTitle:  Behind Python's unittest.main()
 date:   2010-01-30 09:08:00
 categories: blog
 tags: python

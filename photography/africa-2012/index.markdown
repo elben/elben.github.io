@@ -1,5 +1,5 @@
 ---
-title: Africa 2012
+postTitle: Africa 2012
 ---
 
 # Africa 2012

@@ -29,7 +29,7 @@ To set a post as a draft, add this to its metadata:
 
 ```
 ---
-title: The Post Title
+postTitle: The Post Title
 categories: blog
 draft: true
 ---

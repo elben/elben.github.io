@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  UTF-8 for JRuby and MySQL
+postTitle:  UTF-8 for JRuby and MySQL
 categories: blog
 ---
 

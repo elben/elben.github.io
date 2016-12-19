@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  Singleton Pattern in Python
+postTitle:  Singleton Pattern in Python
 date:   2010-04-16 08:09:00
 categories: blog
 tags: python

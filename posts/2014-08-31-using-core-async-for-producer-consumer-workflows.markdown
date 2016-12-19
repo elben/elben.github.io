@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Using core.async for Producer-Consumer Workflows
+postTitle: Using core.async for Producer-Consumer Workflows
 categories: blog
 tags: clojure
 ---

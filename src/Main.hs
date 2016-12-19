@@ -111,6 +111,12 @@ main = do
     --
     tags <- buildTags postsPattern (fromCapture "blog/tags/*.html")
 
+    ------------------------
+    -- Page for each tag
+    --
+    -- /blog/tags/my-tag.html
+    ------------------------
+    --
     -- Generate a page for each tag in the Rules monad.
     --
     -- `pattern` is list of posts with the given `tag`.
@@ -119,7 +125,7 @@ main = do
         route idRoute
         compile $ do
             posts <- recentFirst =<< loadAll pattern
-            let ctx = constField "title" title <>
+            let ctx = constField "postTitle" title <>
                       listField "posts" postContext (return posts) <>
                       defaultContext
 
@@ -128,13 +134,18 @@ main = do
                 >>= loadAndApplyTemplate "templates/default.html" ctx
                 >>= processUrls
 
+    ------------------------
     -- Generate individual blog posts
+    --
+    -- /blog/my-blog-post-title/
+    ------------------------
+    --
     match postsPattern $ do
         route $ customRoute formatFilename
         compile $ pandocCompiler
             -- Render just the post body first, so that I can `saveSnapshot`
             -- just the body for the Atom feed.
-            >>= loadAndApplyTemplate "templates/post-body.html"    (postContextWithTags tags)
+            >>= loadAndApplyTemplate "templates/post-body.html" (postContextWithTags tags)
             >>= saveSnapshot postContentSnapshot
             >>= loadAndApplyTemplate "templates/post.html"    (postContextWithTags tags)
             >>= loadAndApplyTemplate "templates/default.html" (postContextWithTags tags)
@@ -146,7 +157,7 @@ main = do
             posts <- recentFirst =<< loadAllIds postIds
             let archiveCtx =
                     listField "posts" postContext (return posts) <>
-                    constField "title" "Elben Shira - Blog Archive" <>
+                    constField "title" (siteTitle "Blog Archive") <>
                     defaultContext
 
             makeItem ""
@@ -193,7 +204,7 @@ main = do
                 ctx = listField "projects"
                         projCtx
                         (mapM projectCompiler projectItems) -- Build a Compiler [Item Project]
-                      <> constField "title" "Elben Shira - Programming Projects"
+                      <> constField "title" (siteTitle "Programming Projects")
 
             template <- loadBody "templates/projects.html"
 
@@ -240,7 +251,7 @@ main = do
 
         compile $ do
             let serialPostCtx = itemChapterContext <> defaultContext
-            let ctx = constField "title" "Elben Shira — Serial" <>
+            let ctx = constField "title" (siteTitle "Serial") <>
                       listField "postsPart1" serialPostCtx (loadAllIds serialIdsPart1) <>
                       listField "postsPart2" serialPostCtx (loadAllIds serialIdsPart2) <>
                       defaultContext
@@ -269,7 +280,7 @@ main = do
         route idRoute
         compile $ getResourceBody
             >>= loadAndApplyTemplate "templates/default.html"
-                  (constField "title" "Elben Shira - Photography" <>
+                  (constField "title" (siteTitle "Photography") <>
                    constField "extraStylesheet" "photo.css" <>
                    defaultContext)
             >>= processUrls
@@ -284,6 +295,9 @@ main = do
 
 websiteTitle :: String
 websiteTitle = "Elben Shira"
+
+siteTitle :: String -> String
+siteTitle title = title ++ " - Elben Shira"
 
 -- Name for snapshop that contains only the blog post body, without title or
 -- other metadata.

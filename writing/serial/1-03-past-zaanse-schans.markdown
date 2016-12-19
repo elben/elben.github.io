@@ -1,4 +1,4 @@
 ---
-title: "Past Zaanse Schans"
+postTitle: "Past Zaanse Schans"
 ---
 

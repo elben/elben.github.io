@@ -1,5 +1,5 @@
 ---
-title: The Universal Data Structure
+postTitle: The Universal Data Structure
 categories: blog
 tags: bad-theory, recommended
 ---

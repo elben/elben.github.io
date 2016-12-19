@@ -1,6 +1,6 @@
 ---
 layout: post
-title: The Trifecta of ClojureScript, Om and core.async
+postTitle: The Trifecta of ClojureScript, Om and core.async
 categories: blog
 tags: clojure
 ---

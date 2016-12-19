@@ -1,5 +1,5 @@
 ---
-title: The End of Dynamic Languages
+postTitle: The End of Dynamic Languages
 categories: blog
 tags: programming-languages, recommended
 ---
