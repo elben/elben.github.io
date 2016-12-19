@@ -65,10 +65,10 @@ img {
 
   .photo-album-title {
     font-family: $sans-serif-family;
-    text-shadow: 1px 2px 20px #000;
+    text-shadow: 1px 2px 50px #000;
     position: relative;
-    font-size: 2em;
-    top: 2em;
+    font-size: 1.5em;
+    top: 3em;
     text-align: center;
     line-height: 0; // don't take any height in the box
   }

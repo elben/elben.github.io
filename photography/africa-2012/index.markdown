@@ -1,6 +1,11 @@
+---
+title: Africa 2012
+---
+
 # Africa 2012
 
-## Kenya &amp; Tanzania (2012)
+My friend Paul and I went to Kenya and Tanzania for a month. It was our first
+"big trip" overseas.
 
 <a href="/photography/africa-2012/images/Africa 2012-001.jpg"><img src="/photography/africa-2012/images/Africa 2012-001.jpg"></a>
 <div class="caption">Maasai Mara National Reserve, Kenya.</div>
