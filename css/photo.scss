@@ -18,7 +18,7 @@ $album-cover-width: $site-wider / 2 - 16px;
   padding: 0;
 
   img {
-    max-height: 600px;
+    max-height: 700px;
   }
 }
 
@@ -50,13 +50,14 @@ img {
 
 .photo-album {
   float: left;
-  padding-top: 8px;
 
   &:nth-child(1) {
     padding-right: 16px;
   }
 
-  width: 49%;
+  width: 100%;
+  max-height: 10em;
+  overflow: hidden;
 
   a {
     color: #fff;
@@ -64,8 +65,10 @@ img {
 
   .photo-album-title {
     font-family: $sans-serif-family;
+    text-shadow: 1px 2px 20px #000;
     position: relative;
-    top: 1.5em;
+    font-size: 2em;
+    top: 2em;
     text-align: center;
     line-height: 0; // don't take any height in the box
   }
