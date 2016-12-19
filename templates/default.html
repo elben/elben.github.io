@@ -31,6 +31,10 @@
 
         <link rel="stylesheet" href="/css/default.css"/>
         <link rel="stylesheet" href="/css/syntax.css"/>
+
+        $if(extraStylesheet)$
+          <link rel="stylesheet" href="/css/$extraStylesheet$"/>
+        $endif$
     </head>
     <body>
       <div id="structure">
@@ -40,6 +44,7 @@
           <span id="navigation">
             <a href="/blog/">Blog</a>
             <a href="/projects/">Projects</a>
+            <a href="/photography/">Photography</a>
           </span>
 
           <hr>

@@ -268,14 +268,18 @@ main = do
     create ["photography/index.html"] $ do
         route idRoute
         compile $ getResourceBody
-            >>= loadAndApplyTemplate "templates/photos.html"
-                  (constField "title" "Elben Shira - Photography" <> defaultContext)
+            >>= loadAndApplyTemplate "templates/default.html"
+                  (constField "title" "Elben Shira - Photography" <>
+                   constField "extraStylesheet" "photo.css" <>
+                   defaultContext)
             >>= processUrls
 
     create ["photography/africa-2012/index.markdown", "photography/home/index.markdown"] $ do
         route (setExtension ".html")
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/photos.html" defaultContext
+            >>= loadAndApplyTemplate "templates/default.html"
+                  (constField "extraStylesheet" "photo.css" <>
+                   defaultContext)
             >>= processUrls
 
 websiteTitle :: String
