@@ -2,9 +2,17 @@
 {
 "postTitle": "Behind Python's unittest.main()",
 "date": "2010-01-30 09:08:00",
-"tags": ["python"]
+"tags": ["python", "second element", "third"]
 }
 -->
+
+${postTitle}
+
+${date}
+
+${tags}
+
+${unknown variable}
 
 Is Python magical? Consider the trivial unit test below:
 

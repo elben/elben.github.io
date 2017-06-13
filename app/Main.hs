@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Main where
 
+import Pencil.Parser
 import Data.Aeson
-import Data.Aeson.Types (emptyObject)
+import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
-import GHC.Generics
 import qualified Text.ParserCombinators.Parsec as P
 import qualified CMark as CM
 import qualified Data.Text as T
@@ -75,24 +74,19 @@ loadPage fp = do
 -- variables with the value in the JSON object, if present. If the variable is
 -- missing, just skip it for now.
 replaceVarsInTags :: Object -> Tags -> Tags
-replaceVarsInTags object [] = []
-replaceVarsInTags object (TS.TagText str : rest) =
-  TS.TagText (replaceVarsInText object str) : replaceVarsInTags object rest
-
-data SimpleTemplate =
-    STText T.Text
-  | STVar T.Text
-  deriving (Show, Eq)
+replaceVarsInTags _ [] = []
+replaceVarsInTags obj (TS.TagText str : rest) =
+  TS.TagText (replaceVarsInText obj str) : replaceVarsInTags obj rest
+replaceVarsInTags obj (t : rest) =
+  t : replaceVarsInTags obj rest
 
 -- "I have ${one} and ${two} variables and ${three}.
 replaceVarsInText :: Object -> T.Text -> T.Text
-replaceVarsInText object text =
+replaceVarsInText obj text =
   case P.parse parseEverything (T.unpack "") (T.unpack text) of
-    Left err -> text
+    Left _ -> text
     Right exprs ->
-      case replaceVarsInExpression object exprs of
-        Nothing -> text
-        Just evalExprs -> joinExprs evalExprs
+      joinExprs $ replaceVarsInExpression obj exprs
 
 joinExprs :: [SimpleTemplate] -> T.Text
 joinExprs = joinExprs' ""
@@ -100,48 +94,21 @@ joinExprs = joinExprs' ""
 joinExprs' :: T.Text -> [SimpleTemplate] -> T.Text
 joinExprs' curr [] = curr
 joinExprs' curr (STText text : rest) = joinExprs' (T.append curr text) rest
+joinExprs' curr (STVar varName : rest) = joinExprs' (T.append curr varName) rest
 
+-- TODO Elben start here to parse using the aeson parse stuff:
+-- https://hackage.haskell.org/package/aeson-1.2.1.0/docs/Data-Aeson.html
 replaceVarsInExpression :: Object -> [SimpleTemplate] -> [SimpleTemplate]
-replaceVarsInExpression object [] = []
-replaceVarsInExpression object (STVar varName : rest) =
-  case H.lookup varName object of
+replaceVarsInExpression _ [] = []
+replaceVarsInExpression obj (STVar varName : rest) =
+  let p = (obj .: varName) :: Parser T.Text
+      s = parseMaybe (\_ -> p) obj
+  in case s of
     Nothing -> STVar varName : rest
-    Just val -> STText "" : replaceVarsInExpression object rest
-replaceVarsInExpression object (head : rest) =
-  head : replaceVarsInExpression object rest
-
--- | Parse variables.
---
--- >>> parse parseVar "" "${ffwe}"
--- Right (STVar "ffwe")
---
--- >>> isLeft $ parse parseVar "" "Hello ${name}"
--- True
-parseVar :: P.Parser SimpleTemplate
-parseVar = do
-  _ <- P.char '$'
-  _ <- P.char '{'
-  varName <- (P.many (P.noneOf "}"))
-  _ <- P.char '}'
-  return $ STVar (T.pack varName)
-
-parseContent :: P.Parser SimpleTemplate
-parseContent = do
-  stuff <- P.many1 (P.noneOf "$")
-  return $ STText (T.pack stuff)
-
--- | Parse everything.
---
--- >>> parse parseEverything "" "Hello ${name}, how are things going in ${city}?"
-parseEverything :: P.Parser [SimpleTemplate]
-parseEverything = P.many1 (parseContent P.<|> parseVar)
-
--- Should use parsec for this.
--- parseTextIntoSimpleTemplate' :: [SimpleTemplate] -> T.Text -> [SimpleTemplate]
--- parseTextIntoSimpleTemplate' current "" = current
--- -- parseTextIntoSimpleTemplate' current ("${" ++ text) = current
--- parseTextIntoSimpleTemplate' (STText currText : old) (c : text) =
---   parseTextIntoSimpleTemplate' ((STText (c : currText : old)) text
+    Just value ->
+      STText value : replaceVarsInExpression obj rest
+replaceVarsInExpression obj (expr : rest) =
+  expr : replaceVarsInExpression obj rest
 
 loadVariables :: Tags -> Object
 loadVariables tags =
@@ -153,12 +120,12 @@ loadVariables tags =
 
 findPreambleComment :: Tags -> Maybe T.Text
 findPreambleComment [] = Nothing
-findPreambleComment (tag @ (TS.TagComment str) : rest) =
+findPreambleComment (TS.TagComment str : rest) =
   if T.isPrefixOf "PREAMBLE" (T.strip str)
-     then let (a, b) = T.breakOn "PREAMBLE" str
+     then let (_, b) = T.breakOn "PREAMBLE" str
            in Just $ T.replace "PREAMBLE" "" b
   else findPreambleComment rest
-findPreambleComment (tag : rest) =
+findPreambleComment (_ : rest) =
   findPreambleComment rest
 
 includeAsset :: FilePath -> IO ()
@@ -172,7 +139,7 @@ cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.app
 
 -- Inject tags into the body tag, at the ${body} annotation location.
 injectIntoBodyVar :: Tags -> Tags -> Tags
-injectIntoBodyVar inject [] = []
+injectIntoBodyVar _ [] = []
 injectIntoBodyVar inject (tag @ (TS.TagText str) : rest) =
   if T.isInfixOf "${body}" str
   then
@@ -192,8 +159,8 @@ injectIntoHead :: Tags -> Tags -> Tags
 injectIntoHead = injectInto "head"
 
 injectInto :: T.Text -> Tags -> Tags -> Tags
-injectInto tagName inject [] = []
-injectInto tagName inject (tagOpen @ (TS.TagOpen tag attrs) : rest) =
+injectInto _ _ [] = []
+injectInto tagName inject (tagOpen @ (TS.TagOpen tag _) : rest) =
   if tag == tagName
   then tagOpen : inject ++ rest
   else tagOpen : injectInto tagName inject rest
