@@ -1,9 +1,7 @@
-<!--
+<!-- PREAMBLE
 {
-"layout": "post",
 "postTitle": "Behind Python's unittest.main()",
-"date": "2010-01-30 09:08:00"
-"categories": ["blog"],
+"date": "2010-01-30 09:08:00",
 "tags": ["python"]
 }
 -->
