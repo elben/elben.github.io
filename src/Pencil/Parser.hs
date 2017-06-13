@@ -23,7 +23,7 @@ parseEverything = many1 (parseContent <|> parseVar)
 
 -- | Parse variables.
 --
--- >>> parse parseVar "" "${ffwe}"
+-- >>> parse parseVar "" "${ffwe} yep"
 -- Right (STVar "ffwe")
 --
 -- >>> isLeft $ parse parseVar "" "Hello ${name}"
