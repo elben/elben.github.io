@@ -1,12 +1,45 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Pencil.Parser where
 
 import Text.ParserCombinators.Parsec
 import qualified Data.Text as T
+import qualified Text.HTML.TagSoup as TS
 
 -- Doctest setup.
 --
 -- $setup
 -- >>> import Data.Either (isLeft)
+
+-- | Data structure that mirrors the tagsoup @Tag@ data. We need more data types for our variables.
+data PTag =
+  PTagOpen T.Text [TS.Attribute T.Text]
+  | PTagClose T.Text
+  | PTagText T.Text
+  | PTagComment T.Text
+  | PTagVariable T.Text
+
+parsePTags :: T.Text -> [PTag]
+parsePTags t = fromTagsoup (TS.parseTags t)
+
+fromTagsoup :: [TS.Tag T.Text] -> [PTag]
+fromTagsoup = map fromTagsoup'
+
+fromTagsoup' :: TS.Tag T.Text -> PTag
+fromTagsoup' (TS.TagOpen t attrs) = PTagOpen t attrs
+fromTagsoup' (TS.TagClose t) = PTagClose t
+fromTagsoup' (TS.TagText t) = PTagText t
+fromTagsoup' (TS.TagComment t) = PTagComment t
+
+toTagsoup :: [PTag] -> [TS.Tag T.Text]
+toTagsoup = map toTagsoup'
+
+toTagsoup' :: PTag -> TS.Tag T.Text
+toTagsoup' (PTagOpen t attrs) = TS.TagOpen t attrs
+toTagsoup' (PTagClose t) = TS.TagClose t
+toTagsoup' (PTagText t) = TS.TagText t
+toTagsoup' (PTagComment t) = TS.TagComment t
+toTagsoup' (PTagVariable t) = TS.TagText (T.append "${" (T.append t "}"))
 
 data SimpleTemplate =
     STText T.Text
@@ -17,6 +50,12 @@ data SimpleTemplate =
 --
 -- >>> parse parseEverything "" "Hello ${man} and ${woman}."
 -- Right [STText "Hello ",STVar "man",STText " and ",STVar "woman",STText "."]
+--
+-- >>> parse parseEverything "" "<b>this $fakevar works</b> ${realvar}"
+-- Right [STText "<b>this $fakevar works</b>"]
+--
+-- >>> parse parseEverything "" "<b>this ${fakevar works</b> ${realvar}"
+-- Right [STText "<b>this ${fakevar works</b>"]
 --
 parseEverything :: Parser [SimpleTemplate]
 parseEverything = many1 (parseContent <|> parseVar)
@@ -29,7 +68,7 @@ parseEverything = many1 (parseContent <|> parseVar)
 -- >>> isLeft $ parse parseVar "" "Hello ${name}"
 -- True
 parseVar :: Parser SimpleTemplate
-parseVar = do
+parseVar = try $ do
   _ <- char '$'
   _ <- char '{'
   varName <- many (noneOf "}")
@@ -43,8 +82,12 @@ parseVar = do
 --
 -- >>> isLeft $ parse parseContent "" "${name}!!"
 -- True
+--
+-- https://stackoverflow.com/questions/20730488/parsec-read-text-ended-by-a-string
 parseContent :: Parser SimpleTemplate
 parseContent = do
+  -- stuff <- manyTill anyChar (parseVar <|> eof)
+  -- stuff <- try (manyTill anyChar parseVar) -- <|> (many1 anyChar)
   stuff <- many1 (noneOf "$")
   return $ STText (T.pack stuff)
 

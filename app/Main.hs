@@ -16,6 +16,7 @@ import qualified Text.HTML.TagSoup as TS
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as DL
 import qualified Data.Maybe as M
+import Debug.Trace
 
 sitePrefix :: String
 sitePrefix = "site/"
@@ -27,13 +28,9 @@ main :: IO ()
 main = do
   layoutText <- TIO.readFile "site/layouts/default.html"
   text <- TIO.readFile "site/index.html"
-  putStr $ T.unpack text
   let tags = TS.parseTags layoutText
-  putStr $ show tags
   let newTags = injectIntoHead (cssTag "stylesheets/default.css") (injectIntoBodyVar (TS.parseTags text) tags)
-  putStr $ show newTags
   let rendered = TS.renderTags newTags
-  putStr $ T.unpack rendered
   TIO.writeFile "out/index.html" rendered
 
   -- Write CSS file
@@ -41,18 +38,84 @@ main = do
   includeAsset "stylesheets/default.css"
 
   -- Load posts
+  -- TODO load post HTML into partial, into template.
   (tags1, vars1) <- loadPage "site/posts/2010-01-30-behind-pythons-unittest-main.markdown"
-  (tags2, vars2) <- loadPage "site/posts/2010-01-30-behind-pythons-unittest-main.markdown"
+  (tags2, vars2) <- loadPage "site/posts/2010-04-16-singleton-pattern-in-python.markdown"
   print vars1
   print vars2
+  -- Wrong place to apply variables. Need to make sure the content is injected
+  -- into the higher-level partials first.
   let replacedTags1 = replaceVarsInTags vars1 tags1
-  let replacedTags2 = replaceVarsInTags vars2 tags2
-  print replacedTags1
-  print replacedTags2
+  -- let replacedTags2 = replaceVarsInTags vars2 tags2
   let blogPostHtml1 = CM.commonmarkToHtml [] (TS.renderTags replacedTags1)
-  let blogPostHtml2 = CM.commonmarkToHtml [] (TS.renderTags replacedTags2)
-  TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" blogPostHtml1
-  TIO.writeFile "out/posts/2010-04-16-singleton-pattern-in-python.html" blogPostHtml2
+  -- let blogPostHtml2 = CM.commonmarkToHtml [] (TS.renderTags replacedTags2)
+
+  -- Try to add the first blog post into the partial
+  partialText <- TIO.readFile "site/partials/post.html"
+  (partialTags, partialVars) <- loadPage "site/partials/post.html"
+
+  -- Insert an Aeson string as the "body" variable.
+  let completeVar1 = H.union partialVars (H.insert "body" (EHtml replacedTags1) vars1)
+
+  print completeVar1
+  print partialText
+
+  let coolHtml = replaceVarsInText completeVar1 partialText
+  TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" coolHtml
+  -- TIO.writeFile "out/posts/2010-04-16-singleton-pattern-in-python.html" blogPostHtml2
+
+-- Environment variables, for template variables.
+-- We need to do this smartly, like a real PL. Example, say we want to make a
+-- page that list all our blog posts. Well, each blog post has variables, all of
+-- the same name (e.g. postTitle). So this is variable replacement/application
+-- problem aka closures (kind of).
+--
+--
+-- - Layout: the basic layout
+--   - Variables used: title
+--   - Variables declared: color-of-the-week
+--   - Partial: list of blog posts
+--       - Variable declared: title
+--       - Stylesheet needed: blog-post-list.css
+--       - Partial: blog post snippet
+--         - Variables used: postTitle, date
+--         - Blog post: How I win
+--           - Variables declared: title, postTitle, date
+--           - Variables used: color-of-the-week
+--           - JavaScript needed: mathjax (optional to implement)
+--           - Stylesheet needed: dark themed (optional to implement)
+--       - Partial: blog post snippet
+--         - Variables used: postTitle, date
+--         - Blog post: Why I'm awesome
+--           - Variables declared: postTitle
+
+-- We should use that hack that allows ppl to extend this with their own types?
+-- Example: we want a "tags" type for a list of blog post tags
+-- https://two-wrongs.com/dynamic-dispatch-in-haskell-how-to-make-code-extendable
+data EnvData =
+  EText T.Text
+  | EHtml Tags
+  deriving (Eq, Show)
+
+type Env = H.HashMap T.Text EnvData
+
+envDataToDisplay :: EnvData -> T.Text
+envDataToDisplay (EText t) = t
+envDataToDisplay (EHtml tags) = TS.renderTags tags
+
+parseMaybeText :: T.Text -> Object -> Maybe T.Text
+parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
+
+maybeInsertIntoEnv :: Env -> T.Text -> Value -> Env
+maybeInsertIntoEnv env k (String s) = H.insert k (EText s) env
+maybeInsertIntoEnv env k unknown = env
+
+aesonToEnv :: Object -> Env
+aesonToEnv o =
+  let keys = H.keys o
+  in H.foldlWithKey'
+      maybeInsertIntoEnv
+      H.empty o
 
 loadAndApplyPage :: FilePath -> IO T.Text
 loadAndApplyPage fp = do
@@ -60,7 +123,7 @@ loadAndApplyPage fp = do
   let tags' = replaceVarsInTags value tags
   return $ TS.renderTags tags'
 
-loadPage :: FilePath -> IO (Tags, Object)
+loadPage :: FilePath -> IO (Tags, Env)
 loadPage fp = do
   content <- TIO.readFile fp
   let content' =
@@ -68,25 +131,25 @@ loadPage fp = do
         then CM.commonmarkToHtml [] content
         else content
   let tags = TS.parseTags content'
-  return (tags, loadVariables tags)
+  return (tags, aesonToEnv $ loadVariables tags)
 
--- Given a JSON object, search through tags and replace any occurence of
+-- Given a Env object, search through tags and replace any occurence of
 -- variables with the value in the JSON object, if present. If the variable is
 -- missing, just skip it for now.
-replaceVarsInTags :: Object -> Tags -> Tags
+replaceVarsInTags :: Env -> Tags -> Tags
 replaceVarsInTags _ [] = []
-replaceVarsInTags obj (TS.TagText str : rest) =
-  TS.TagText (replaceVarsInText obj str) : replaceVarsInTags obj rest
-replaceVarsInTags obj (t : rest) =
-  t : replaceVarsInTags obj rest
+replaceVarsInTags env (TS.TagText str : rest) =
+  TS.TagText (replaceVarsInText env str) : replaceVarsInTags env rest
+replaceVarsInTags env (t : rest) =
+  t : replaceVarsInTags env rest
 
 -- "I have ${one} and ${two} variables and ${three}.
-replaceVarsInText :: Object -> T.Text -> T.Text
-replaceVarsInText obj text =
+replaceVarsInText :: Env -> T.Text -> T.Text
+replaceVarsInText env text =
   case P.parse parseEverything (T.unpack "") (T.unpack text) of
-    Left _ -> text
+    Left _ -> (traceShow "I have gone left!!!" text)
     Right exprs ->
-      joinExprs $ replaceVarsInExpression obj exprs
+      joinExprs $ replaceVarsInExpression env (traceShowId exprs)
 
 joinExprs :: [SimpleTemplate] -> T.Text
 joinExprs = joinExprs' ""
@@ -96,19 +159,17 @@ joinExprs' curr [] = curr
 joinExprs' curr (STText text : rest) = joinExprs' (T.append curr text) rest
 joinExprs' curr (STVar varName : rest) = joinExprs' (T.append curr varName) rest
 
--- TODO Elben start here to parse using the aeson parse stuff:
--- https://hackage.haskell.org/package/aeson-1.2.1.0/docs/Data-Aeson.html
-replaceVarsInExpression :: Object -> [SimpleTemplate] -> [SimpleTemplate]
+replaceVarsInExpression :: Env -> [SimpleTemplate] -> [SimpleTemplate]
 replaceVarsInExpression _ [] = []
-replaceVarsInExpression obj (STVar varName : rest) =
-  let p = (obj .: varName) :: Parser T.Text
-      s = parseMaybe (\_ -> p) obj
-  in case s of
+replaceVarsInExpression env (STVar varName : rest) =
+  case H.lookup varName env of
     Nothing -> STVar varName : rest
-    Just value ->
-      STText value : replaceVarsInExpression obj rest
-replaceVarsInExpression obj (expr : rest) =
-  expr : replaceVarsInExpression obj rest
+    Just envData ->
+      -- TODO envDataToDisplay may spit out HTML that we need to not escape. We
+      -- need to return Tags??
+      STText (envDataToDisplay envData) : replaceVarsInExpression env rest
+replaceVarsInExpression env (expr : rest) =
+  expr : replaceVarsInExpression env rest
 
 loadVariables :: Tags -> Object
 loadVariables tags =
