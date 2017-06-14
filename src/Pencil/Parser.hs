@@ -58,7 +58,7 @@ data SimpleTemplate =
 -- Right [STText "<b>this ${fakevar works</b>"]
 --
 parseEverything :: Parser [SimpleTemplate]
-parseEverything = many1 (parseContent <|> parseVar)
+parseEverything = many1 (parseContent <|> parseVar <|> parseFakeVar)
 
 -- | Parse variables.
 --
@@ -84,10 +84,19 @@ parseVar = try $ do
 -- True
 --
 -- https://stackoverflow.com/questions/20730488/parsec-read-text-ended-by-a-string
+-- https://github.com/jaspervdj/hakyll/blob/32e34f435c7911f36acdf4a62eec1f56faf0b269/src/Hakyll/Web/Template/Internal/Element.hs#L137
 parseContent :: Parser SimpleTemplate
 parseContent = do
-  -- stuff <- manyTill anyChar (parseVar <|> eof)
+  -- stuff <- manyTill anyChar (try (string "${"))
   -- stuff <- try (manyTill anyChar parseVar) -- <|> (many1 anyChar)
   stuff <- many1 (noneOf "$")
   return $ STText (T.pack stuff)
 
+-- | A hack to capture strings that "almost" are templates. I couldn't figure
+-- out another way.
+parseFakeVar :: Parser SimpleTemplate
+parseFakeVar = do
+  _ <- char '$'
+  n <- noneOf "{"
+  rest <- many1 (noneOf "$")
+  return $ STText (T.pack ("$" ++ [n] ++ rest))
