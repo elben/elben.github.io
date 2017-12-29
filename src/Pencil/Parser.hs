@@ -51,14 +51,15 @@ data SimpleTemplate =
 -- >>> parse parseEverything "" "Hello ${man} and ${woman}."
 -- Right [STText "Hello ",STVar "man",STText " and ",STVar "woman",STText "."]
 --
--- >>> parse parseEverything "" "<b>this $fakevar works</b> ${realvar}"
--- Right [STText "<b>this $fakevar works</b>"]
+-- >>> parse parseEverything "" "<b>this $$escape works</b> ${realvar}"
+-- Right [STText "<b>this ",STText "$$",STText "escape works</b> ",STVar "realvar"]
 --
--- >>> parse parseEverything "" "<b>this ${fakevar works</b> ${realvar}"
--- Right [STText "<b>this ${fakevar works</b>"]
+-- | This is a degenerate case that we will just allow (for now) to go sideways:
+-- >>> parse parseEverything "" "<b>this ${var never closes</b> ${realvar}"
+-- Right [STText "<b>this ",STVar "var never closes</b> ${realvar"]
 --
 parseEverything :: Parser [SimpleTemplate]
-parseEverything = many1 (parseContent <|> parseVar <|> parseFakeVar)
+parseEverything = many1 (parseContent <|> parseEscape <|> parseVar)
 
 -- | Parse variables.
 --
@@ -90,7 +91,13 @@ parseContent = do
   -- stuff <- manyTill anyChar (try (string "${"))
   -- stuff <- try (manyTill anyChar parseVar) -- <|> (many1 anyChar)
   stuff <- many1 (noneOf "$")
+  -- stuff <- manyTill anyChar (eof <|> lookAhead (parseVar >> return ()))
   return $ STText (T.pack stuff)
+
+parseEscape :: Parser SimpleTemplate
+parseEscape = do
+  esc <- try (string "$$")
+  return $ STText "$$"
 
 -- | A hack to capture strings that "almost" are templates. I couldn't figure
 -- out another way.
