@@ -7,14 +7,15 @@ library) and more.</p>
 <h3>Recommended Blog Posts</h3>
 
 <ul class="posts simple">
-  $for(recommendedPosts)$
-    $partial("templates/post-list-item.html")$
-  $endfor$
+  ${
+    for(recommendedPosts)
+      partial("templates/post-list-item.html")
+  }
 </ul>
 
 <h3>Blog Archive</h3>
 
-$partial("templates/post-list.html")$
+${partial("templates/post-list.html")}
 
 <h3>Other writings</h3>
 

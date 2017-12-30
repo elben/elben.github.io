@@ -21,7 +21,7 @@ type Tags = [TS.Tag T.Text]
 type PTags = [PTag]
 
 sitePrefix :: String
-sitePrefix = "site2/"
+sitePrefix = "site/"
 
 outPrefix :: String
 outPrefix = "out/"
@@ -32,11 +32,11 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 main :: IO ()
 main = do
   -- Layout
-  layoutText <- TIO.readFile "site2/layouts/default.html"
+  layoutText <- TIO.readFile "site/layouts/default.html"
   let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
 
   -- Index
-  (indexNodes, indexEnv) <- loadPage "site2/index.html"
+  (indexNodes, indexEnv) <- loadPage "site/index.html"
   let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
   let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
   TIO.writeFile "out/index.html" indexNodesReplaced
@@ -46,14 +46,14 @@ main = do
   includeAsset "stylesheets/default.css"
 
   -- Load posts
-  (nodes1, env1) <- loadPage "site2/posts/2010-01-30-behind-pythons-unittest-main.markdown"
+  (nodes1, env1) <- loadPage "site/posts/2010-01-30-behind-pythons-unittest-main.markdown"
 
   let env1' = H.union globalEnv env1
 
   let nodes1Replaced = replaceVarsInTemplate env1' nodes1
 
   -- Try to add the first blog post into the partial
-  (partialNodes, partialEnv) <- loadPage "site2/partials/post.html"
+  (partialNodes, partialEnv) <- loadPage "site/partials/post.html"
 
   -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
   let env1'' = H.union (H.insert "body" (EText (renderNodes nodes1Replaced)) env1') partialEnv
