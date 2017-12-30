@@ -31,11 +31,13 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
 main :: IO ()
 main = do
+  -- Layout
   layoutText <- TIO.readFile "site2/layouts/default.html"
+  let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
+
+  -- Index
   (indexNodes, indexEnv) <- loadPage "site2/index.html"
-  let layoutTags = TS.parseTags layoutText
-  let indexTags = injectIntoHead (cssTag "stylesheets/default.css")
-                    (injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags)
+  let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
   let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
   TIO.writeFile "out/index.html" indexNodesReplaced
 
@@ -66,7 +68,7 @@ main = do
   print partialNodesReplaced
 
   let env1''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodesReplaced))) env1''
-  let layoutTextForPost1 = replaceVarsInText env1''' layoutText
+  let layoutTextForPost1 = replaceVarsInText env1''' (TS.renderTags layoutTags)
 
   TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" layoutTextForPost1
 
