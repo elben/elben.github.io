@@ -13,6 +13,7 @@ import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified Text.HTML.TagSoup as TS
 import qualified Data.HashMap.Strict as H
+import qualified Data.List as DL
 import qualified Data.Maybe as M
 import Debug.Trace
 
@@ -25,41 +26,47 @@ sitePrefix = "site2/"
 outPrefix :: String
 outPrefix = "out/"
 
+globalEnv :: Env
+globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
+
 main :: IO ()
 main = do
   layoutText <- TIO.readFile "site2/layouts/default.html"
-  text <- TIO.readFile "site2/index.html"
+  (indexNodes, indexEnv) <- loadPage "site2/index.html"
   let layoutTags = TS.parseTags layoutText
-  let indexTags = injectIntoHead (cssTag "stylesheets/default.css") (injectIntoBodyVar (TS.parseTags text) layoutTags)
-  let indexHtml = TS.renderTags indexTags
-  TIO.writeFile "out/index.html" indexHtml
+  let indexTags = injectIntoHead (cssTag "stylesheets/default.css")
+                    (injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags)
+  let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
+  TIO.writeFile "out/index.html" indexNodesReplaced
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
   includeAsset "stylesheets/default.css"
 
   -- Load posts
-  (text1, vars1) <- loadAndApplyPage "site2/posts/2010-01-30-behind-pythons-unittest-main.markdown"
-  let html1 = CM.commonmarkToHtml [] text1
+  (nodes1, env1) <- loadPage "site2/posts/2010-01-30-behind-pythons-unittest-main.markdown"
+
+  let env1' = H.union globalEnv env1
+
+  let nodes1Replaced = replaceVarsInTemplate env1' nodes1
 
   -- Try to add the first blog post into the partial
-  partialText <- TIO.readFile "site2/partials/post.html"
-  (partialNodes, partialVars) <- loadPage "site2/partials/post.html"
+  (partialNodes, partialEnv) <- loadPage "site2/partials/post.html"
 
-  -- Insert an Aeson string as the "body" variable.
-  let vars1' = H.union partialVars (H.insert "body" (EHtml (TS.parseTags html1)) vars1)
+  -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
+  let env1'' = H.union (H.insert "body" (EText (renderNodes nodes1Replaced)) env1') partialEnv
 
   print ("!========== 1" :: String)
-  print vars1'
+  print env1''
   print ("!========== 2" :: String)
   print partialNodes
 
-  let partialTextReplaced = replaceVarsInText vars1' partialText
+  let partialNodesReplaced = replaceVarsInTemplate env1'' partialNodes
   print ("!========== 3" :: String)
-  print partialTextReplaced
+  print partialNodesReplaced
 
-  let vars1'' = H.union partialVars (H.insert "body" (EHtml (TS.parseTags partialTextReplaced)) vars1')
-  let layoutTextForPost1 = replaceVarsInText vars1'' layoutText
+  let env1''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodesReplaced))) env1''
+  let layoutTextForPost1 = replaceVarsInText env1''' layoutText
 
   TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" layoutTextForPost1
 
@@ -132,7 +139,11 @@ loadPage :: FilePath -> IO ([PNode], Env)
 loadPage fp = do
   content <- TIO.readFile fp
   let env = aesonToEnv $ loadVariables (TS.parseTags content)
-  case runParser content of
+  let content' =
+        if ".markdown" `DL.isSuffixOf` fp
+        then CM.commonmarkToHtml [] content
+        else content
+  case runParser content' of
     Left _ -> return ([], env)
     Right nodes -> return (nodes, env)
 
