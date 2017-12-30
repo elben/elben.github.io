@@ -7,62 +7,61 @@ import Data.Aeson
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
-import qualified Text.ParserCombinators.Parsec as P
 import qualified CMark as CM
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified Text.HTML.TagSoup as TS
 import qualified Data.HashMap.Strict as H
-import qualified Data.List as DL
 import qualified Data.Maybe as M
 import Debug.Trace
 
+type Tags = [TS.Tag T.Text]
+type PTags = [PTag]
+
 sitePrefix :: String
-sitePrefix = "site/"
+sitePrefix = "site2/"
 
 outPrefix :: String
 outPrefix = "out/"
 
 main :: IO ()
 main = do
-  layoutText <- TIO.readFile "site/layouts/default.html"
-  text <- TIO.readFile "site/index.html"
-  let tags = TS.parseTags layoutText
-  let newTags = injectIntoHead (cssTag "stylesheets/default.css") (injectIntoBodyVar (TS.parseTags text) tags)
-  let rendered = TS.renderTags newTags
-  TIO.writeFile "out/index.html" rendered
+  layoutText <- TIO.readFile "site2/layouts/default.html"
+  text <- TIO.readFile "site2/index.html"
+  let layoutTags = TS.parseTags layoutText
+  let indexTags = injectIntoHead (cssTag "stylesheets/default.css") (injectIntoBodyVar (TS.parseTags text) layoutTags)
+  let indexHtml = TS.renderTags indexTags
+  TIO.writeFile "out/index.html" indexHtml
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
   includeAsset "stylesheets/default.css"
 
   -- Load posts
-  -- TODO load post HTML into partial, into template.
-  (tags1, vars1) <- loadPage "site/posts/2010-01-30-behind-pythons-unittest-main.markdown"
-  (tags2, vars2) <- loadPage "site/posts/2010-04-16-singleton-pattern-in-python.markdown"
-  print vars1
-  print vars2
-  -- Wrong place to apply variables. Need to make sure the content is injected
-  -- into the higher-level partials first.
-  let replacedTags1 = replaceVarsInTags vars1 tags1
-  -- let replacedTags2 = replaceVarsInTags vars2 tags2
-  let blogPostHtml1 = CM.commonmarkToHtml [] (TS.renderTags replacedTags1)
-  -- let blogPostHtml2 = CM.commonmarkToHtml [] (TS.renderTags replacedTags2)
+  (text1, vars1) <- loadAndApplyPage "site2/posts/2010-01-30-behind-pythons-unittest-main.markdown"
+  let html1 = CM.commonmarkToHtml [] text1
 
   -- Try to add the first blog post into the partial
-  partialText <- TIO.readFile "site/partials/post.html"
-  (partialTags, partialVars) <- loadPage "site/partials/post.html"
+  partialText <- TIO.readFile "site2/partials/post.html"
+  (partialNodes, partialVars) <- loadPage "site2/partials/post.html"
 
   -- Insert an Aeson string as the "body" variable.
-  let completeVar1 = H.union partialVars (H.insert "body" (EHtml replacedTags1) vars1)
+  let vars1' = H.union partialVars (H.insert "body" (EHtml (TS.parseTags html1)) vars1)
 
-  print completeVar1
-  print partialText
+  print ("!========== 1" :: String)
+  print vars1'
+  print ("!========== 2" :: String)
+  print partialNodes
 
-  let coolHtml = replaceVarsInText completeVar1 partialText
-  TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" coolHtml
-  -- TIO.writeFile "out/posts/2010-04-16-singleton-pattern-in-python.html" blogPostHtml2
+  let partialTextReplaced = replaceVarsInText vars1' partialText
+  print ("!========== 3" :: String)
+  print partialTextReplaced
+
+  let vars1'' = H.union partialVars (H.insert "body" (EHtml (TS.parseTags partialTextReplaced)) vars1')
+  let layoutTextForPost1 = replaceVarsInText vars1'' layoutText
+
+  TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" layoutTextForPost1
 
 -- Environment variables, for template variables.
 -- We need to do this smartly, like a real PL. Example, say we want to make a
@@ -106,71 +105,52 @@ envDataToDisplay (EHtml tags) = TS.renderTags tags
 parseMaybeText :: T.Text -> Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
 
+-- | Convert known Aeson types into known Env types.
+-- TODO: support array of env vars
 maybeInsertIntoEnv :: Env -> T.Text -> Value -> Env
 maybeInsertIntoEnv env k (String s) = H.insert k (EText s) env
-maybeInsertIntoEnv env k unknown = env
+maybeInsertIntoEnv env _ _ = env
 
+-- | Convert an Aeson Object to an Env.
 aesonToEnv :: Object -> Env
-aesonToEnv o =
-  let keys = H.keys o
-  in H.foldlWithKey'
-      maybeInsertIntoEnv
-      H.empty o
+aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
-loadAndApplyPage :: FilePath -> IO T.Text
+loadAndApplyPage :: FilePath -> IO (T.Text, Env)
 loadAndApplyPage fp = do
-  (tags, value) <- loadPage fp
-  let tags' = replaceVarsInTags value tags
-  return $ TS.renderTags tags'
+  (nodes, env) <- loadPage fp
+  print ("*********** 1 *******" :: String)
+  print nodes
+  print ("*********** 2 *******" :: String)
+  print env
+  let nodes' = replaceVarsInTemplate env nodes
+  print ("*********** 3 *******" :: String)
+  print nodes'
+  return (renderNodes nodes', env)
 
-loadPage :: FilePath -> IO (Tags, Env)
+-- | Load page, extracting the tags and preamble variables.
+loadPage :: FilePath -> IO ([PNode], Env)
 loadPage fp = do
   content <- TIO.readFile fp
-  let content' =
-        if ".markdown" `DL.isSuffixOf` fp
-        then CM.commonmarkToHtml [] content
-        else content
-  let tags = TS.parseTags content'
-  return (tags, aesonToEnv $ loadVariables tags)
+  let env = aesonToEnv $ loadVariables (TS.parseTags content)
+  case runParser content of
+    Left _ -> return ([], env)
+    Right nodes -> return (nodes, env)
 
--- Given a Env object, search through tags and replace any occurence of
--- variables with the value in the JSON object, if present. If the variable is
--- missing, just skip it for now.
-replaceVarsInTags :: Env -> Tags -> Tags
-replaceVarsInTags _ [] = []
-replaceVarsInTags env (TS.TagText str : rest) =
-  TS.TagText (replaceVarsInText env str) : replaceVarsInTags env rest
-replaceVarsInTags env (t : rest) =
-  t : replaceVarsInTags env rest
+replaceVarsInTemplate :: Env -> [PNode] -> [PNode]
+replaceVarsInTemplate _ [] = []
+replaceVarsInTemplate env (PVar var : rest) =
+  case H.lookup var env of
+    Nothing -> PVar var : replaceVarsInTemplate env rest
+    Just envData -> PText (envDataToDisplay envData) : replaceVarsInTemplate env rest
+replaceVarsInTemplate env (n : rest) = n : replaceVarsInTemplate env rest
 
--- "I have ${one} and ${two} variables and ${three}.
 replaceVarsInText :: Env -> T.Text -> T.Text
 replaceVarsInText env text =
-  case P.parse parseEverything (T.unpack "") (T.unpack text) of
-    Left _ -> (traceShow "I have gone left!!!" text)
-    Right exprs ->
-      joinExprs $ replaceVarsInExpression env (traceShowId exprs)
+  case runParser text of
+    Left _ -> traceShow ("I have gone left!!!" :: String) text
+    Right nodes -> renderNodes $ replaceVarsInTemplate env nodes
 
-joinExprs :: [SimpleTemplate] -> T.Text
-joinExprs = joinExprs' ""
-
-joinExprs' :: T.Text -> [SimpleTemplate] -> T.Text
-joinExprs' curr [] = curr
-joinExprs' curr (STText text : rest) = joinExprs' (T.append curr text) rest
-joinExprs' curr (STVar varName : rest) = joinExprs' (T.append curr varName) rest
-
-replaceVarsInExpression :: Env -> [SimpleTemplate] -> [SimpleTemplate]
-replaceVarsInExpression _ [] = []
-replaceVarsInExpression env (STVar varName : rest) =
-  case H.lookup varName env of
-    Nothing -> STVar varName : rest
-    Just envData ->
-      -- TODO envDataToDisplay may spit out HTML that we need to not escape. We
-      -- need to return Tags??
-      STText (envDataToDisplay envData) : replaceVarsInExpression env rest
-replaceVarsInExpression env (expr : rest) =
-  expr : replaceVarsInExpression env rest
-
+-- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> Object
 loadVariables tags =
   case findPreambleComment tags of
@@ -189,16 +169,15 @@ findPreambleComment (TS.TagComment str : rest) =
 findPreambleComment (_ : rest) =
   findPreambleComment rest
 
+-- | Copy specified file from site to out.
 includeAsset :: FilePath -> IO ()
 includeAsset f = D.copyFile (sitePrefix ++ f) (outPrefix ++ f)
-
--- Type alias
-type Tags = [TS.Tag T.Text]
 
 cssTag :: T.Text -> Tags
 cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
 
 -- Inject tags into the body tag, at the ${body} annotation location.
+-- TODO use the Parser we wrote instead of this custom thing
 injectIntoBodyVar :: Tags -> Tags -> Tags
 injectIntoBodyVar _ [] = []
 injectIntoBodyVar inject (tag @ (TS.TagText str) : rest) =
@@ -216,7 +195,10 @@ injectIntoBodyVar inject (tag : rest) =
 injectIntoBody :: Tags -> Tags -> Tags
 injectIntoBody = injectInto "body"
 
-injectIntoHead :: Tags -> Tags -> Tags
+-- | Inject tags into the HTML <head> element.
+injectIntoHead :: Tags -- Tags to inject
+               -> Tags -- Tags with <head> being injected into
+               -> Tags -- Resulting tags
 injectIntoHead = injectInto "head"
 
 injectInto :: T.Text -> Tags -> Tags -> Tags
