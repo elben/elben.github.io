@@ -16,11 +16,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Pencil.Parser
+                     , Pencil.Env
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
                      , cmark
                      , directory
+                     , filepath
                      , parsec
                      , tagsoup
                      , text
@@ -37,6 +39,7 @@ executable pencil-exe
                      , bytestring
                      , cmark
                      , directory
+                     , filepath
                      , parsec
                      , tagsoup
                      , text

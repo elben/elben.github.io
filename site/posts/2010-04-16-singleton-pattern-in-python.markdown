@@ -1,10 +1,11 @@
----
-layout: post
-postTitle:  Singleton Pattern in Python
-date:   2010-04-16 08:09:00
-categories: blog
-tags: python
----
+<!-- PREAMBLE
+{
+"postTitle": "Singleton Pattern in Python",
+"date": "2010-04-16 08:09:00",
+"categories": ["blog"],
+"tags": ["python", "second element", "third"]
+}
+-->
 
 Sometimes, you find that you only want one instance of a class to be created.
 Ever. This way of programming is often referred to as the singleton pattern.

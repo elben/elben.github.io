@@ -13,6 +13,19 @@ library) and more.</p>
   }
 </ul>
 
+<h3>Testing for loop</h3>
+
+<ul>
+${for(posts)}
+  <li>This is inside a post, so we should now have a closure over individual
+    $$post vars, but still have access to the outer vars.
+    Website title: ${title}
+    ${postTitle}
+    ${date}
+    ${body}</li>
+${endfor}
+</ul>
+
 <h3>Blog Archive</h3>
 
 ${partial("templates/post-list.html")}

@@ -3,21 +3,23 @@
 module Main where
 
 import Pencil.Parser
+import Pencil.Env
+import Control.Monad (forM_)
 import Data.Aeson
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
 import qualified CMark as CM
-import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
-import qualified System.Directory as D
-import qualified Text.HTML.TagSoup as TS
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as DL
 import qualified Data.Maybe as M
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import qualified System.Directory as D
+import qualified System.FilePath as FP
+import qualified Text.HTML.TagSoup as TS
 import Debug.Trace
 
-type Tags = [TS.Tag T.Text]
 type PTags = [PTag]
 
 sitePrefix :: String
@@ -29,6 +31,25 @@ outPrefix = "out/"
 globalEnv :: Env
 globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
+doPage :: Env -> Page -> IO ()
+doPage env (Page nodes penv fp) = do
+  layoutText <- TIO.readFile "site/layouts/default.html"
+  let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
+
+  let env' = H.union env penv
+  let nodes' = replaceVarsInTemplate env' nodes
+  Page partialNodes partialEnv _ <- loadPage' "partials/post.html"
+
+  -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
+  let env'' = H.union (H.insert "body" (EText (renderNodes nodes')) env') partialEnv
+
+  let partialNodes' = replaceVarsInTemplate env'' partialNodes
+
+  let env''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodes'))) env''
+  let layoutTextForPost1 = replaceVarsInText env''' (TS.renderTags layoutTags)
+
+  TIO.writeFile (outPrefix ++ fp ++ ".html") layoutTextForPost1
+
 main :: IO ()
 main = do
   -- Layout
@@ -36,7 +57,7 @@ main = do
   let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
 
   -- Index
-  (indexNodes, indexEnv) <- loadPage "site/index.html"
+  Page indexNodes indexEnv _ <- loadPage' "index.html"
   let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
   let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
   TIO.writeFile "out/index.html" indexNodesReplaced
@@ -46,70 +67,12 @@ main = do
   includeAsset "stylesheets/default.css"
 
   -- Load posts
-  (nodes1, env1) <- loadPage "site/posts/2010-01-30-behind-pythons-unittest-main.markdown"
+  pages <- mapM loadPage'
+                  [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
+                  , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+                  ]
 
-  let env1' = H.union globalEnv env1
-
-  let nodes1Replaced = replaceVarsInTemplate env1' nodes1
-
-  -- Try to add the first blog post into the partial
-  (partialNodes, partialEnv) <- loadPage "site/partials/post.html"
-
-  -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
-  let env1'' = H.union (H.insert "body" (EText (renderNodes nodes1Replaced)) env1') partialEnv
-
-  print ("!========== 1" :: String)
-  print env1''
-  print ("!========== 2" :: String)
-  print partialNodes
-
-  let partialNodesReplaced = replaceVarsInTemplate env1'' partialNodes
-  print ("!========== 3" :: String)
-  print partialNodesReplaced
-
-  let env1''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodesReplaced))) env1''
-  let layoutTextForPost1 = replaceVarsInText env1''' (TS.renderTags layoutTags)
-
-  TIO.writeFile "out/posts/2010-01-30-behind-pythons-unittest-main.html" layoutTextForPost1
-
--- Environment variables, for template variables.
--- We need to do this smartly, like a real PL. Example, say we want to make a
--- page that list all our blog posts. Well, each blog post has variables, all of
--- the same name (e.g. postTitle). So this is variable replacement/application
--- problem aka closures (kind of).
---
---
--- - Layout: the basic layout
---   - Variables used: title
---   - Variables declared: color-of-the-week
---   - Partial: list of blog posts
---       - Variable declared: title
---       - Stylesheet needed: blog-post-list.css
---       - Partial: blog post snippet
---         - Variables used: postTitle, date
---         - Blog post: How I win
---           - Variables declared: title, postTitle, date
---           - Variables used: color-of-the-week
---           - JavaScript needed: mathjax (optional to implement)
---           - Stylesheet needed: dark themed (optional to implement)
---       - Partial: blog post snippet
---         - Variables used: postTitle, date
---         - Blog post: Why I'm awesome
---           - Variables declared: postTitle
-
--- We should use that hack that allows ppl to extend this with their own types?
--- Example: we want a "tags" type for a list of blog post tags
--- https://two-wrongs.com/dynamic-dispatch-in-haskell-how-to-make-code-extendable
-data EnvData =
-  EText T.Text
-  | EHtml Tags
-  deriving (Eq, Show)
-
-type Env = H.HashMap T.Text EnvData
-
-envDataToDisplay :: EnvData -> T.Text
-envDataToDisplay (EText t) = t
-envDataToDisplay (EHtml tags) = TS.renderTags tags
+  forM_ pages (doPage globalEnv)
 
 parseMaybeText :: T.Text -> Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
@@ -124,19 +87,35 @@ maybeInsertIntoEnv env _ _ = env
 aesonToEnv :: Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
-loadAndApplyPage :: FilePath -> IO (T.Text, Env)
-loadAndApplyPage fp = do
-  (nodes, env) <- loadPage fp
-  print ("*********** 1 *******" :: String)
-  print nodes
-  print ("*********** 2 *******" :: String)
-  print env
-  let nodes' = replaceVarsInTemplate env nodes
-  print ("*********** 3 *******" :: String)
-  print nodes'
-  return (renderNodes nodes', env)
+data Page = Page
+  { getPageNodes    :: [PNode]
+  , getPageEnv      :: Env
+  , getPageFilePath :: String
+  -- ^ The original filename, without the extension and without site prefix path
+  } deriving (Eq, Show)
 
--- | Load page, extracting the tags and preamble variables.
+-- | Load page, extracting the tags and preamble variables. Renders Markdown
+-- files into HTML.
+loadPage' :: FilePath -> IO Page
+loadPage' fp = do
+  -- foo/bar/file.markdown -> foo/bar/file
+  content <- TIO.readFile (sitePrefix ++ fp)
+  let fp' = FP.dropExtension fp
+  let extension = FP.takeExtension fp
+  let env = aesonToEnv $ loadVariables (TS.parseTags content)
+  let content' =
+        if extension `elem` [".markdown", ".md"]
+        then CM.commonmarkToHtml [] content
+        else content
+  case runParser content' of
+    Left _ -> return $ Page [] env fp'
+    Right nodes -> return $ Page nodes env fp'
+
+-- cleanFilePath :: FilePath -> FilePath
+-- cleanFilePath fp =
+
+-- | Load page, extracting the tags and preamble variables. Renders Markdown
+-- files into HTML.
 loadPage :: FilePath -> IO ([PNode], Env)
 loadPage fp = do
   content <- TIO.readFile fp
@@ -184,7 +163,10 @@ findPreambleComment (_ : rest) =
 
 -- | Copy specified file from site to out.
 includeAsset :: FilePath -> IO ()
-includeAsset f = D.copyFile (sitePrefix ++ f) (outPrefix ++ f)
+includeAsset fp = do
+  -- True flag is to create parents too
+  D.createDirectoryIfMissing True (outPrefix ++ FP.takeDirectory fp)
+  D.copyFile (sitePrefix ++ fp) (outPrefix ++ fp)
 
 cssTag :: T.Text -> Tags
 cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
