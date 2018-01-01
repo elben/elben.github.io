@@ -33,12 +33,13 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
 doPage :: Env -> Page -> IO ()
 doPage env (Page nodes penv fp) = do
-  layoutText <- TIO.readFile "site/layouts/default.html"
-  let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
+  Page layoutNodes layoutEnv _ <- loadPage "layouts/default.html"
+  -- layoutText <- TIO.readFile "site/layouts/default.html"
+  -- let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
 
   let env' = H.union env penv
   let nodes' = replaceVarsInTemplate env' nodes
-  Page partialNodes partialEnv _ <- loadPage' "partials/post.html"
+  Page partialNodes partialEnv _ <- loadPage "partials/post.html"
 
   -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
   let env'' = H.union (H.insert "body" (EText (renderNodes nodes')) env') partialEnv
@@ -46,9 +47,11 @@ doPage env (Page nodes penv fp) = do
   let partialNodes' = replaceVarsInTemplate env'' partialNodes
 
   let env''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodes'))) env''
-  let layoutTextForPost1 = replaceVarsInText env''' (TS.renderTags layoutTags)
+  let layoutNodes' = replaceVarsInTemplate env''' layoutNodes
 
-  TIO.writeFile (outPrefix ++ fp ++ ".html") layoutTextForPost1
+  -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
+  let fp' = FP.replaceFileName fp (drop 11 (FP.takeFileName fp)) ++ "/"
+  renderPage $ PageTarget layoutNodes' fp'
 
 main :: IO ()
 main = do
@@ -56,23 +59,25 @@ main = do
   layoutText <- TIO.readFile "site/layouts/default.html"
   let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
 
+  -- Load posts
+  posts <- mapM loadPage
+                  [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
+                  , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+                  ]
+
   -- Index
-  Page indexNodes indexEnv _ <- loadPage' "index.html"
+  Page indexNodes indexEnv _ <- loadPage "index.html"
   let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
   let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
+
   TIO.writeFile "out/index.html" indexNodesReplaced
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
   includeAsset "stylesheets/default.css"
 
-  -- Load posts
-  pages <- mapM loadPage'
-                  [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
-                  , "posts/2010-04-16-singleton-pattern-in-python.markdown"
-                  ]
-
-  forM_ pages (doPage globalEnv)
+  -- Render posts
+  forM_ posts (doPage globalEnv)
 
 parseMaybeText :: T.Text -> Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
@@ -87,17 +92,33 @@ maybeInsertIntoEnv env _ _ = env
 aesonToEnv :: Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
+-- Describes a loaded page, with the page's template nodes, loaded environment
+-- from the preamble, and where the page was loaded from.
 data Page = Page
-  { getPageNodes    :: [PNode]
-  , getPageEnv      :: Env
-  , getPageFilePath :: String
-  -- ^ The original filename, without the extension and without site prefix path
+  { getPageNodes     :: [PNode]
+  , getPageEnv       :: Env
+  , getPageFilePath  :: String
+  -- ^ The original filename, without extension and site prefix
   } deriving (Eq, Show)
+
+-- Describes a target a page is to be rendered to. If the FilePath is a
+-- directory, the page renderer will automatically target index.html inside that
+-- directory.
+data PageTarget = PageTarget [PNode] FilePath
+
+renderPage :: PageTarget -> IO ()
+renderPage (PageTarget nodes fpOut) = do
+  let noFileName = FP.takeBaseName fpOut == ""
+  let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
+  D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
+  TIO.writeFile fpOut' (renderNodes nodes)
+  return ()
 
 -- | Load page, extracting the tags and preamble variables. Renders Markdown
 -- files into HTML.
-loadPage' :: FilePath -> IO Page
-loadPage' fp = do
+loadPage :: FilePath
+         -> IO Page
+loadPage fp = do
   -- foo/bar/file.markdown -> foo/bar/file
   content <- TIO.readFile (sitePrefix ++ fp)
   let fp' = FP.dropExtension fp
@@ -107,26 +128,10 @@ loadPage' fp = do
         if extension `elem` [".markdown", ".md"]
         then CM.commonmarkToHtml [] content
         else content
-  case runParser content' of
-    Left _ -> return $ Page [] env fp'
-    Right nodes -> return $ Page nodes env fp'
-
--- cleanFilePath :: FilePath -> FilePath
--- cleanFilePath fp =
-
--- | Load page, extracting the tags and preamble variables. Renders Markdown
--- files into HTML.
-loadPage :: FilePath -> IO ([PNode], Env)
-loadPage fp = do
-  content <- TIO.readFile fp
-  let env = aesonToEnv $ loadVariables (TS.parseTags content)
-  let content' =
-        if ".markdown" `DL.isSuffixOf` fp
-        then CM.commonmarkToHtml [] content
-        else content
-  case runParser content' of
-    Left _ -> return ([], env)
-    Right nodes -> return (nodes, env)
+  let nodes = case runParser content' of
+                Left _ -> []
+                Right nodes -> nodes
+  return $ Page nodes env fp'
 
 replaceVarsInTemplate :: Env -> [PNode] -> [PNode]
 replaceVarsInTemplate _ [] = []
