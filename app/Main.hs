@@ -104,6 +104,11 @@ renderBlogPost structure fp = do
   let page' = applyPage globalEnv (NE.cons page structure)
   renderPage page'
 
+loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
+loadAndApplyPage structure fp = do
+  page <- loadPage fp
+  renderPage (applyPage globalEnv (NE.cons page structure))
+
 main :: IO ()
 main = do
   pageLayout <- loadPage "layouts/default.html"
@@ -117,11 +122,7 @@ main = do
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  -- TODO this is a common 1-2-3 step here. Load page, apply to a
-  -- previously-defined structure as the alst thing, and then render the page
-  pageIndex <- loadPage "index.html"
-  let pageIndex' = applyPage globalEnv (pageIndex :| [pageLayout])
-  renderPage pageIndex'
+  loadAndApplyPage (pageLayout :| []) "index.html"
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
