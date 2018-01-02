@@ -37,7 +37,7 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 -- The NonEmpty is expected to be ordered by inner-most content first (such that
 -- the final, HTML structure layout is last in the list).
 --
--- The returned Page contains the PNodes of the fully rendered page, the
+-- The returned Page contains the Nodes of the fully rendered page, the
 -- fully-applied environment, and the URL of the last (inner-most) Page.
 --
 -- The variable application works by applying the outer environments down into
@@ -84,13 +84,13 @@ applyPage' :: Env -> NonEmpty Page -> Page
 applyPage' env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
       env'' = H.insert "this.url" (EText (T.pack fp)) env'
-      nodes' = replaceVarsInTemplate env'' nodes
+      nodes' = replaceVarsInNodes env'' nodes
   in Page nodes' env'' fp
 applyPage' env (Page nodes penv fp :| (headp : rest)) =
   let Page nodes' env' fpInner = applyPage' (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
       env''' = H.insert "this.url" (EText (T.pack fp)) env''
-      nodes'' = replaceVarsInTemplate env''' nodes
+      nodes'' = replaceVarsInNodes env''' nodes
    -- Get the inner-most Page's file path, and pass that upwards to the returned
    -- Page.
    in Page nodes'' env''' fpInner
@@ -183,13 +183,33 @@ loadPageWithFileModifier fpf fp = do
                 Right n -> n
   return $ Page nodes env ("/" ++ fpf fp)
 
-replaceVarsInTemplate :: Env -> [PNode] -> [PNode]
-replaceVarsInTemplate _ [] = []
-replaceVarsInTemplate env (PVar var : rest) =
+replaceVarsInNodes :: Env -> [PNode] -> [PNode]
+replaceVarsInNodes _ [] = []
+replaceVarsInNodes env (PVar var : rest) =
   case H.lookup var env of
-    Nothing -> PVar var : replaceVarsInTemplate env rest
-    Just envData -> PText (envDataToDisplay envData) : replaceVarsInTemplate env rest
-replaceVarsInTemplate env (PIf var : rest) =
+    Nothing -> PVar var : replaceVarsInNodes env rest
+    Just envData -> PText (envDataToDisplay envData) : replaceVarsInNodes env rest
+replaceVarsInNodes env (PIf var nodes : rest) =
+  case H.lookup var env of
+    -- Everything inside the if-statement is thrown away
+    Nothing -> replaceVarsInNodes env rest
+    -- Render nodes inside the if-statement
+    Just _ -> replaceVarsInNodes env nodes ++ replaceVarsInNodes env rest
+replaceVarsInNodes env (PFor var nodes : rest) =
+  case H.lookup var env of
+    -- Everything inside the for-statement is thrown away
+    Nothing -> replaceVarsInNodes env rest
+    -- Render nodes inside the for-statement
+    Just _ -> replaceVarsInNodes env nodes ++ replaceVarsInNodes env rest
+replaceVarsInNodes env (n : rest) = n : replaceVarsInNodes env rest
+
+replaceVarsInTemplate :: Env -> [Token] -> [Token]
+replaceVarsInTemplate _ [] = []
+replaceVarsInTemplate env (TokVar var : rest) =
+  case H.lookup var env of
+    Nothing -> TokVar var : replaceVarsInTemplate env rest
+    Just envData -> TokText (envDataToDisplay envData) : replaceVarsInTemplate env rest
+replaceVarsInTemplate env (TokIf var : rest) =
   let (beforeEnd, afterEnd) = findUntilEndIf rest
   in case H.lookup var env of
     -- Everything inside the if-statement is thrown away
@@ -198,29 +218,29 @@ replaceVarsInTemplate env (PIf var : rest) =
     Just _ -> replaceVarsInTemplate env beforeEnd ++ replaceVarsInTemplate env afterEnd
 replaceVarsInTemplate env (n : rest) = n : replaceVarsInTemplate env rest
 
--- Split the given PNodes at the next ${endif} statement, returning a pair where
+-- Split the given Tokens at the next ${endif} statement, returning a pair where
 -- the LHS are nodes before the ${endif}, and the RHS are nodes after the
 -- ${endif}. The ${endif} itself is not returned.
-findUntilEndIf :: [PNode]
-               -> ([PNode], [PNode]) -- (nodes inside if, things after endif)
+findUntilEndIf :: [Token]
+               -> ([Token], [Token]) -- (nodes inside if, things after endif)
 findUntilEndIf nodes =
   let (lhs, rhs) = findUntilEndIf' [] nodes
   in (reverse lhs, rhs)
 
-findUntilEndIf' :: [PNode] -- ^ Accumulated nodes
-                -> [PNode] -- ^ Rest of nodes
-                -> ([PNode], [PNode])
+findUntilEndIf' :: [Token] -- ^ Accumulated nodes
+                -> [Token] -- ^ Rest of nodes
+                -> ([Token], [Token])
                 -- ^ LHS: Nodes before the endif, reversed.
                 -- RHS: Nodes after the endif, not reversed.
 findUntilEndIf' acc [] = (acc, [])
-findUntilEndIf' acc (PEndIf : rest) = (acc, rest)
+findUntilEndIf' acc (TokEnd : rest) = (acc, rest)
 findUntilEndIf' acc (n : rest) = findUntilEndIf' (n : acc) rest
 
 replaceVarsInText :: Env -> T.Text -> T.Text
 replaceVarsInText env text =
   case runParser text of
     Left _ -> traceShow ("I have gone left!!!" :: String) text
-    Right nodes -> renderNodes $ replaceVarsInTemplate env nodes
+    Right nodes -> renderNodes $ replaceVarsInNodes env nodes
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> Object

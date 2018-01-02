@@ -12,14 +12,28 @@ import qualified Data.List as L
 -- $setup
 -- >>> import Data.Either (isLeft)
 
--- | Pencil's template for content.
+-- | Pencil's AST.
 data PNode =
     PText T.Text
   | PVar T.Text
-  | PFor T.Text -- for variable
-  | PEndFor
-  | PIf T.Text -- if variable
-  | PEndIf
+  | PFor T.Text [PNode]
+  | PIf T.Text [PNode]
+  | PMetaFor T.Text
+  -- ^ Signals a For expression in the stack waiting for expressions
+  | PMetaIf T.Text
+  -- ^ Signals an If expression in the stack waiting for expressions
+  | PMetaEnd
+  -- A terminating node that represents the end of the program, to help with AST
+  -- converstion
+  deriving (Show, Eq)
+
+-- | Pencil's tokens for content.
+data Token =
+    TokText T.Text
+  | TokVar T.Text
+  | TokFor T.Text -- for variable
+  | TokIf T.Text -- if variable
+  | TokEnd
   deriving (Show, Eq)
 
 -- | Data structure that mirrors the tagsoup @Tag@ data. We need more data types for our variables.
@@ -31,6 +45,85 @@ data PTag =
   | PTagVariable T.Text
   | PTagWarning T.Text   -- Meta: parse warning
   | PTagPosition Int Int -- Meta: row, col
+
+-- | Convert Tokens to PNode AST.o
+--
+-- >>> transform [TokText "hello", TokText "world"]
+-- ([PText "hello",PText "world"],[])
+--
+-- >>> transform [TokIf "title", TokEnd]
+-- ([PIf "title" []],[])
+--
+-- >>> transform [TokIf "title", TokText "hello", TokText "world", TokEnd]
+-- ([PIf "title" [PText "hello",PText "world"]],[])
+--
+-- ${if(title)}
+--   ${for(posts)}
+--     world
+--   ${end}
+-- ${end}
+--
+-- >>> transform [TokIf "title", TokFor "posts", TokText "world", TokEnd, TokEnd]
+-- ([PIf "title" [PFor "posts" [PText "world"]]],[])
+--
+-- begin
+-- now
+-- ${if(title)}
+--   hello
+--   world
+--   ${if(body)}
+--     ${body}
+--     ${someothervar}
+--     wahh
+--   ${end}
+--   final
+--   thing
+-- ${end}
+-- the
+-- lastline
+--
+-- >>> transform [TokText "begin", TokText "now", TokIf "title", TokText "hello", TokText "world", TokIf "body", TokVar "body", TokVar "someothervar", TokText "wahh", TokEnd, TokText "final", TokText "thing", TokEnd, TokText "the", TokText "lastline"]
+-- ([PText "begin",PText "now",PIf "title" [PText "hello",PText "world",PIf "body" [PVar "body",PVar "someothervar",PText "wahh"],PText "final",PText "thing"],PText "the",PText "lastline"],[])
+--
+transform :: [Token] -> ([PNode], [Token])
+transform toks =
+  let (stack, leftovers) = ast [] toks
+  in (reverse stack, leftovers)
+
+ast :: [PNode] -- stack
+    -> [Token] -- remaining
+    -> ([PNode], [Token]) -- (AST, remaining)
+ast stack [] = (stack, [])
+ast stack (TokText t : toks) =
+  let (nodes', tokens') = ast (PText t : stack) toks
+  in (nodes', tokens')
+ast stack (TokVar t : toks) =
+  let (nodes', tokens') = ast (PVar t : stack) toks
+  in (nodes', tokens')
+ast stack (TokIf t : toks) =
+  let (nodes', tokens') = ast (PMetaIf t : stack) toks
+  in (nodes', tokens')
+ast stack (TokFor t : toks) =
+  let (nodes', tokens') = ast (PMetaFor t : stack) toks
+  in (nodes', tokens')
+ast stack (TokEnd : toks) =
+  let (node, popped, remaining) = popNodes stack
+      n = case node of
+            PMetaIf t -> PIf t popped
+            PMetaFor t -> PFor t popped
+            _ -> PMetaEnd
+  in ast (n : remaining) toks
+
+-- | Pop nodes until we hit a If/For statement.
+-- Return pair (constructor found, nodes popped, remaining stack)
+popNodes :: [PNode] -> (PNode, [PNode], [PNode])
+popNodes = popNodes' []
+
+popNodes' :: [PNode] -> [PNode] -> (PNode, [PNode], [PNode])
+popNodes' popped [] = (PMetaEnd, popped, [])
+popNodes' popped (PMetaIf t : rest) = (PMetaIf t, popped, rest)
+popNodes' popped (PMetaFor t : rest) = (PMetaFor t, popped, rest)
+popNodes' popped (t : rest) = popNodes' (t : popped) rest
 
 parsePTags :: T.Text -> [PTag]
 parsePTags t = fromTagsoup (TS.parseTags t)
@@ -59,56 +152,74 @@ toTagsoup' (PTagWarning _) = TS.TagText ""
 toTagsoup' (PTagPosition _ _) = TS.TagText ""
 
 renderNodes :: [PNode] -> T.Text
-renderNodes = L.foldl' (\str n -> (T.append str (nodeToDisplay n))) ""
+renderNodes = L.foldl' (\str n -> (T.append str (renderNode n))) ""
 
-nodeToDisplay :: PNode -> T.Text
-nodeToDisplay (PText t) = t
-nodeToDisplay (PVar t) = T.append (T.append "${" t) "}"
-nodeToDisplay (PFor t) = T.append (T.append "${for(" t) ")}"
-nodeToDisplay (PEndFor) = "${endfor}"
-nodeToDisplay (PIf t) = T.append (T.append "${if(" t) ")}"
-nodeToDisplay (PEndIf) = "${endif}"
+renderNode :: PNode -> T.Text
+renderNode (PText t) = t
+renderNode (PVar t) = T.append (T.append "${" t) "}"
+renderNode (PFor t nodes) =
+  let for = T.append (T.append "${for(" t) ")}"
+      body = renderNodes nodes
+      end = "${end}"
+  in T.append (T.append for body) end
+renderNode (PIf t nodes) =
+  let for = T.append (T.append "${if(" t) ")}"
+      body = renderNodes nodes
+      end = "${end}"
+  in T.append (T.append for body) end
+
+renderTokens :: [Token] -> T.Text
+renderTokens = L.foldl' (\str n -> (T.append str (renderToken n))) ""
+
+renderToken :: Token -> T.Text
+renderToken (TokText t) = t
+renderToken (TokVar t) = T.append (T.append "${" t) "}"
+renderToken (TokFor t) = T.append (T.append "${for(" t) ")}"
+renderToken (TokEnd) = "${end}"
+renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
 
 runParser :: T.Text -> Either ParseError [PNode]
-runParser text = parse parseEverything (T.unpack "") (T.unpack text)
+runParser text = do
+  toks <- parse parseEverything (T.unpack "") (T.unpack text)
+  return $ fst $ transform toks
 
 -- | Parse everything.
 --
 -- >>> parse parseEverything "" "Hello ${man} and ${woman}."
--- Right [PText "Hello ",PVar "man",PText " and ",PVar "woman",PText "."]
+-- Right [TokText "Hello ",TokVar "man",TokText " and ",TokVar "woman",TokText "."]
 --
 -- >>> parse parseEverything "" "Hello ${man} and ${if(woman)} text here ${endif}."
--- Right [PText "Hello ",PVar "man",PText " and ",PIf "woman",PText " text here ",PEndIf,PText "."]
+-- Right [TokText "Hello ",TokVar "man",TokText " and ",TokIf "woman",TokText " text here ",TokEnd,TokText "."]
 --
--- >>> parse parseEverything "" "Hi ${for(people)} ${name}, ${endfor} everyone!"
--- Right [PText "Hi ",PFor "people",PText " ",PVar "name",PText ", ",PEndFor,PText " everyone!"]
+-- >>> parse parseEverything "" "Hi ${for(people)} ${name}, ${end} everyone!"
+-- Right [TokText "Hi ",TokFor "people",TokText " ",TokVar "name",TokText ", ",TokEnd,TokText " everyone!"]
 --
 -- >>> parse parseEverything "" "<b>this $$escape works</b> ${realvar}"
--- Right [PText "<b>this ",PText "$",PText "escape works</b> ",PVar "realvar"]
+-- Right [TokText "<b>this ",TokText "$",TokText "escape works</b> ",TokVar "realvar"]
 --
 -- | This is a degenerate case that we will just allow (for now) to go sideways:
 -- >>> parse parseEverything "" "<b>this ${var never closes</b> ${realvar}"
--- Right [PText "<b>this ",PVar "var never closes</b> ${realvar"]
+-- Right [TokText "<b>this ",TokVar "var never closes</b> ${realvar"]
 --
-parseEverything :: Parser [PNode]
+parseEverything :: Parser [Token]
 parseEverything =
   -- Note that order matters here. We want "most general" to be last (variable
   -- names).
   many1 (parseContent
      <|> try parseEscape
-     <|> try parseEndFor
+     <|> try parseEnd
      <|> try parseFor
-     <|> try parseEndIf
+     <|> try parseEnd
      <|> try parseIf
      <|> parseVar)
 
 -- | Parse variables.
 --
 -- >>> parse parseVar "" "${ffwe} yep"
--- Right (PVar "ffwe")
+-- Right (TokVar "ffwe")
 --
 -- >>> parse parseVar "" "${spaces technically allowed}"
--- Right (PVar "spaces technically allowed")
+-- Right (TokVar "spaces technically allowed")
 --
 -- >>> isLeft $ parse parseVar "" "Hello ${name}"
 -- True
@@ -116,54 +227,54 @@ parseEverything =
 -- >>> isLeft $ parse parseVar "" "${}"
 -- True
 --
-parseVar :: Parser PNode
+parseVar :: Parser Token
 parseVar = try $ do
   _ <- char '$'
   _ <- char '{'
   varName <- many1 (noneOf "}")
   _ <- char '}'
-  return $ PVar (T.pack varName)
+  return $ TokVar (T.pack varName)
 
 -- | Parse boring, boring text.
 --
 -- >>> parse parseContent "" "hello ${ffwe} you!"
--- Right (PText "hello ")
+-- Right (TokText "hello ")
 --
 -- >>> isLeft $ parse parseContent "" "${name}!!"
 -- True
 --
 -- https://stackoverflow.com/questions/20730488/parsec-read-text-ended-by-a-string
 -- https://github.com/jaspervdj/hakyll/blob/32e34f435c7911f36acdf4a62eec1f56faf0b269/src/Hakyll/Web/Template/Internal/Element.hs#L137
-parseContent :: Parser PNode
+parseContent :: Parser Token
 parseContent = do
   -- stuff <- manyTill anyChar (try (string "${"))
   -- stuff <- try (manyTill anyChar parseVar) -- <|> (many1 anyChar)
   stuff <- many1 (noneOf "$")
   -- stuff <- manyTill anyChar (eof <|> lookAhead (parseVar >> return ()))
-  return $ PText (T.pack stuff)
+  return $ TokText (T.pack stuff)
 
 -- | Parse "$$" to escape as "$".
 --
 -- >>> parse parseEscape "" "$$"
--- Right (PText "$")
+-- Right (TokText "$")
 --
 -- >>> isLeft $ parse parseEscape "" "$"
 -- True
 --
 -- >>> parse parseEscape "" "$$$"
--- Right (PText "$")
-parseEscape :: Parser PNode
+-- Right (TokText "$")
+parseEscape :: Parser Token
 parseEscape = do
   _ <- try (string "$$")
-  return $ PText "$"
+  return $ TokText "$"
 
 -- | Parse for loop declaration.
 --
 -- >>> parse parseFor "" "${for(posts)}"
--- Right (PFor "posts")
+-- Right (TokFor "posts")
 --
 -- >>> parse parseFor "" "${for(variable name with spaces technically allowed)}"
--- Right (PFor "variable name with spaces technically allowed")
+-- Right (TokFor "variable name with spaces technically allowed")
 --
 -- >>> isLeft $ parse parseFor "" "${for()}"
 -- True
@@ -171,13 +282,13 @@ parseEscape = do
 -- >>> isLeft $ parse parseFor "" "${for foo}"
 -- True
 --
-parseFor :: Parser PNode
-parseFor = parseFunction "for" PFor
+parseFor :: Parser Token
+parseFor = parseFunction "for" TokFor
 
-parseIf :: Parser PNode
-parseIf = parseFunction "if" PIf
+parseIf :: Parser Token
+parseIf = parseFunction "if" TokIf
 
-parseFunction :: String -> (T.Text -> PNode) -> Parser PNode
+parseFunction :: String -> (T.Text -> Token) -> Parser Token
 parseFunction keyword ctor = do
   _ <- char '$'
   _ <- char '{'
@@ -187,33 +298,24 @@ parseFunction keyword ctor = do
   _ <- char '}'
   return $ ctor (T.pack varName)
 
--- | Parse endfor keyword.
+-- | Parse end keyword.
 --
--- >>> parse parseEndFor "" "${endfor}"
--- Right PEndFor
+-- >>> parse parseEnd "" "${end}"
+-- Right TokEnd
 --
--- >>> isLeft $ parse parseEndFor "" "${endforrr}"
+-- >>> isLeft $ parse parseEnd "" "${enddd}"
 -- True
 --
-parseEndFor :: Parser PNode
-parseEndFor = parseEnd "endfor" PEndFor
-
-parseEndIf :: Parser PNode
-parseEndIf = parseEnd "endif" PEndIf
-
-parseEnd :: String -> PNode -> Parser PNode
-parseEnd keyword ctor = do
-  _ <- char '$'
-  _ <- char '{'
-  _ <- try $ string keyword
-  _ <- char '}'
-  return ctor
+parseEnd :: Parser Token
+parseEnd = do
+  _ <- try $ string "${end}"
+  return TokEnd
 
 -- | A hack to capture strings that "almost" are templates. I couldn't figure
 -- out another way.
-parseFakeVar :: Parser PNode
+parseFakeVar :: Parser Token
 parseFakeVar = do
   _ <- char '$'
   n <- noneOf "{"
   rest <- many1 (noneOf "$")
-  return $ PText (T.pack ("$" ++ [n] ++ rest))
+  return $ TokText (T.pack ("$" ++ [n] ++ rest))

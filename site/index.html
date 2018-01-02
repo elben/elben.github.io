@@ -19,12 +19,12 @@ ${if(title)}
 I have a $$title variable!! The value is: ${title}
 ${if(fakevar)}
 I should never see this inside if!
-${endif}
-${endif}
+${end}
+${end}
 
 ${if(fakevar)}
 I should never see this!
-${endif}
+${end}
 
 <h3>Testing for loop</h3>
 
@@ -36,7 +36,7 @@ ${for(posts)}
     <a href="${postUrl}">${postTitle}</a>
     ${date}
     ${body}</li>
-${endfor}
+${end}
 </ul>
 
 <h3>Blog Archive</h3>
