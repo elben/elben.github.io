@@ -31,6 +31,79 @@ outPrefix = "out/"
 globalEnv :: Env
 globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
+-- TODO we need a data structure (use PageTarget?) where you can say: "please
+-- load this blog post, and render it to this partial, and render it to this
+-- template". It's a tree/linked-list thing, starting for the partial as the
+-- top-most, down to the content
+data Layout = LayoutNode Page Layout
+            | LayoutLeaf Page
+
+-- | Apply the given layout with the layout's enviornment merged with the given
+-- previous environment.
+--
+-- If the parent layout is a node and has other (children) layouts inside of it,
+-- it will first apply the childern layouts, applying the parent layout's
+-- environment for the childern's environment. Once all the environments are
+-- merged downwards into the stack, the lowest layout then renders its template
+-- variables and returns the rendered page. The parent layout then takes that
+-- rendered page and injects it into the "body" variable in its new environment,
+-- which will also include variables declared in the childern layouts.
+--
+-- As an example, there is the common scenario where we have a default layout
+-- (e.g. "default.html"), with the full HTML structure, but no body. It has only
+-- a "${body}" template variable inside. This is the parent layout. There is a
+-- child layout, the partial called "blog-post.html", which has HTML for
+-- rendering a blog post, like usage of ${postTitle} and ${postDate}. Inside
+-- this, there is another child layout, the blog post content itself, which
+-- defines the variables $postTitle and $postDate, and may renderer parent
+-- variables such as ${websiteTitle}.
+--
+--   +--------------+
+--   |              | <--- default.html
+--   |              |      Defines ${websiteTitle}
+--   |  +---------+ |
+--   |  |         |<+----- blog-post.html
+--   |  | +-----+ | |      Renders ${postTitle}, ${postDate}
+--   |  | |     | | |
+--   |  | |     | | |
+--   |  | |     |<+-+----- blog-article-content.markdown
+--   |  | |     | | |      Renders ${websiteTitle}
+--   |  | +-----+ | |      Defines ${postTitle}, ${postDate}
+--   |  +---------+ |
+--   +--------------+
+--
+-- In this case, we want to accumulate the environment variables, starting from
+-- default.html, to blog-post.html, and the markdown file's variables. Combine
+-- all of that, then render the blog post content. This content is then injected
+-- into the parent's environment as a $body variable, for use in blog-post.html.
+-- Now *that* content is injected into the parent environment's $body variable,
+-- which is then used to render the full-blown HTML page.
+--
+-- TODO can convert Layout data structrue to just a [Page]
+applyLayout :: Env -> Layout -> Page
+applyLayout env (LayoutLeaf (Page nodes penv fp)) =
+  let env' = H.union penv env -- LHS overrides RHS
+      nodes' = replaceVarsInTemplate env' nodes
+  in Page nodes' env' fp
+applyLayout env (LayoutNode (Page nodes penv fp) layout) =
+  let Page nodes' env' _ = applyLayout (H.union penv env) layout
+      env'' = H.insert "body" (EText (renderNodes nodes')) env'
+      nodes'' = replaceVarsInTemplate env'' nodes
+   in Page nodes'' env'' fp
+
+renderBlogPost :: FilePath -> IO ()
+renderBlogPost fp = do
+  pageLayout <- loadPage "layouts/default.html"
+  pagePartial <- loadPage "partials/post.html"
+  page <- loadPage fp
+
+  let layout = LayoutNode pageLayout (LayoutNode pagePartial (LayoutLeaf page))
+  let Page nodes _ _ = applyLayout globalEnv layout
+
+  -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
+  let fp' = FP.replaceFileName (getPageFilePath page) (drop 11 (FP.takeFileName (getPageFilePath page))) ++ "/"
+  renderPage $ PageTarget nodes fp'
+
 doPage :: Env -> Page -> IO ()
 doPage env (Page nodes penv fp) = do
   Page layoutNodes layoutEnv _ <- loadPage "layouts/default.html"
@@ -60,11 +133,15 @@ main = do
   let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
 
   -- Load posts
-  posts <- mapM loadPage
-                  [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
-                  , "posts/2010-04-16-singleton-pattern-in-python.markdown"
-                  ]
-
+  -- posts <- mapM loadPage
+  --                 [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
+  --                 , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+  --                 ]
+  forM_
+    [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
+    , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+    ]
+    renderBlogPost
   -- Index
   Page indexNodes indexEnv _ <- loadPage "index.html"
   let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
@@ -77,7 +154,7 @@ main = do
   includeAsset "stylesheets/default.css"
 
   -- Render posts
-  forM_ posts (doPage globalEnv)
+  -- forM_ posts (doPage globalEnv)
 
 parseMaybeText :: T.Text -> Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
