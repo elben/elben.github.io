@@ -17,6 +17,7 @@ import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
+import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Debug.Trace
 
 type PTags = [PTag]
@@ -36,6 +37,10 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 -- top-most, down to the content
 data Layout = LayoutNode Page Layout
             | LayoutLeaf Page
+
+data Chain = Page :. Chain
+           | Nil
+
 
 -- | Apply the given layout with the layout's enviornment merged with the given
 -- previous environment.
@@ -78,14 +83,13 @@ data Layout = LayoutNode Page Layout
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
--- TODO can convert Layout data structrue to just a [Page]
-applyLayout :: Env -> Layout -> Page
-applyLayout env (LayoutLeaf (Page nodes penv fp)) =
+applyLayout :: Env -> NonEmpty Page -> Page
+applyLayout env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
       nodes' = replaceVarsInTemplate env' nodes
   in Page nodes' env' fp
-applyLayout env (LayoutNode (Page nodes penv fp) layout) =
-  let Page nodes' env' _ = applyLayout (H.union penv env) layout
+applyLayout env (Page nodes penv fp :| (headp : rest)) =
+  let Page nodes' env' _ = applyLayout (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
       nodes'' = replaceVarsInTemplate env'' nodes
    in Page nodes'' env'' fp
@@ -96,7 +100,7 @@ renderBlogPost fp = do
   pagePartial <- loadPage "partials/post.html"
   page <- loadPage fp
 
-  let layout = LayoutNode pageLayout (LayoutNode pagePartial (LayoutLeaf page))
+  let layout = pageLayout :| [pagePartial, page]
   let Page nodes _ _ = applyLayout globalEnv layout
 
   -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
@@ -115,7 +119,7 @@ main = do
   -- Index
   pageLayout <- loadPage "layouts/default.html"
   pageIndex <- loadPage "index.html"
-  let layoutIndex = LayoutNode pageLayout (LayoutLeaf pageIndex)
+  let layoutIndex = pageLayout :| [pageIndex]
   let Page nodesIndex _ _ = applyLayout globalEnv layoutIndex
   renderPage nodesIndex "index.html"
 
