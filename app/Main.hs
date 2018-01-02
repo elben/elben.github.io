@@ -11,7 +11,6 @@ import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
 import qualified CMark as CM
 import qualified Data.HashMap.Strict as H
-import qualified Data.List as DL
 import qualified Data.Maybe as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -31,9 +30,9 @@ outPrefix = "out/"
 globalEnv :: Env
 globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
--- TODO we need a data structure (use PageTarget?) where you can say: "please
+-- TODO we need a data structure where you can say: "please
 -- load this blog post, and render it to this partial, and render it to this
--- template". It's a tree/linked-list thing, starting for the partial as the
+-- template". It's a non-empty list, starting for the partial as the
 -- top-most, down to the content
 data Layout = LayoutNode Page Layout
             | LayoutLeaf Page
@@ -102,59 +101,27 @@ renderBlogPost fp = do
 
   -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
   let fp' = FP.replaceFileName (getPageFilePath page) (drop 11 (FP.takeFileName (getPageFilePath page))) ++ "/"
-  renderPage $ PageTarget nodes fp'
-
-doPage :: Env -> Page -> IO ()
-doPage env (Page nodes penv fp) = do
-  Page layoutNodes layoutEnv _ <- loadPage "layouts/default.html"
-  -- layoutText <- TIO.readFile "site/layouts/default.html"
-  -- let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
-
-  let env' = H.union env penv
-  let nodes' = replaceVarsInTemplate env' nodes
-  Page partialNodes partialEnv _ <- loadPage "partials/post.html"
-
-  -- Insert an Aeson string as the "body" variable. Prefer LHS keys for dupes.
-  let env'' = H.union (H.insert "body" (EText (renderNodes nodes')) env') partialEnv
-
-  let partialNodes' = replaceVarsInTemplate env'' partialNodes
-
-  let env''' = H.insert "body" (EHtml (TS.parseTags (renderNodes partialNodes'))) env''
-  let layoutNodes' = replaceVarsInTemplate env''' layoutNodes
-
-  -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
-  let fp' = FP.replaceFileName fp (drop 11 (FP.takeFileName fp)) ++ "/"
-  renderPage $ PageTarget layoutNodes' fp'
+  renderPage nodes fp'
 
 main :: IO ()
 main = do
-  -- Layout
-  layoutText <- TIO.readFile "site/layouts/default.html"
-  let layoutTags = injectIntoHead (cssTag "/stylesheets/default.css") (TS.parseTags layoutText)
-
   -- Load posts
-  -- posts <- mapM loadPage
-  --                 [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
-  --                 , "posts/2010-04-16-singleton-pattern-in-python.markdown"
-  --                 ]
   forM_
     [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
     , "posts/2010-04-16-singleton-pattern-in-python.markdown"
     ]
     renderBlogPost
-  -- Index
-  Page indexNodes indexEnv _ <- loadPage "index.html"
-  let indexTags = injectIntoBodyVar (TS.parseTags (renderNodes indexNodes)) layoutTags
-  let indexNodesReplaced = replaceVarsInText (H.union globalEnv indexEnv) (TS.renderTags indexTags)
 
-  TIO.writeFile "out/index.html" indexNodesReplaced
+  -- Index
+  pageLayout <- loadPage "layouts/default.html"
+  pageIndex <- loadPage "index.html"
+  let layoutIndex = LayoutNode pageLayout (LayoutLeaf pageIndex)
+  let Page nodesIndex _ _ = applyLayout globalEnv layoutIndex
+  renderPage nodesIndex "index.html"
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
   includeAsset "stylesheets/default.css"
-
-  -- Render posts
-  -- forM_ posts (doPage globalEnv)
 
 parseMaybeText :: T.Text -> Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
@@ -171,6 +138,7 @@ aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
 -- Describes a loaded page, with the page's template nodes, loaded environment
 -- from the preamble, and where the page was loaded from.
+-- TODO: do we need getPageFilePath? It is often not used.
 data Page = Page
   { getPageNodes     :: [PNode]
   , getPageEnv       :: Env
@@ -178,13 +146,8 @@ data Page = Page
   -- ^ The original filename, without extension and site prefix
   } deriving (Eq, Show)
 
--- Describes a target a page is to be rendered to. If the FilePath is a
--- directory, the page renderer will automatically target index.html inside that
--- directory.
-data PageTarget = PageTarget [PNode] FilePath
-
-renderPage :: PageTarget -> IO ()
-renderPage (PageTarget nodes fpOut) = do
+renderPage :: [PNode] -> FilePath -> IO ()
+renderPage nodes fpOut = do
   let noFileName = FP.takeBaseName fpOut == ""
   let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
   D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
@@ -207,7 +170,7 @@ loadPage fp = do
         else content
   let nodes = case runParser content' of
                 Left _ -> []
-                Right nodes -> nodes
+                Right n -> n
   return $ Page nodes env fp'
 
 replaceVarsInTemplate :: Env -> [PNode] -> [PNode]
