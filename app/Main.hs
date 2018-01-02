@@ -18,6 +18,7 @@ import qualified System.Directory as D
 import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
+import qualified Data.List.NonEmpty as NE
 import Debug.Trace
 
 type PTags = [PTag]
@@ -31,27 +32,15 @@ outPrefix = "out/"
 globalEnv :: Env
 globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 
--- TODO we need a data structure where you can say: "please
--- load this blog post, and render it to this partial, and render it to this
--- template". It's a non-empty list, starting for the partial as the
--- top-most, down to the content
-data Layout = LayoutNode Page Layout
-            | LayoutLeaf Page
-
-data Chain = Page :. Chain
-           | Nil
-
-
--- | Apply the given layout with the layout's enviornment merged with the given
--- previous environment.
+-- | Apply the environment variables on the given pages.
 --
--- If the parent layout is a node and has other (children) layouts inside of it,
--- it will first apply the childern layouts, applying the parent layout's
--- environment for the childern's environment. Once all the environments are
--- merged downwards into the stack, the lowest layout then renders its template
--- variables and returns the rendered page. The parent layout then takes that
--- rendered page and injects it into the "body" variable in its new environment,
--- which will also include variables declared in the childern layouts.
+-- The NonEmpty is expected to be ordered by inner-most content first (such that
+-- the final, HTML structure layout is last in the list).
+--
+-- The variable application works by applying the outer environments down into
+-- the inner environments, until it hits the lowest environment, in which the
+-- page is rendered. Once done, this rendered content is saved as the ${body}
+-- variable for the parent structure, which is then applied, and so on.
 --
 -- As an example, there is the common scenario where we have a default layout
 -- (e.g. "default.html"), with the full HTML structure, but no body. It has only
@@ -83,25 +72,27 @@ data Chain = Page :. Chain
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-applyLayout :: Env -> NonEmpty Page -> Page
-applyLayout env (Page nodes penv fp :| []) =
+applyStructure :: Env -> NonEmpty Page -> Page
+applyStructure env pages = applyStructure' env (NE.reverse pages)
+
+-- It's simpler to implement by assuming that the NonEmpty is ordered
+-- outer-structure first (e.g. HTML layout).
+applyStructure' :: Env -> NonEmpty Page -> Page
+applyStructure' env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
       nodes' = replaceVarsInTemplate env' nodes
   in Page nodes' env' fp
-applyLayout env (Page nodes penv fp :| (headp : rest)) =
-  let Page nodes' env' _ = applyLayout (H.union penv env) (headp :| rest)
+applyStructure' env (Page nodes penv fp :| (headp : rest)) =
+  let Page nodes' env' _ = applyStructure' (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
       nodes'' = replaceVarsInTemplate env'' nodes
    in Page nodes'' env'' fp
 
-renderBlogPost :: FilePath -> IO ()
-renderBlogPost fp = do
-  pageLayout <- loadPage "layouts/default.html"
-  pagePartial <- loadPage "partials/post.html"
+renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
+renderBlogPost structure fp = do
   page <- loadPage fp
 
-  let layout = pageLayout :| [pagePartial, page]
-  let Page nodes _ _ = applyLayout globalEnv layout
+  let Page nodes _ _ = applyStructure globalEnv (NE.cons page structure)
 
   -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
   let fp' = FP.replaceFileName (getPageFilePath page) (drop 11 (FP.takeFileName (getPageFilePath page))) ++ "/"
@@ -109,18 +100,19 @@ renderBlogPost fp = do
 
 main :: IO ()
 main = do
+  pageLayout <- loadPage "layouts/default.html"
+  pagePartial <- loadPage "partials/post.html"
+
   -- Load posts
   forM_
     [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
     , "posts/2010-04-16-singleton-pattern-in-python.markdown"
     ]
-    renderBlogPost
+    (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  pageLayout <- loadPage "layouts/default.html"
   pageIndex <- loadPage "index.html"
-  let layoutIndex = pageLayout :| [pageIndex]
-  let Page nodesIndex _ _ = applyLayout globalEnv layoutIndex
+  let Page nodesIndex _ _ = applyStructure globalEnv (pageIndex :| [pageLayout])
   renderPage nodesIndex "index.html"
 
   -- Write CSS file
