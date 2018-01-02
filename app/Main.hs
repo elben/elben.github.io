@@ -37,6 +37,9 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 -- The NonEmpty is expected to be ordered by inner-most content first (such that
 -- the final, HTML structure layout is last in the list).
 --
+-- The returned Page contains the PNodes of the fully rendered page, the
+-- fully-applied environment, and the URL of the last (inner-most) Page.
+--
 -- The variable application works by applying the outer environments down into
 -- the inner environments, until it hits the lowest environment, in which the
 -- page is rendered. Once done, this rendered content is saved as the ${body}
@@ -72,31 +75,34 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-applyStructure :: Env -> NonEmpty Page -> Page
-applyStructure env pages = applyStructure' env (NE.reverse pages)
+applyPage :: Env -> NonEmpty Page -> Page
+applyPage env pages = applyPage' env (NE.reverse pages)
 
--- It's simpler to implement by assuming that the NonEmpty is ordered
--- outer-structure first (e.g. HTML layout).
-applyStructure' :: Env -> NonEmpty Page -> Page
-applyStructure' env (Page nodes penv fp :| []) =
+-- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
+-- HTML layout).
+applyPage' :: Env -> NonEmpty Page -> Page
+applyPage' env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
-      nodes' = replaceVarsInTemplate env' nodes
-  in Page nodes' env' fp
-applyStructure' env (Page nodes penv fp :| (headp : rest)) =
-  let Page nodes' env' _ = applyStructure' (H.union penv env) (headp :| rest)
+      env'' = H.insert "this.url" (EText (T.pack fp)) env'
+      nodes' = replaceVarsInTemplate env'' nodes
+  in Page nodes' env'' fp
+applyPage' env (Page nodes penv fp :| (headp : rest)) =
+  let Page nodes' env' fpInner = applyPage' (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
-      nodes'' = replaceVarsInTemplate env'' nodes
-   in Page nodes'' env'' fp
+      env''' = H.insert "this.url" (EText (T.pack fp)) env''
+      nodes'' = replaceVarsInTemplate env''' nodes
+   -- Get the inner-most Page's file path, and pass that upwards to the returned
+   -- Page.
+   in Page nodes'' env''' fpInner
 
 renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
 renderBlogPost structure fp = do
-  page <- loadPage fp
-
-  let Page nodes _ _ = applyStructure globalEnv (NE.cons page structure)
-
-  -- "/posts/2011-01-01-the-post-title" => "/posts/the-post-title/"
-  let fp' = FP.replaceFileName (getPageFilePath page) (drop 11 (FP.takeFileName (getPageFilePath page))) ++ "/"
-  renderPage nodes fp'
+  -- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
+  page <- loadPageWithFileModifier
+            (\f -> FP.replaceFileName f (drop 11 (FP.takeBaseName f)) ++ "/")
+            fp
+  let page' = applyPage globalEnv (NE.cons page structure)
+  renderPage page'
 
 main :: IO ()
 main = do
@@ -111,9 +117,11 @@ main = do
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
+  -- TODO this is a common 1-2-3 step here. Load page, apply to a
+  -- previously-defined structure as the alst thing, and then render the page
   pageIndex <- loadPage "index.html"
-  let Page nodesIndex _ _ = applyStructure globalEnv (pageIndex :| [pageLayout])
-  renderPage nodesIndex "index.html"
+  let pageIndex' = applyPage globalEnv (pageIndex :| [pageLayout])
+  renderPage pageIndex'
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
@@ -139,25 +147,31 @@ data Page = Page
   { getPageNodes     :: [PNode]
   , getPageEnv       :: Env
   , getPageFilePath  :: String
-  -- ^ The original filename, without extension and site prefix
+  -- ^ The rendered output path of this page. Defaults to the input file path.
   } deriving (Eq, Show)
 
-renderPage :: [PNode] -> FilePath -> IO ()
-renderPage nodes fpOut = do
+renderPage :: Page -> IO ()
+renderPage (Page nodes _ fpOut) = do
   let noFileName = FP.takeBaseName fpOut == ""
   let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
   D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
   TIO.writeFile fpOut' (renderNodes nodes)
-  return ()
 
 -- | Load page, extracting the tags and preamble variables. Renders Markdown
--- files into HTML.
+-- files into HTML. Defaults the page output file path to the given input file
+-- path, but as a folder, with an HTML extension.
+--
+-- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
+-- filepath is "/foo/bar/hello.html".
 loadPage :: FilePath
          -> IO Page
-loadPage fp = do
+loadPage = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
+
+loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Page
+loadPageWithFileModifier fpf fp = do
   -- foo/bar/file.markdown -> foo/bar/file
   content <- TIO.readFile (sitePrefix ++ fp)
-  let fp' = FP.dropExtension fp
+  let fp' = "/" ++ FP.dropExtension fp ++ ".html"
   let extension = FP.takeExtension fp
   let env = aesonToEnv $ loadVariables (TS.parseTags content)
   let content' =
@@ -167,7 +181,7 @@ loadPage fp = do
   let nodes = case runParser content' of
                 Left _ -> []
                 Right n -> n
-  return $ Page nodes env fp'
+  return $ Page nodes env ("/" ++ fpf fp)
 
 replaceVarsInTemplate :: Env -> [PNode] -> [PNode]
 replaceVarsInTemplate _ [] = []

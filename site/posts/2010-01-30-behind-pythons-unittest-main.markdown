@@ -10,6 +10,8 @@ ${postTitle}
 
 ${date}
 
+My own URL is ${this.url} which links to <a href="${this.url}">here</a>
+
 ${tags}
 
 ${unknown variable}
