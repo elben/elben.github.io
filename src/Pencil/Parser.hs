@@ -16,6 +16,10 @@ import qualified Data.List as L
 data PNode =
     PText T.Text
   | PVar T.Text
+  | PFor T.Text -- for variable
+  | PEndFor
+  | PIf T.Text -- if variable
+  | PEndIf
   deriving (Show, Eq)
 
 -- | Data structure that mirrors the tagsoup @Tag@ data. We need more data types for our variables.
@@ -60,6 +64,10 @@ renderNodes = L.foldl' (\str n -> (T.append str (nodeToDisplay n))) ""
 nodeToDisplay :: PNode -> T.Text
 nodeToDisplay (PText t) = t
 nodeToDisplay (PVar t) = T.append (T.append "${" t) "}"
+nodeToDisplay (PFor t) = T.append (T.append "${for(" t) ")}"
+nodeToDisplay (PEndFor) = "${endfor}"
+nodeToDisplay (PIf t) = T.append (T.append "${if(" t) ")}"
+nodeToDisplay (PEndIf) = "${endif}"
 
 runParser :: T.Text -> Either ParseError [PNode]
 runParser text = parse parseEverything (T.unpack "") (T.unpack text)
@@ -69,28 +77,50 @@ runParser text = parse parseEverything (T.unpack "") (T.unpack text)
 -- >>> parse parseEverything "" "Hello ${man} and ${woman}."
 -- Right [PText "Hello ",PVar "man",PText " and ",PVar "woman",PText "."]
 --
+-- >>> parse parseEverything "" "Hello ${man} and ${if(woman)} text here ${endif}."
+-- Right [PText "Hello ",PVar "man",PText " and ",PIf "woman",PText " text here ",PEndIf,PText "."]
+--
+-- >>> parse parseEverything "" "Hi ${for(people)} ${name}, ${endfor} everyone!"
+-- Right [PText "Hi ",PFor "people",PText " ",PVar "name",PText ", ",PEndFor,PText " everyone!"]
+--
 -- >>> parse parseEverything "" "<b>this $$escape works</b> ${realvar}"
--- Right [PText "<b>this ",PText "$$",PText "escape works</b> ",PVar "realvar"]
+-- Right [PText "<b>this ",PText "$",PText "escape works</b> ",PVar "realvar"]
 --
 -- | This is a degenerate case that we will just allow (for now) to go sideways:
 -- >>> parse parseEverything "" "<b>this ${var never closes</b> ${realvar}"
 -- Right [PText "<b>this ",PVar "var never closes</b> ${realvar"]
 --
 parseEverything :: Parser [PNode]
-parseEverything = many1 (parseContent <|> parseEscape <|> parseVar)
+parseEverything =
+  -- Note that order matters here. We want "most general" to be last (variable
+  -- names).
+  many1 (parseContent
+     <|> try parseEscape
+     <|> try parseEndFor
+     <|> try parseFor
+     <|> try parseEndIf
+     <|> try parseIf
+     <|> parseVar)
 
 -- | Parse variables.
 --
 -- >>> parse parseVar "" "${ffwe} yep"
 -- Right (PVar "ffwe")
 --
+-- >>> parse parseVar "" "${spaces technically allowed}"
+-- Right (PVar "spaces technically allowed")
+--
 -- >>> isLeft $ parse parseVar "" "Hello ${name}"
 -- True
+--
+-- >>> isLeft $ parse parseVar "" "${}"
+-- True
+--
 parseVar :: Parser PNode
 parseVar = try $ do
   _ <- char '$'
   _ <- char '{'
-  varName <- many (noneOf "}")
+  varName <- many1 (noneOf "}")
   _ <- char '}'
   return $ PVar (T.pack varName)
 
@@ -112,10 +142,72 @@ parseContent = do
   -- stuff <- manyTill anyChar (eof <|> lookAhead (parseVar >> return ()))
   return $ PText (T.pack stuff)
 
+-- | Parse "$$" to escape as "$".
+--
+-- >>> parse parseEscape "" "$$"
+-- Right (PText "$")
+--
+-- >>> isLeft $ parse parseEscape "" "$"
+-- True
+--
+-- >>> parse parseEscape "" "$$$"
+-- Right (PText "$")
 parseEscape :: Parser PNode
 parseEscape = do
   _ <- try (string "$$")
-  return $ PText "$$"
+  return $ PText "$"
+
+-- | Parse for loop declaration.
+--
+-- >>> parse parseFor "" "${for(posts)}"
+-- Right (PFor "posts")
+--
+-- >>> parse parseFor "" "${for(variable name with spaces technically allowed)}"
+-- Right (PFor "variable name with spaces technically allowed")
+--
+-- >>> isLeft $ parse parseFor "" "${for()}"
+-- True
+--
+-- >>> isLeft $ parse parseFor "" "${for foo}"
+-- True
+--
+parseFor :: Parser PNode
+parseFor = parseFunction "for" PFor
+
+parseIf :: Parser PNode
+parseIf = parseFunction "if" PIf
+
+parseFunction :: String -> (T.Text -> PNode) -> Parser PNode
+parseFunction keyword ctor = do
+  _ <- char '$'
+  _ <- char '{'
+  _ <- try $ string (keyword ++ "(")
+  varName <- many1 (noneOf ")")
+  _ <- char ')'
+  _ <- char '}'
+  return $ ctor (T.pack varName)
+
+-- | Parse endfor keyword.
+--
+-- >>> parse parseEndFor "" "${endfor}"
+-- Right PEndFor
+--
+-- >>> isLeft $ parse parseEndFor "" "${endforrr}"
+-- True
+--
+parseEndFor :: Parser PNode
+parseEndFor = parseEnd "endfor" PEndFor
+
+parseEndIf :: Parser PNode
+parseEndIf = parseEnd "endif" PEndIf
+
+parseEnd :: String -> PNode -> Parser PNode
+parseEnd keyword ctor = do
+  _ <- char '$'
+  _ <- char '{'
+  _ <- try $ string keyword
+  _ <- char '}'
+  return ctor
 
 -- | A hack to capture strings that "almost" are templates. I couldn't figure
 -- out another way.

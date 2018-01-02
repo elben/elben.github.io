@@ -172,7 +172,6 @@ loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Page
 loadPageWithFileModifier fpf fp = do
   -- foo/bar/file.markdown -> foo/bar/file
   content <- TIO.readFile (sitePrefix ++ fp)
-  let fp' = "/" ++ FP.dropExtension fp ++ ".html"
   let extension = FP.takeExtension fp
   let env = aesonToEnv $ loadVariables (TS.parseTags content)
   let content' =
@@ -190,7 +189,32 @@ replaceVarsInTemplate env (PVar var : rest) =
   case H.lookup var env of
     Nothing -> PVar var : replaceVarsInTemplate env rest
     Just envData -> PText (envDataToDisplay envData) : replaceVarsInTemplate env rest
+replaceVarsInTemplate env (PIf var : rest) =
+  let (beforeEnd, afterEnd) = findUntilEndIf rest
+  in case H.lookup var env of
+    -- Everything inside the if-statement is thrown away
+    Nothing -> replaceVarsInTemplate env afterEnd
+    -- Render nodes inside the if-statement
+    Just _ -> replaceVarsInTemplate env beforeEnd ++ replaceVarsInTemplate env afterEnd
 replaceVarsInTemplate env (n : rest) = n : replaceVarsInTemplate env rest
+
+-- Split the given PNodes at the next ${endif} statement, returning a pair where
+-- the LHS are nodes before the ${endif}, and the RHS are nodes after the
+-- ${endif}. The ${endif} itself is not returned.
+findUntilEndIf :: [PNode]
+               -> ([PNode], [PNode]) -- (nodes inside if, things after endif)
+findUntilEndIf nodes =
+  let (lhs, rhs) = findUntilEndIf' [] nodes
+  in (reverse lhs, rhs)
+
+findUntilEndIf' :: [PNode] -- ^ Accumulated nodes
+                -> [PNode] -- ^ Rest of nodes
+                -> ([PNode], [PNode])
+                -- ^ LHS: Nodes before the endif, reversed.
+                -- RHS: Nodes after the endif, not reversed.
+findUntilEndIf' acc [] = (acc, [])
+findUntilEndIf' acc (PEndIf : rest) = (acc, rest)
+findUntilEndIf' acc (n : rest) = findUntilEndIf' (n : acc) rest
 
 replaceVarsInText :: Env -> T.Text -> T.Text
 replaceVarsInText env text =

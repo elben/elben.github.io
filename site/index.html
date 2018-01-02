@@ -13,6 +13,19 @@ library) and more.</p>
   }
 </ul>
 
+<h3>Testing if</h3>
+
+${if(title)}
+I have a $$title variable!! The value is: ${title}
+${if(fakevar)}
+I should never see this inside if!
+${endif}
+${endif}
+
+${if(fakevar)}
+I should never see this!
+${endif}
+
 <h3>Testing for loop</h3>
 
 <ul>
