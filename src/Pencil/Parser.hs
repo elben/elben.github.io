@@ -18,13 +18,15 @@ data PNode =
   | PVar T.Text
   | PFor T.Text [PNode]
   | PIf T.Text [PNode]
-  | PMetaFor T.Text
-  -- ^ Signals a For expression in the stack waiting for expressions
+
+  -- Signals a If/For expression in the stack waiting for expressions. So that we
+  -- can find the next unused open if/for-statement in nested if/for-statements.
   | PMetaIf T.Text
-  -- ^ Signals an If expression in the stack waiting for expressions
-  | PMetaEnd
+  | PMetaFor T.Text
+
   -- A terminating node that represents the end of the program, to help with AST
   -- converstion
+  | PMetaEnd
   deriving (Show, Eq)
 
 -- | Pencil's tokens for content.
@@ -94,24 +96,19 @@ ast :: [PNode] -- stack
     -> [Token] -- remaining
     -> ([PNode], [Token]) -- (AST, remaining)
 ast stack [] = (stack, [])
-ast stack (TokText t : toks) =
-  let (nodes', tokens') = ast (PText t : stack) toks
-  in (nodes', tokens')
-ast stack (TokVar t : toks) =
-  let (nodes', tokens') = ast (PVar t : stack) toks
-  in (nodes', tokens')
-ast stack (TokIf t : toks) =
-  let (nodes', tokens') = ast (PMetaIf t : stack) toks
-  in (nodes', tokens')
-ast stack (TokFor t : toks) =
-  let (nodes', tokens') = ast (PMetaFor t : stack) toks
-  in (nodes', tokens')
+ast stack (TokText t : toks) = ast (PText t : stack) toks
+ast stack (TokVar t : toks)  = ast (PVar t : stack) toks
+ast stack (TokIf t : toks)   = ast (PMetaIf t : stack) toks
+ast stack (TokFor t : toks)  = ast (PMetaFor t : stack) toks
 ast stack (TokEnd : toks) =
   let (node, popped, remaining) = popNodes stack
+      -- ^ Find the last unused if/for statement, and grab all the expressions
+      -- in-between this TokEnd and the opening if/for keyword.
       n = case node of
             PMetaIf t -> PIf t popped
             PMetaFor t -> PFor t popped
             _ -> PMetaEnd
+  -- Push the statement into the stack
   in ast (n : remaining) toks
 
 -- | Pop nodes until we hit a If/For statement.

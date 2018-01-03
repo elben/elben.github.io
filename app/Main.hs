@@ -203,45 +203,6 @@ replaceVarsInNodes env (PFor var nodes : rest) =
     Just _ -> replaceVarsInNodes env nodes ++ replaceVarsInNodes env rest
 replaceVarsInNodes env (n : rest) = n : replaceVarsInNodes env rest
 
-replaceVarsInTemplate :: Env -> [Token] -> [Token]
-replaceVarsInTemplate _ [] = []
-replaceVarsInTemplate env (TokVar var : rest) =
-  case H.lookup var env of
-    Nothing -> TokVar var : replaceVarsInTemplate env rest
-    Just envData -> TokText (envDataToDisplay envData) : replaceVarsInTemplate env rest
-replaceVarsInTemplate env (TokIf var : rest) =
-  let (beforeEnd, afterEnd) = findUntilEndIf rest
-  in case H.lookup var env of
-    -- Everything inside the if-statement is thrown away
-    Nothing -> replaceVarsInTemplate env afterEnd
-    -- Render nodes inside the if-statement
-    Just _ -> replaceVarsInTemplate env beforeEnd ++ replaceVarsInTemplate env afterEnd
-replaceVarsInTemplate env (n : rest) = n : replaceVarsInTemplate env rest
-
--- Split the given Tokens at the next ${endif} statement, returning a pair where
--- the LHS are nodes before the ${endif}, and the RHS are nodes after the
--- ${endif}. The ${endif} itself is not returned.
-findUntilEndIf :: [Token]
-               -> ([Token], [Token]) -- (nodes inside if, things after endif)
-findUntilEndIf nodes =
-  let (lhs, rhs) = findUntilEndIf' [] nodes
-  in (reverse lhs, rhs)
-
-findUntilEndIf' :: [Token] -- ^ Accumulated nodes
-                -> [Token] -- ^ Rest of nodes
-                -> ([Token], [Token])
-                -- ^ LHS: Nodes before the endif, reversed.
-                -- RHS: Nodes after the endif, not reversed.
-findUntilEndIf' acc [] = (acc, [])
-findUntilEndIf' acc (TokEnd : rest) = (acc, rest)
-findUntilEndIf' acc (n : rest) = findUntilEndIf' (n : acc) rest
-
-replaceVarsInText :: Env -> T.Text -> T.Text
-replaceVarsInText env text =
-  case runParser text of
-    Left _ -> traceShow ("I have gone left!!!" :: String) text
-    Right nodes -> renderNodes $ replaceVarsInNodes env nodes
-
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> Object
 loadVariables tags =
