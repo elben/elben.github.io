@@ -9,7 +9,7 @@ library) and more.</p>
 <ul class="posts simple">
   ${
     for(recommendedPosts)
-      partial("templates/post-list-item.html")
+      partial("partials/post-list-item.html")
   }
 </ul>
 
@@ -31,18 +31,17 @@ ${end}
 
 <ul>
 ${for(posts)}
-  <li>This is inside a post, so we should now have a closure over individual
-    $$post vars, but still have access to the outer vars.
-    Website title: ${title}
-    <a href="${this.url}">${postTitle}</a>
-    ${date}
-    ${body}</li>
+  ${partial("partials/post-list-item.html")}
 ${end}
 </ul>
 
+<h3>Testing partial</h3>
+
+${partial("partials/simple.html")}
+
 <h3>Blog Archive</h3>
 
-${partial("templates/post-list.html")}
+${partial("partials/post-list.html")}
 
 <h3>Other writings</h3>
 

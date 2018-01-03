@@ -35,8 +35,9 @@ data PNode =
 data Token =
     TokText T.Text
   | TokVar T.Text
-  | TokFor T.Text -- for variable
-  | TokIf T.Text -- if variable
+  | TokFor T.Text
+  | TokIf T.Text
+  | TokPartial T.Text
   | TokEnd
   deriving (Show, Eq)
 
@@ -100,6 +101,7 @@ ast :: [PNode] -- stack
 ast stack [] = (stack, [])
 ast stack (TokText t : toks) = ast (PText t : stack) toks
 ast stack (TokVar t : toks)  = ast (PVar t : stack) toks
+ast stack (TokPartial fp : toks) = ast (PPartial fp : stack) toks
 ast stack (TokIf t : toks)   = ast (PMetaIf t : stack) toks
 ast stack (TokFor t : toks)  = ast (PMetaFor t : stack) toks
 ast stack (TokEnd : toks) =
@@ -177,6 +179,7 @@ renderTokens = DL.foldl' (\str n -> (T.append str (renderToken n))) ""
 renderToken :: Token -> T.Text
 renderToken (TokText t) = t
 renderToken (TokVar t) = T.append (T.append "${" t) "}"
+renderToken (TokPartial fp) = T.append (T.append "${partial(\"" fp) "\"}"
 renderToken (TokFor t) = T.append (T.append "${for(" t) ")}"
 renderToken (TokEnd) = "${end}"
 renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
@@ -212,8 +215,9 @@ parseEverything =
      <|> try parseEscape
      <|> try parseEnd
      <|> try parseFor
-     <|> try parseEnd
      <|> try parseIf
+     <|> try parseEnd
+     <|> try parsePartial
      <|> parseVar)
 
 -- | Parse variables.
@@ -237,6 +241,18 @@ parseVar = try $ do
   varName <- many1 (noneOf "}")
   _ <- char '}'
   return $ TokVar (T.pack varName)
+
+-- | Parse partial commands.
+--
+-- >>> parse parsePartial "" "${partial(\"my/file/name.html\")}"
+-- Right (TokPartial "my/file/name.html")
+--
+parsePartial :: Parser Token
+parsePartial = do
+  _ <- string "${partial(\""
+  filename <- many (noneOf "\"")
+  _ <- string "\")}"
+  return $ TokPartial (T.pack filename)
 
 -- | Parse boring, boring text.
 --

@@ -4,7 +4,7 @@ module Main where
 
 import Pencil.Parser
 import Pencil.Env
-import Control.Monad (forM_)
+import Control.Monad (forM_, foldM)
 import Data.Aeson
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
@@ -17,7 +17,6 @@ import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
-import qualified Data.List as DL
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import qualified Data.List.NonEmpty as NE
 
@@ -75,23 +74,23 @@ globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-applyPage :: Env -> NonEmpty Page -> Page
+applyPage :: Env -> NonEmpty Page -> IO Page
 applyPage env pages = applyPage' env (NE.reverse pages)
 
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
-applyPage' :: Env -> NonEmpty Page -> Page
-applyPage' env (Page nodes penv fp :| []) =
+applyPage' :: Env -> NonEmpty Page -> IO Page
+applyPage' env (Page nodes penv fp :| []) = do
   let env' = H.union penv env -- LHS overrides RHS
-      nodes' = evalNodes env' nodes
-  in Page nodes' env' fp
-applyPage' env (Page nodes penv _ :| (headp : rest)) =
-  let Page nodes' env' fpInner = applyPage' (H.union penv env) (headp :| rest)
-      env'' = H.insert "body" (EText (renderNodes nodes')) env'
-      nodes'' = evalNodes env'' nodes
-   -- Get the inner-most Page's file path, and pass that upwards to the returned
-   -- Page.
-   in Page nodes'' env'' fpInner
+  nodes' <- evalNodes env' nodes
+  return $ Page nodes' env' fp
+applyPage' env (Page nodes penv _ :| (headp : rest)) = do
+  Page nodes' env' fpInner <- applyPage' (H.union penv env) (headp :| rest)
+  let env'' = H.insert "body" (EText (renderNodes nodes')) env'
+  nodes'' <- evalNodes env'' nodes
+  -- Get the inner-most Page's file path, and pass that upwards to the returned
+  -- Page.
+  return $ Page nodes'' env'' fpInner
 
 blogPostUrl :: FilePath -> FilePath
 blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
@@ -100,13 +99,12 @@ renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
 renderBlogPost structure fp = do
   -- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
   page <- loadPageWithFileModifier blogPostUrl fp
-  let page' = applyPage globalEnv (NE.cons page structure)
-  renderPage page'
+  applyPage globalEnv (NE.cons page structure) >>= renderPage
 
 loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
 loadAndApplyPage structure fp = do
   page <- loadPage fp
-  renderPage (applyPage globalEnv (NE.cons page structure))
+  applyPage globalEnv (NE.cons page structure) >>= renderPage
 
 main :: IO ()
 main = do
@@ -129,7 +127,7 @@ main = do
   -- Index
   let postsEnv = H.insert "posts" (EList (map getPageEnv posts)) globalEnv
   indexPage <- loadPage "index.html"
-  renderPage (applyPage postsEnv (indexPage :| [pageLayout]))
+  applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
@@ -176,12 +174,16 @@ loadPage = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
 loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Page
 loadPageWithFileModifier fpf fp = do
-  -- foo/bar/file.markdown -> foo/bar/file
-  content <- TIO.readFile (sitePrefix ++ fp)
-  let extension = FP.takeExtension fp
+  (content, nodes) <- parsePage fp
   let env = aesonToEnv $ loadVariables (TS.parseTags content)
   let fp' = "/" ++ fpf fp
   let env' = H.insert "this.url" (EText (T.pack fp')) env
+  return $ Page nodes env' ("/" ++ fpf fp)
+
+parsePage :: FilePath -> IO (T.Text, [PNode])
+parsePage fp = do
+  content <- TIO.readFile (sitePrefix ++ fp)
+  let extension = FP.takeExtension fp
   let content' =
         if extension `elem` [".markdown", ".md"]
         then CM.commonmarkToHtml [] content
@@ -189,39 +191,51 @@ loadPageWithFileModifier fpf fp = do
   let nodes = case runParser content' of
                 Left _ -> []
                 Right n -> n
-  return $ Page nodes env' ("/" ++ fpf fp)
+  return (content', nodes)
 
-evalNodes :: Env -> [PNode] -> [PNode]
-evalNodes _ [] = []
-evalNodes env (PVar var : rest) =
+-- | Evaluate the nodes in the given environment. Note that it returns an IO
+-- because of ${partial(..)} calls that requires us to load a file.
+evalNodes :: Env -> [PNode] -> IO [PNode]
+evalNodes _ [] = return []
+evalNodes env (PVar var : rest) = do
+  nodes <- evalNodes env rest
   case H.lookup var env of
-    Nothing -> PVar var : evalNodes env rest
-    Just envData -> PText (envDataToDisplay envData) : evalNodes env rest
-evalNodes env (PIf var nodes : rest) =
+    Nothing -> return $ PVar var : nodes
+    Just envData -> return $ PText (envDataToDisplay envData) : nodes
+evalNodes env (PIf var nodes : rest) = do
+  rest' <- evalNodes env rest
   case H.lookup var env of
     -- Can't find var in env; Everything inside the if-statement is thrown away
-    Nothing -> evalNodes env rest
+    Nothing -> return rest'
     -- Render nodes inside the if-statement
-    Just _ -> evalNodes env nodes ++ evalNodes env rest
-evalNodes env (PFor var nodes : rest) =
-  -- TODO
+    Just _ -> do
+      nodes' <- evalNodes env nodes
+      return $ nodes' ++ rest'
+evalNodes env (PFor var nodes : rest) = do
+  rest' <- evalNodes env rest
   case H.lookup var env of
     -- Can't find var in env; everything inside the for-statement is thrown away
-    Nothing -> evalNodes env rest
+    Nothing -> return rest'
     -- Render nodes inside the for-statement
-    Just (EList envs) ->
+    Just (EList envs) -> do
       -- Render the for nodes once for each given env, and append them together
-      let forNodes =
-            DL.foldl'
-              (\accNodes e -> accNodes ++ evalNodes (H.union e env) nodes)
-              [] envs
-      in forNodes ++ evalNodes env rest
+      forNodes <-
+        foldM
+          (\accNodes e -> do
+              nodes' <- evalNodes (H.union e env) nodes
+              return $ accNodes ++ nodes')
+          [] envs
+      return $ forNodes ++ rest'
     -- Var is not an EList; everything inside the for-statement is thrown away
-    Just _ -> evalNodes env rest
--- TODO in order to handle PPartial, we need to conver this to an IO, since we
--- will be loading the partial from a file. :(
-evalNodes env (PPartial fp : rest) = rest
-evalNodes env (n : rest) = n : evalNodes env rest
+    Just _ -> return rest'
+evalNodes env (PPartial fp : rest) = do
+  (_, nodes) <- parsePage (T.unpack fp)
+  nodes' <- evalNodes env nodes
+  rest' <- evalNodes env rest
+  return $ nodes' ++ rest'
+evalNodes env (n : rest) = do
+  rest' <- evalNodes env rest
+  return $ n : rest'
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> Object
