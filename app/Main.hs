@@ -83,24 +83,23 @@ applyPage env pages = applyPage' env (NE.reverse pages)
 applyPage' :: Env -> NonEmpty Page -> Page
 applyPage' env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
-      env'' = H.insert "this.url" (EText (T.pack fp)) env'
-      nodes' = evalNodes env'' nodes
-  in Page nodes' env'' fp
-applyPage' env (Page nodes penv fp :| (headp : rest)) =
+      nodes' = evalNodes env' nodes
+  in Page nodes' env' fp
+applyPage' env (Page nodes penv _ :| (headp : rest)) =
   let Page nodes' env' fpInner = applyPage' (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
-      env''' = H.insert "this.url" (EText (T.pack fp)) env''
-      nodes'' = evalNodes env''' nodes
+      nodes'' = evalNodes env'' nodes
    -- Get the inner-most Page's file path, and pass that upwards to the returned
    -- Page.
-   in Page nodes'' env''' fpInner
+   in Page nodes'' env'' fpInner
+
+blogPostUrl :: FilePath -> FilePath
+blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
 renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
 renderBlogPost structure fp = do
   -- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
-  page <- loadPageWithFileModifier
-            (\f -> FP.replaceFileName f (drop 11 (FP.takeBaseName f)) ++ "/")
-            fp
+  page <- loadPageWithFileModifier blogPostUrl fp
   let page' = applyPage globalEnv (NE.cons page structure)
   renderPage page'
 
@@ -116,7 +115,7 @@ main = do
 
   -- Load posts
   posts <- mapM
-    loadPage
+    (loadPageWithFileModifier blogPostUrl)
     [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
     , "posts/2010-04-16-singleton-pattern-in-python.markdown"
     ]
@@ -181,6 +180,8 @@ loadPageWithFileModifier fpf fp = do
   content <- TIO.readFile (sitePrefix ++ fp)
   let extension = FP.takeExtension fp
   let env = aesonToEnv $ loadVariables (TS.parseTags content)
+  let fp' = "/" ++ fpf fp
+  let env' = H.insert "this.url" (EText (T.pack fp')) env
   let content' =
         if extension `elem` [".markdown", ".md"]
         then CM.commonmarkToHtml [] content
@@ -188,7 +189,7 @@ loadPageWithFileModifier fpf fp = do
   let nodes = case runParser content' of
                 Left _ -> []
                 Right n -> n
-  return $ Page nodes env ("/" ++ fpf fp)
+  return $ Page nodes env' ("/" ++ fpf fp)
 
 evalNodes :: Env -> [PNode] -> [PNode]
 evalNodes _ [] = []

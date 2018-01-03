@@ -34,7 +34,7 @@ ${for(posts)}
   <li>This is inside a post, so we should now have a closure over individual
     $$post vars, but still have access to the outer vars.
     Website title: ${title}
-    <a href="${postUrl}">${postTitle}</a>
+    <a href="${this.url}">${postTitle}</a>
     ${date}
     ${body}</li>
 ${end}
