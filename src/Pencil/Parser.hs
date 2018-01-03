@@ -19,6 +19,7 @@ data PNode =
   | PVar T.Text
   | PFor T.Text [PNode]
   | PIf T.Text [PNode]
+  | PPartial T.Text
 
   -- Signals a If/For expression in the stack waiting for expressions. So that we
   -- can find the next unused open if/for-statement in nested if/for-statements.
@@ -165,6 +166,10 @@ renderNode (PIf t nodes) =
       body = renderNodes nodes
       end = "${end}"
   in T.append (T.append for body) end
+renderNode (PPartial file) = T.append (T.append "${partial(" file) ")}"
+renderNode (PMetaIf v) = renderNode (PIf v [])
+renderNode (PMetaFor v) = renderNode (PFor v [])
+renderNode PMetaEnd = ""
 
 renderTokens :: [Token] -> T.Text
 renderTokens = DL.foldl' (\str n -> (T.append str (renderToken n))) ""

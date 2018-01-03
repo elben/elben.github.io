@@ -218,6 +218,9 @@ evalNodes env (PFor var nodes : rest) =
       in forNodes ++ evalNodes env rest
     -- Var is not an EList; everything inside the for-statement is thrown away
     Just _ -> evalNodes env rest
+-- TODO in order to handle PPartial, we need to conver this to an IO, since we
+-- will be loading the partial from a file. :(
+evalNodes env (PPartial fp : rest) = rest
 evalNodes env (n : rest) = n : evalNodes env rest
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.

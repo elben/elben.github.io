@@ -20,3 +20,5 @@ type Env = H.HashMap T.Text EnvData
 envDataToDisplay :: EnvData -> T.Text
 envDataToDisplay (EText t) = t
 envDataToDisplay (EHtml tags) = TS.renderTags tags
+envDataToDisplay (EList envs) = T.unwords $ map (T.unwords . map envDataToDisplay . H.elems) envs
+
