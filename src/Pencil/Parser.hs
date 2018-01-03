@@ -5,11 +5,12 @@ module Pencil.Parser where
 import Text.ParserCombinators.Parsec
 import qualified Data.Text as T
 import qualified Text.HTML.TagSoup as TS
-import qualified Data.List as L
+import qualified Data.List as DL
 
 -- Doctest setup.
 --
 -- $setup
+-- >>> :set -XOverloadedStrings
 -- >>> import Data.Either (isLeft)
 
 -- | Pencil's AST.
@@ -149,7 +150,7 @@ toTagsoup' (PTagWarning _) = TS.TagText ""
 toTagsoup' (PTagPosition _ _) = TS.TagText ""
 
 renderNodes :: [PNode] -> T.Text
-renderNodes = L.foldl' (\str n -> (T.append str (renderNode n))) ""
+renderNodes = DL.foldl' (\str n -> (T.append str (renderNode n))) ""
 
 renderNode :: PNode -> T.Text
 renderNode (PText t) = t
@@ -166,7 +167,7 @@ renderNode (PIf t nodes) =
   in T.append (T.append for body) end
 
 renderTokens :: [Token] -> T.Text
-renderTokens = L.foldl' (\str n -> (T.append str (renderToken n))) ""
+renderTokens = DL.foldl' (\str n -> (T.append str (renderToken n))) ""
 
 renderToken :: Token -> T.Text
 renderToken (TokText t) = t
@@ -185,7 +186,7 @@ runParser text = do
 -- >>> parse parseEverything "" "Hello ${man} and ${woman}."
 -- Right [TokText "Hello ",TokVar "man",TokText " and ",TokVar "woman",TokText "."]
 --
--- >>> parse parseEverything "" "Hello ${man} and ${if(woman)} text here ${endif}."
+-- >>> parse parseEverything "" "Hello ${man} and ${if(woman)} text here ${end}."
 -- Right [TokText "Hello ",TokVar "man",TokText " and ",TokIf "woman",TokText " text here ",TokEnd,TokText "."]
 --
 -- >>> parse parseEverything "" "Hi ${for(people)} ${name}, ${end} everyone!"

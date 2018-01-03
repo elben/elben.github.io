@@ -7,6 +7,7 @@ stack install hindent
 
 stack build
 stack test
+stack exec doctest src/
 
 stack build && stack exec pencil-exe
 cd out && python -m SimpleHTTPServer 8000

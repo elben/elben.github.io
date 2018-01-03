@@ -12,6 +12,7 @@ type Tags = [TS.Tag T.Text]
 data EnvData =
   EText T.Text
   | EHtml Tags
+  | EList [Env]
   deriving (Eq, Show)
 
 type Env = H.HashMap T.Text EnvData

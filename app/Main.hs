@@ -17,9 +17,9 @@ import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
+import qualified Data.List as DL
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import qualified Data.List.NonEmpty as NE
-import Debug.Trace
 
 type PTags = [PTag]
 
@@ -84,13 +84,13 @@ applyPage' :: Env -> NonEmpty Page -> Page
 applyPage' env (Page nodes penv fp :| []) =
   let env' = H.union penv env -- LHS overrides RHS
       env'' = H.insert "this.url" (EText (T.pack fp)) env'
-      nodes' = replaceVarsInNodes env'' nodes
+      nodes' = evalNodes env'' nodes
   in Page nodes' env'' fp
 applyPage' env (Page nodes penv fp :| (headp : rest)) =
   let Page nodes' env' fpInner = applyPage' (H.union penv env) (headp :| rest)
       env'' = H.insert "body" (EText (renderNodes nodes')) env'
       env''' = H.insert "this.url" (EText (T.pack fp)) env''
-      nodes'' = replaceVarsInNodes env''' nodes
+      nodes'' = evalNodes env''' nodes
    -- Get the inner-most Page's file path, and pass that upwards to the returned
    -- Page.
    in Page nodes'' env''' fpInner
@@ -115,6 +115,12 @@ main = do
   pagePartial <- loadPage "partials/post.html"
 
   -- Load posts
+  posts <- mapM
+    loadPage
+    [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
+    , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+    ]
+
   forM_
     [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
     , "posts/2010-04-16-singleton-pattern-in-python.markdown"
@@ -122,7 +128,9 @@ main = do
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  loadAndApplyPage (pageLayout :| []) "index.html"
+  let postsEnv = H.insert "posts" (EList (map getPageEnv posts)) globalEnv
+  indexPage <- loadPage "index.html"
+  renderPage (applyPage postsEnv (indexPage :| [pageLayout]))
 
   -- Write CSS file
   includeAsset "stylesheets/mysheet.css"
@@ -143,7 +151,6 @@ aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
 -- Describes a loaded page, with the page's template nodes, loaded environment
 -- from the preamble, and where the page was loaded from.
--- TODO: do we need getPageFilePath? It is often not used.
 data Page = Page
   { getPageNodes     :: [PNode]
   , getPageEnv       :: Env
@@ -183,25 +190,34 @@ loadPageWithFileModifier fpf fp = do
                 Right n -> n
   return $ Page nodes env ("/" ++ fpf fp)
 
-replaceVarsInNodes :: Env -> [PNode] -> [PNode]
-replaceVarsInNodes _ [] = []
-replaceVarsInNodes env (PVar var : rest) =
+evalNodes :: Env -> [PNode] -> [PNode]
+evalNodes _ [] = []
+evalNodes env (PVar var : rest) =
   case H.lookup var env of
-    Nothing -> PVar var : replaceVarsInNodes env rest
-    Just envData -> PText (envDataToDisplay envData) : replaceVarsInNodes env rest
-replaceVarsInNodes env (PIf var nodes : rest) =
+    Nothing -> PVar var : evalNodes env rest
+    Just envData -> PText (envDataToDisplay envData) : evalNodes env rest
+evalNodes env (PIf var nodes : rest) =
   case H.lookup var env of
-    -- Everything inside the if-statement is thrown away
-    Nothing -> replaceVarsInNodes env rest
+    -- Can't find var in env; Everything inside the if-statement is thrown away
+    Nothing -> evalNodes env rest
     -- Render nodes inside the if-statement
-    Just _ -> replaceVarsInNodes env nodes ++ replaceVarsInNodes env rest
-replaceVarsInNodes env (PFor var nodes : rest) =
+    Just _ -> evalNodes env nodes ++ evalNodes env rest
+evalNodes env (PFor var nodes : rest) =
+  -- TODO
   case H.lookup var env of
-    -- Everything inside the for-statement is thrown away
-    Nothing -> replaceVarsInNodes env rest
+    -- Can't find var in env; everything inside the for-statement is thrown away
+    Nothing -> evalNodes env rest
     -- Render nodes inside the for-statement
-    Just _ -> replaceVarsInNodes env nodes ++ replaceVarsInNodes env rest
-replaceVarsInNodes env (n : rest) = n : replaceVarsInNodes env rest
+    Just (EList envs) ->
+      -- Render the for nodes once for each given env, and append them together
+      let forNodes =
+            DL.foldl'
+              (\accNodes e -> accNodes ++ evalNodes (H.union e env) nodes)
+              [] envs
+      in forNodes ++ evalNodes env rest
+    -- Var is not an EList; everything inside the for-statement is thrown away
+    Just _ -> evalNodes env rest
+evalNodes env (n : rest) = n : evalNodes env rest
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> Object
@@ -233,7 +249,6 @@ cssTag :: T.Text -> Tags
 cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
 
 -- Inject tags into the body tag, at the ${body} annotation location.
--- TODO use the Parser we wrote instead of this custom thing
 injectIntoBodyVar :: Tags -> Tags -> Tags
 injectIntoBodyVar _ [] = []
 injectIntoBodyVar inject (tag @ (TS.TagText str) : rest) =
