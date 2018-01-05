@@ -61,3 +61,23 @@ toDateTime s =
     Nothing -> TF.parseTimeM True TF.defaultTimeLocale (TF.iso8601DateFormat (Just "%H:%M:%S")) s
     Just dt -> Just dt
 
+-- | Define an ordering for possibly-missing EnvData. Nothings are ordered last.
+maybeOrdering :: (EnvData -> EnvData -> Ordering)
+              -> Maybe EnvData -> Maybe EnvData -> Ordering
+maybeOrdering _ Nothing Nothing = EQ
+maybeOrdering _ (Just _) Nothing = GT
+maybeOrdering _ Nothing (Just _) = LT
+maybeOrdering o (Just a) (Just b) = o a b
+
+-- | Sort by newest first.
+dateOrdering :: EnvData -> EnvData -> Ordering
+dateOrdering (EDateTime a) (EDateTime b) = compare b a
+dateOrdering _ _ = EQ
+
+arrayContainsString :: T.Text -> EnvData -> Bool
+arrayContainsString t (EArray arr) =
+  any (\d -> case d of
+               EText t' -> t == t'
+               _ -> False)
+      arr
+arrayContainsString _ _ = False

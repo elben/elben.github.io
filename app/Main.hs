@@ -19,6 +19,7 @@ import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import qualified Data.List.NonEmpty as NE
+import qualified Data.List as L
 
 type PTags = [PTag]
 
@@ -113,6 +114,28 @@ loadAndApplyPage structure fp = do
   page <- loadPage fp
   applyPage globalEnv (NE.cons page structure) >>= renderPage
 
+sortByVar :: T.Text
+          -- ^ Variable name to look up in Env.
+          -> (EnvData -> EnvData -> Ordering)
+          -- ^ Ordering function to compare EnvData against. If the variable is
+          -- not in the Env, the Page will be placed at the bottom of the order.
+          -> [Page]
+          -> [Page]
+sortByVar var ordering =
+  L.sortBy
+    (\(Page _ enva _) (Page _ envb _) ->
+      maybeOrdering ordering (H.lookup var enva) (H.lookup var envb))
+
+-- | Filter by a variable's value in the environment. If missing, it is not
+-- included in the final result.
+filterByVar :: T.Text
+            -> (EnvData -> Bool)
+            -> [Page]
+            -> [Page]
+filterByVar var f =
+  L.filter
+   (\(Page _ env _) -> M.fromMaybe False (H.lookup var env >>= (Just . f)))
+
 main :: IO ()
 main = do
   pageLayout <- loadPage "layouts/default.html"
@@ -125,6 +148,10 @@ main = do
     , "blog/2010-04-16-singleton-pattern-in-python.markdown"
     , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
     ]
+  let sortedPosts = sortByVar "date" dateOrdering posts
+  let recommendedPosts = filterByVar "tags"
+                           (arrayContainsString "recommended")
+                           posts
 
   forM_
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
@@ -134,7 +161,7 @@ main = do
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  let postsEnv = H.insert "posts" (EEnvList (map getPageEnv posts)) globalEnv
+  let postsEnv = H.insert "recommendedPosts" (EEnvList (map getPageEnv recommendedPosts)) (H.insert "posts" (EEnvList (map getPageEnv sortedPosts)) globalEnv)
   indexPage <- loadPage "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 

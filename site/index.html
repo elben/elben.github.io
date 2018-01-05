@@ -7,10 +7,9 @@ library) and more.</p>
 <h3>Recommended Blog Posts</h3>
 
 <ul class="posts simple">
-  ${
-    for(recommendedPosts)
-      partial("partials/post-list-item.html")
-  }
+  ${for(recommendedPosts)}
+    ${partial("partials/post-list-item.html")}
+  ${end}
 </ul>
 
 <h3>Testing if</h3>
@@ -26,14 +25,6 @@ ${end}
 ${if(fakevar)}
 BALL!!! If you see this there is a bug.
 ${end}
-
-<h3>Testing for loop</h3>
-
-<ul class="posts simple">
-${for(posts)}
-  ${partial("partials/post-list-item.html")}
-${end}
-</ul>
 
 <h3>Testing partial</h3>
 
