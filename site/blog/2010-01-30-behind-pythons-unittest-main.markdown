@@ -2,6 +2,9 @@
 {
 "postTitle": "Behind Python's unittest.main()",
 "date": "2010-01-30",
+"mybool": true,
+"myboolother": false,
+"myundef": null,
 "tags": ["python", "second element", "third"]
 }
 -->
@@ -11,6 +14,8 @@ ${postTitle}
 ${tags}
 
 ${date}
+
+${mybool} ${myboolother} ${myundef}
 
 My own URL is ${this.url} which links to <a href="${this.url}">here</a>
 

@@ -21,7 +21,8 @@ type Tags = [TS.Tag T.Text]
 -- (https://hackage.haskell.org/package/aeson-1.2.3.0/docs/Data-Aeson.html#t:Value),
 -- plus other useful ones.
 data EnvData =
-    EText T.Text
+    ENull -- JSON null
+  | EText T.Text
   | EBool Bool
   | EDateTime TC.UTCTime
   | EArray [EnvData]
@@ -31,6 +32,7 @@ data EnvData =
 type Env = H.HashMap T.Text EnvData
 
 toEnvData :: A.Value -> Maybe EnvData
+toEnvData A.Null = Just ENull
 toEnvData (A.Bool b) = Just $ EBool b
 toEnvData (A.String s) =
   -- See if coercible to datetime
@@ -42,6 +44,7 @@ toEnvData (A.Array arr) =
 toEnvData _ = Nothing
 
 envDataToDisplay :: EnvData -> T.Text
+envDataToDisplay ENull = "null"
 envDataToDisplay (EText t) = t
 envDataToDisplay (EArray arr) = T.unwords $ map envDataToDisplay arr
 envDataToDisplay (EBool b) = if b then "true" else "false"
