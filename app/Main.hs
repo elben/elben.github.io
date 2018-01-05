@@ -93,7 +93,7 @@ applyPage' env (Page nodes penv _ :| (headp : rest)) = do
   return $ Page nodes'' env'' fpInner
 
 -- | Rewrite file path for blog posts.
--- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
+-- "/blog/2011-01-01-the-post-title.html" => "/blog/the-post-title/"
 blogPostUrl :: FilePath -> FilePath
 blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
@@ -121,13 +121,13 @@ main = do
   -- Load posts
   posts <- mapM
     (loadPageWithFileModifier blogPostUrl)
-    [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
-    , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+    [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
+    , "blog/2010-04-16-singleton-pattern-in-python.markdown"
     ]
 
   forM_
-    [ "posts/2010-01-30-behind-pythons-unittest-main.markdown"
-    , "posts/2010-04-16-singleton-pattern-in-python.markdown"
+    [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
+    , "blog/2010-04-16-singleton-pattern-in-python.markdown"
     ]
     (renderBlogPost (pagePartial :| [pageLayout]))
 
