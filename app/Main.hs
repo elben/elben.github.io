@@ -123,16 +123,18 @@ main = do
     (loadPageWithFileModifier blogPostUrl)
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
     , "blog/2010-04-16-singleton-pattern-in-python.markdown"
+    , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
     ]
 
   forM_
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
     , "blog/2010-04-16-singleton-pattern-in-python.markdown"
+    , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
     ]
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  let postsEnv = H.insert "posts" (EList (map getPageEnv posts)) globalEnv
+  let postsEnv = H.insert "posts" (EEnvList (map getPageEnv posts)) globalEnv
   indexPage <- loadPage "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
@@ -143,13 +145,11 @@ parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o A..: k :: Parser T.Text)
 
 -- | Convert known Aeson types into known Env types.
--- TODO: support array of env vars
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
-maybeInsertIntoEnv env k (A.String s) =
-  case toDateTime (T.unpack s) of
-    Nothing -> H.insert k (EText s) env
-    Just dt -> H.insert k (EDateTime dt) env
-maybeInsertIntoEnv env _ _ = env
+maybeInsertIntoEnv env k v =
+  case toEnvData v of
+    Nothing -> env
+    Just d -> H.insert k d env
 
 -- | Convert an Aeson Object to an Env.
 aesonToEnv :: A.Object -> Env
@@ -229,7 +229,7 @@ evalNodes env (PFor var nodes : rest) = do
     -- Can't find var in env; everything inside the for-statement is thrown away
     Nothing -> return rest'
     -- Render nodes inside the for-statement
-    Just (EList envs) -> do
+    Just (EEnvList envs) -> do
       -- Render the for nodes once for each given env, and append them together
       forNodes <-
         foldM
@@ -238,7 +238,7 @@ evalNodes env (PFor var nodes : rest) = do
               return $ accNodes ++ nodes')
           [] envs
       return $ forNodes ++ rest'
-    -- Var is not an EList; everything inside the for-statement is thrown away
+    -- Var is not an EEnvList; everything inside the for-statement is thrown away
     Just _ -> return rest'
 evalNodes env (PPartial fp : rest) = do
   (_, nodes) <- parsePage (T.unpack fp)
