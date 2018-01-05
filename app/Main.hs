@@ -5,7 +5,7 @@ module Main where
 import Pencil.Parser
 import Pencil.Env
 import Control.Monad (forM_, foldM)
-import Data.Aeson
+import qualified Data.Aeson as A
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Text.Encoding (encodeUtf8)
@@ -92,12 +92,19 @@ applyPage' env (Page nodes penv _ :| (headp : rest)) = do
   -- Page.
   return $ Page nodes'' env'' fpInner
 
+-- | Rewrite file path for blog posts.
+-- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
 blogPostUrl :: FilePath -> FilePath
 blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
+-- | Modify a variable in the env.
+modifyEnvVar :: Page -> (EnvData -> EnvData) -> T.Text -> Page
+modifyEnvVar (Page nodes env fp) f k =
+  let env' = H.adjust f k env
+  in Page nodes env' fp
+
 renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
 renderBlogPost structure fp = do
-  -- "/posts/2011-01-01-the-post-title.html" => "/posts/the-post-title/"
   page <- loadPageWithFileModifier blogPostUrl fp
   applyPage globalEnv (NE.cons page structure) >>= renderPage
 
@@ -130,20 +137,22 @@ main = do
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
   -- Write CSS file
-  includeAsset "stylesheets/mysheet.css"
   includeAsset "stylesheets/default.css"
 
-parseMaybeText :: T.Text -> Object -> Maybe T.Text
-parseMaybeText k = parseMaybe (\o -> o .: k :: Parser T.Text)
+parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
+parseMaybeText k = parseMaybe (\o -> o A..: k :: Parser T.Text)
 
 -- | Convert known Aeson types into known Env types.
 -- TODO: support array of env vars
-maybeInsertIntoEnv :: Env -> T.Text -> Value -> Env
-maybeInsertIntoEnv env k (String s) = H.insert k (EText s) env
+maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
+maybeInsertIntoEnv env k (A.String s) =
+  case toDateTime (T.unpack s) of
+    Nothing -> H.insert k (EText s) env
+    Just dt -> H.insert k (EDateTime dt) env
 maybeInsertIntoEnv env _ _ = env
 
 -- | Convert an Aeson Object to an Env.
-aesonToEnv :: Object -> Env
+aesonToEnv :: A.Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
 -- Describes a loaded page, with the page's template nodes, loaded environment
@@ -201,6 +210,9 @@ evalNodes env (PVar var : rest) = do
   nodes <- evalNodes env rest
   case H.lookup var env of
     Nothing -> return $ PVar var : nodes
+    -- TODO for date rendering, we want to choose here HOW we want to render,
+    -- given what? a type? Or a var name + type? Or should be have injected it
+    -- into the env beforehand?
     Just envData -> return $ PText (envDataToDisplay envData) : nodes
 evalNodes env (PIf var nodes : rest) = do
   rest' <- evalNodes env rest
@@ -238,12 +250,12 @@ evalNodes env (n : rest) = do
   return $ n : rest'
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
-loadVariables :: Tags -> Object
+loadVariables :: Tags -> A.Object
 loadVariables tags =
   case findPreambleComment tags of
     Nothing -> H.empty
     Just commentText ->
-      let v = decode (fromStrict $ encodeUtf8 (T.strip commentText)) :: Maybe Object
+      let v = A.decode (fromStrict $ encodeUtf8 (T.strip commentText)) :: Maybe A.Object
        in M.fromMaybe H.empty v
 
 findPreambleComment :: Tags -> Maybe T.Text

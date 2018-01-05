@@ -1,7 +1,7 @@
 <!-- PREAMBLE
 {
 "postTitle": "Singleton Pattern in Python",
-"date": "2010-04-16 08:09:00",
+"date": "2010-04-16",
 "categories": ["blog"],
 "tags": ["python", "second element", "third"]
 }

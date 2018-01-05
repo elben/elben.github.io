@@ -1,7 +1,7 @@
 <!-- PREAMBLE
 {
 "postTitle": "Behind Python's unittest.main()",
-"date": "2010-01-30 09:08:00",
+"date": "2010-01-30",
 "tags": ["python", "second element", "third"]
 }
 -->
