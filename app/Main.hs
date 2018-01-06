@@ -161,12 +161,16 @@ main = do
     (renderBlogPost (pagePartial :| [pageLayout]))
 
   -- Index
-  let postsEnv = H.insert "recommendedPosts" (EEnvList (map getPageEnv recommendedPosts)) (H.insert "posts" (EEnvList (map getPageEnv sortedPosts)) globalEnv)
+  -- Function composition
+  let postsEnv = (insertEnvList "posts" sortedPosts . insertEnvList "recommendedPosts" recommendedPosts) globalEnv
   indexPage <- loadPage "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
   -- Write CSS file
   includeAsset "stylesheets/default.css"
+
+insertEnvList :: T.Text -> [Page] -> Env -> Env
+insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
 
 parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o A..: k :: Parser T.Text)
