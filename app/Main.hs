@@ -104,10 +104,30 @@ modifyEnvVar (Page nodes env fp) f k =
   let env' = H.adjust f k env
   in Page nodes env' fp
 
-renderBlogPost :: NonEmpty Page -> FilePath -> IO ()
-renderBlogPost structure fp = do
-  page <- loadPageWithFileModifier blogPostUrl fp
-  applyPage globalEnv (NE.cons page structure) >>= renderPage
+renderBlogPost :: H.HashMap T.Text Page -> NonEmpty Page -> FilePath -> IO ()
+renderBlogPost tagMap structure fp = do
+  page@(Page _ env _) <- loadPageWithFileModifier blogPostUrl fp
+  let tagEnvList =
+        case H.lookup "tags" env of
+          Just (EArray tags) ->
+            EEnvList $
+              L.foldl'
+                (\acc envData ->
+                  case envData of
+                    EText tag ->
+                      case H.lookup tag tagMap of
+                        Just tagIndexPage -> getPageEnv tagIndexPage : acc
+                        _ -> acc
+                    _ -> acc)
+                [] tags
+          _ -> EEnvList []
+
+  -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
+  -- loaded Tag index pages. This is so that when we render the blog posts, we
+  -- have access to the URL of the Tag index.
+  let env' = H.insert "tags" tagEnvList env
+
+  applyPage globalEnv (NE.cons (page { getPageEnv = env' }) structure) >>= renderPage
 
 loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
 loadAndApplyPage structure fp = do
@@ -187,14 +207,32 @@ main = do
   let recommendedPosts = filterByVar "tags"
                            (arrayContainsString "recommended")
                            posts
+
+  -- Tags and tag list pages
+
   let tagMap = groupByTagVar "tags" posts
+  -- Build a mapping of tag to the tag list Page
+  tagPages <- foldM
+    (\acc (tag, taggedPosts) -> do
+      tagPage <- loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
+      let tagEnv = (insertEnvList "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) globalEnv
+      return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
+    )
+    H.empty
+    (H.toList tagMap)
+
+  -- TODO we need to _modify_ the posts pages and inject the URLs to the tag
+  -- pages, which we now know. Then render that instead.
+  --
+  -- This means we need to convert the "tag" variable from an EArray to an
+  -- EEnvList.
 
   forM_
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
     , "blog/2010-04-16-singleton-pattern-in-python.markdown"
     , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
     ]
-    (renderBlogPost (pagePartial :| [pageLayout]))
+    (renderBlogPost tagPages (pagePartial :| [pageLayout]))
 
   -- Index
   -- Function composition
@@ -202,13 +240,8 @@ main = do
   indexPage <- loadPage "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
-  -- Render tag archive list
-  forM_ (H.toList tagMap)
-    (\(tag, posts) -> do
-      tagPage <- loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
-      let tagEnv = (insertEnvList "posts" posts . insertEnvText "tag" tag) globalEnv
-      applyPage tagEnv (tagPage :| [pageLayout]) >>= renderPage
-    )
+  -- Render tag list pages
+  forM_ (H.elems tagPages) (\page -> applyPage globalEnv (page :| [pageLayout]) >>= renderPage)
 
   -- Render CSS file
   includeAsset "stylesheets/default.css"
@@ -218,6 +251,10 @@ insertEnvText var val = H.insert var (EText val)
 
 insertEnvList :: T.Text -> [Page] -> Env -> Env
 insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
+
+-- | Merge two envs together, biased towards the left-hand env on duplicates.
+insertEnv :: Env -> Env -> Env
+insertEnv = H.union
 
 parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
 parseMaybeText k = parseMaybe (\o -> o A..: k :: Parser T.Text)
