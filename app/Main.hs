@@ -136,6 +136,41 @@ filterByVar var f =
   L.filter
    (\(Page _ env _) -> M.fromMaybe False (H.lookup var env >>= (Just . f)))
 
+-- | Given a variable (whose value is assumed to be an array of EText) and list
+-- of pages, group the pages by the EText found in the variable.
+--
+-- For example, say each Page has a variable "tags" that is a list of tags. The
+-- first Page has a "tags" variable that is an EArray [EText "a"], and the
+-- second Page has a "tags" variable that is an EArray [EText "a", EText "b"].
+-- The final output would be a map fromList [("a", [page1, page2]), ("b",
+-- [page2])].
+groupByTagVar :: T.Text
+           -> [Page]
+           -> H.HashMap T.Text [Page]
+groupByTagVar var =
+  -- This outer fold takes the list of pages, and accumulates the giant HashMap.
+  L.foldl'
+    (\acc page@(Page _ env _) ->
+      let x = H.lookup var env
+      in case x of
+           Just (EArray values) ->
+             -- This fold takes each of the found values (each is a key in the
+             -- hash map), and adds the current page (from the outer fold) into
+             -- each of the key.
+             L.foldl'
+               (\hashmap envData ->
+                 case envData of
+                   -- Only insert Pages into the map if the variable is an EArray of
+                   -- EText. Alter the map to either (1) insert this current
+                   -- page into the existing list, or (2) create a new list (the
+                   -- key has never been seen) with just this page.
+                   EText val -> H.alter (\mv -> Just (page : M.fromMaybe [] mv)) val hashmap
+                   _ -> hashmap)
+               acc values
+           _ -> acc
+    )
+    H.empty
+
 main :: IO ()
 main = do
   pageLayout <- loadPage "layouts/default.html"
@@ -152,6 +187,7 @@ main = do
   let recommendedPosts = filterByVar "tags"
                            (arrayContainsString "recommended")
                            posts
+  let tagMap = groupByTagVar "tags" posts
 
   forM_
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
@@ -166,8 +202,19 @@ main = do
   indexPage <- loadPage "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
-  -- Write CSS file
+  -- Render tag archive list
+  forM_ (H.toList tagMap)
+    (\(tag, posts) -> do
+      tagPage <- loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
+      let tagEnv = (insertEnvList "posts" posts . insertEnvText "tag" tag) globalEnv
+      applyPage tagEnv (tagPage :| [pageLayout]) >>= renderPage
+    )
+
+  -- Render CSS file
   includeAsset "stylesheets/default.css"
+
+insertEnvText :: T.Text -> T.Text -> Env -> Env
+insertEnvText var val = H.insert var (EText val)
 
 insertEnvList :: T.Text -> [Page] -> Env -> Env
 insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
