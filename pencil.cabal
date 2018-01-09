@@ -23,7 +23,9 @@ library
                      , cmark
                      , directory
                      , filepath
+                     , hsass
                      , parsec
+                     , mtl
                      , tagsoup
                      , text
                      , time
@@ -42,6 +44,8 @@ executable pencil-exe
                      , cmark
                      , directory
                      , filepath
+                     , hsass
+                     , mtl
                      , parsec
                      , tagsoup
                      , text

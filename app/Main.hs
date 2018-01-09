@@ -5,21 +5,23 @@ module Main where
 import Pencil.Parser
 import Pencil.Env
 import Control.Monad (forM_, foldM)
-import qualified Data.Aeson as A
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
-import Data.Text.Encoding (encodeUtf8)
+import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import qualified CMark as CM
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
+import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Maybe as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified System.Directory as D
 import qualified System.FilePath as FP
 import qualified Text.HTML.TagSoup as TS
-import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
-import qualified Data.List.NonEmpty as NE
-import qualified Data.List as L
+import qualified Text.Sass as Sass
+import Text.Sass.Options (defaultSassOptions)
 
 type PTags = [PTag]
 
@@ -244,7 +246,8 @@ main = do
   forM_ (H.elems tagPages) (\page -> applyPage globalEnv (page :| [pageLayout]) >>= renderPage)
 
   -- Render CSS file
-  includeAsset "stylesheets/default.css"
+  renderCss "stylesheets/default.css"
+  renderCss "stylesheets/syntax.scss"
 
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
@@ -304,14 +307,32 @@ loadPageWithFileModifier fpf fp = do
   let env' = H.insert "this.url" (EText (T.pack fp')) env
   return $ Page nodes env' ("/" ++ fpf fp)
 
+data Extension = Markdown
+               | Sass
+               | Scss
+               | Other
+
+extensionMap :: H.HashMap String Extension
+extensionMap = H.fromList
+  [ ("markdown", Markdown)
+  , ("md", Markdown)
+  , ("sass", Sass)
+  , ("scss", Scss)]
+
 parsePage :: FilePath -> IO (T.Text, [PNode])
 parsePage fp = do
   content <- TIO.readFile (sitePrefix ++ fp)
   let extension = FP.takeExtension fp
-  let content' =
+  content' <-
         if extension `elem` [".markdown", ".md"]
-        then CM.commonmarkToHtml [] content
-        else content
+        then return $ CM.commonmarkToHtml [] content
+        else if extension == ".scss"
+             then do
+               result <- Sass.compileString (T.unpack content) Text.Sass.Options.defaultSassOptions
+               case result of
+                 Left _ -> return content
+                 Right byteStr -> return $ decodeUtf8 byteStr
+             else return content
   let nodes = case runParser content' of
                 Left _ -> []
                 Right n -> n
@@ -384,11 +405,13 @@ findPreambleComment (_ : rest) =
   findPreambleComment rest
 
 -- | Copy specified file from site to out.
-includeAsset :: FilePath -> IO ()
-includeAsset fp = do
+renderCss :: FilePath -> IO ()
+renderCss fp = do
   -- True flag is to create parents too
   D.createDirectoryIfMissing True (outPrefix ++ FP.takeDirectory fp)
-  D.copyFile (sitePrefix ++ fp) (outPrefix ++ fp)
+  (content, _) <- parsePage fp
+  -- Drop .scss/sass extension and replace with .css.
+  TIO.writeFile (outPrefix ++ FP.dropExtension fp ++ ".css") content
 
 cssTag :: T.Text -> Tags
 cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
@@ -425,4 +448,3 @@ injectInto tagName inject (tagOpen @ (TS.TagOpen tag _) : rest) =
   else tagOpen : injectInto tagName inject rest
 injectInto tagName inject (tag : rest) =
   tag : injectInto tagName inject rest
-
