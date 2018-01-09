@@ -1,0 +1,343 @@
+@import 'fonts';
+@import 'syntax';
+
+/******* default.css *******/
+
+$serif-family: 'Charter', Georgia, serif;
+$sans-serif-family: "Avenir", "Gill Sans", "Helvetica Neue", helvetica, sans-serif;
+$monospace-family: "Source Code Pro", monospace;
+
+/* Hits about 80 characters per line with font size 16px */
+$site-width: 640px;
+
+html {
+  font-family: Georgia, serif;
+}
+
+html.fonts-loaded {
+  font-family: $serif-family;
+}
+
+.code-fonts-loaded code,pre {
+  font-family: $monospace-family;
+}
+
+body {
+  color: #151311; /* Dark grey with a little of red saturation */
+
+  /* Our base font of 18px. Line-heights, margins, and paddings calculated to
+   * produce vertical rhyhtm. */
+  font-size: 18px;
+  line-height: 1.5em;
+  padding: 0;
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  font-size: 1em;
+  line-height: 1.5em;
+  margin-bottom: 1em;
+}
+
+a {
+  /* color: #ff3366; */ /* red persimmon */
+  /* color: #003beb; */ /* spring blue */
+  /* color: #53912a; */ /* awesome green */
+  color: inherit; /* Same as body */
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
+   * baseline, so this means we have 23px left. Hence 23px margin. */
+  border: 3px solid #222;
+  margin-top: 23px 0;
+}
+
+#header hr {
+  margin: 1em 0;
+  display: block;
+}
+
+/* Useful to give an image some breathing room */
+.some-padding {
+  padding: 1em 0;
+}
+
+img {
+  border: 0px;
+  max-width: 100%;
+}
+
+img#background {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
+
+/* Code is used in body (not just code blocks), so we need to be sure to handle
+ * vertical rhyhtm. Simpliest to keep font-size 1em.
+ */
+code {
+  font-size: 0.95em;
+  font-family: monospace;
+  font-weight: normal;
+  line-height: 1em; /* For some reason, 1em for monospace fonts gives us vertical rhyhtm. */
+  font-weight: 400;
+}
+
+pre {
+  /* This number affects .lineNumbers in syntax.css. */
+  /* Use !important to overwrite the inner `code` line height */
+  line-height: 1.3em !important;
+
+  font-family: monospace;
+  border-left: 8px solid #e5e5e5;
+  padding: 0 1em;
+  margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
+
+  overflow-x: auto;
+}
+
+/*
+ * Headers
+ *
+ * For headers, we use http://modularscale.com to produce a scale in base size
+ * 18px using the "perfect-fourth" ratio.
+ *
+ * font     font
+ * px       em      line-height (1.5 / em)
+ * =======+========+==============
+ * 56.832 | 3.157  | .475134621
+ * 42.635 | 2.369  | .633178556
+ * 31.984 | 1.777  | .844119302
+ * 23.994 | 1.333  | 1.12528132
+ * 18     | 1      | 1.5
+ * 13.503 | 0.75   | 2
+ * 10.13  | 0.563  | 2.664298401
+ *
+ *
+ * The line-height measurements above are calculated via (1.5 em / font em).
+ * This represents the line-height (and margin/padding, if applicable) needed to
+ * make each element hit the right vertical line.
+ */
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: $sans-serif-family;
+}
+
+h1 {
+  font-size: 1.777em;
+
+  /* This line-height calculated by pretending our base rhyhtm is at 13.5px
+   * instead of 27px (found by 18px * 1.5em).  This is done to produce some
+   * spacing between multi-lined headers.
+   *
+   * = (1.5em * 1.5) / 1.777em
+   */
+  line-height: 1.266178953em;
+
+  font-weight: bold;
+}
+
+h1.post-title {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+h2 {
+  font-size: 1.333em;
+
+  /* For a font size 1.333em, per our chart above, we have a line height of
+   * 1.12528132em. For "perfect" alignment, our margin-bottom should also be
+   * that number, but I'm going to go with what looks good by gut. The header
+   * should be a bit closer to the section it declares, for contextual
+   * proximity.
+   *
+   * x = 1.12528132
+   * margin-top    = x * 1.5
+   * margin-bottom = x / 2
+   */
+  line-height: 1.12528132em;
+  margin: 1.68792198em 0 0.56264066em 0;
+}
+
+h3 {
+  font-weight: bold;
+  font-size: 1em;
+  margin: 1.5em 0 0em;
+}
+
+ul.simple {
+  list-style: none;
+  margin-left: -1em;
+  margin-top: 0;
+  margin-bottom: 1.5em;
+  padding-left: 1em;
+  line-height: 1.5em;
+}
+
+#structure {
+  position: relative;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1em;
+
+  max-width: $site-width;
+}
+
+#navigation {
+  font-family: $sans-serif-family;
+  float: right;
+}
+
+#navigation a {
+  margin-left: 1em;
+}
+
+/* Don't give margin-left to left-most navigation element, since there's nothing
+ * to the left of it. In mobile mode, this helps navigation stay aligned to the
+ * left side. */
+#navigation a:first-child {
+  margin-left: 0;
+}
+
+
+#header {
+  margin-top: 0;
+  padding-top: 1.5em;
+}
+
+#header h1 {
+  display: inline;
+
+  font-size: 1em;
+  line-height: 1.5em;
+  font-weight: bold;
+}
+
+#header h1 a {
+  text-decoration: none;
+}
+
+#footer {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+.floatleft {
+  float: left;
+  clear: left;
+  margin: 0px 15px 10px 0px;
+  border: 0px;
+  padding: 5px;
+}
+
+.quote {
+  text-align: justify;
+  text-shadow: 1px 1px 0px #eee;
+  padding: 5px;
+  margin-left: auto;
+  margin-right: auto;
+  font-style: italic;
+  color: #333;
+  padding-left: 20px;
+  margin-top: -20px;
+  margin-bottom: 20px;
+}
+
+.intro {
+  padding: 20px;
+  margin-bottom: 20px;
+  background-color: #FFEC5C; /* yellow */
+  /*border: 1px solid #FFE313;*/
+  -moz-border-radius: 20px;
+  border-radius: 20px;
+
+}
+
+.post-metadata {
+  font-size: 0.75em;
+  font-family: $sans-serif-family;
+  /* color: #b3a9a6; */ /* Grey with reddish saturation */
+  color: #666260; /* Darker grey with reddish saturation */
+  padding-bottom: 1em;
+}
+
+.post-metadata a {
+  color: #666260; /* Darker grey with reddish saturation */
+}
+
+.post-list-metadata {
+  font-family: $sans-serif-family;
+  /* color: #b3a9a6; */ /* Grey with reddish saturation */
+  color: #666260; /* Darker grey with reddish saturation */
+  font-size: 0.75em;
+  line-height: 2em;
+}
+
+.post-content-end {
+  margin-top: 1em;
+  margin-bottom: 3em;
+}
+
+div.chapter-num {
+ width: 1.5em;
+ float: left;
+}
+
+@media (max-width: $site-width) {
+  #header h1 {
+    padding-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  pre {
+    border-left: none;
+    padding: 0;
+    margin: 1.5em 0; /* 1.5em margin to flow with default body line-height. */
+  }
+
+  ul.project-list li {
+   margin-bottom: 0.5em;
+  }
+}
+
+@media (max-width: 460px) {
+  #navigation {
+    display: block;
+    float: none;
+  }
+}
+
+@media print {
+  body {
+    font-size: 9pt;
+    color: #000;
+    background: none;
+  }
+
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  code {
+    /* Remove padding used for background hightlight */
+    padding: 0;
+  }
+
+  @page {
+    margin: 2cm 3.5cm 2cm 3.5cm;
+  }
+
+  .post-content-end {
+    display: none;
+  }
+}

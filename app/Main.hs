@@ -246,8 +246,7 @@ main = do
   forM_ (H.elems tagPages) (\page -> applyPage globalEnv (page :| [pageLayout]) >>= renderPage)
 
   -- Render CSS file
-  renderCss "stylesheets/default.css"
-  renderCss "stylesheets/syntax.scss"
+  renderCss "stylesheets/default.scss"
 
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
@@ -319,6 +318,9 @@ extensionMap = H.fromList
   , ("sass", Sass)
   , ("scss", Scss)]
 
+sassOptions :: Sass.SassOptions
+sassOptions = Text.Sass.Options.defaultSassOptions
+
 parsePage :: FilePath -> IO (T.Text, [PNode])
 parsePage fp = do
   content <- TIO.readFile (sitePrefix ++ fp)
@@ -328,7 +330,8 @@ parsePage fp = do
         then return $ CM.commonmarkToHtml [] content
         else if extension == ".scss"
              then do
-               result <- Sass.compileString (T.unpack content) Text.Sass.Options.defaultSassOptions
+               -- Use compileFile so that SASS @import works
+               result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
                case result of
                  Left _ -> return content
                  Right byteStr -> return $ decodeUtf8 byteStr
