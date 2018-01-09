@@ -5,8 +5,7 @@
     <div class="post-metadata">
       <div class="date">
         ${date}
-        ${if(tags)} / ${end}
-        ${for(tags)} <a href="${this.url}">${tag}</a> ${end}
+        ${for(tags)} / <a href="${this.url}">${tag}</a> ${end}
       </div>
     </div>
   </header>
