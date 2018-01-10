@@ -10,6 +10,7 @@ import Data.ByteString.Lazy (fromStrict)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import qualified CMark as CM
+import qualified Text.Pandoc as P
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
@@ -308,7 +309,6 @@ loadPageWithFileModifier fpf fp = do
 
 data Extension = Markdown
                | Sass
-               | Scss
                | Other
 
 extensionMap :: H.HashMap String Extension
@@ -316,26 +316,38 @@ extensionMap = H.fromList
   [ ("markdown", Markdown)
   , ("md", Markdown)
   , ("sass", Sass)
-  , ("scss", Scss)]
+  , ("scss", Sass)]
+
+toExtension :: String -> Extension
+toExtension fp =
+  -- takeExtension returns ".markdown", so drop the "."
+  M.fromMaybe Other (H.lookup (drop 1 (FP.takeExtension fp)) extensionMap)
 
 sassOptions :: Sass.SassOptions
 sassOptions = Text.Sass.Options.defaultSassOptions
 
+markdownWriterOptions :: P.WriterOptions
+markdownWriterOptions =
+  P.def {
+    P.writerHighlight = True
+  }
+
 parsePage :: FilePath -> IO (T.Text, [PNode])
 parsePage fp = do
   content <- TIO.readFile (sitePrefix ++ fp)
-  let extension = FP.takeExtension fp
   content' <-
-        if extension `elem` [".markdown", ".md"]
-        then return $ CM.commonmarkToHtml [] content
-        else if extension == ".scss"
-             then do
-               -- Use compileFile so that SASS @import works
-               result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
-               case result of
-                 Left _ -> return content
-                 Right byteStr -> return $ decodeUtf8 byteStr
-             else return content
+    case toExtension fp of
+      Markdown ->
+        case P.readMarkdown P.def (T.unpack content) of
+          Left _ -> return content
+          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
+      Sass -> do
+         -- Use compileFile so that SASS @import works
+         result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
+         case result of
+           Left _ -> return content
+           Right byteStr -> return $ decodeUtf8 byteStr
+      Other -> return content
   let nodes = case runParser content' of
                 Left _ -> []
                 Right n -> n

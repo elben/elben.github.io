@@ -11,15 +11,13 @@
 
 ${postTitle}
 
-${tags}
-
 ${date}
 
 ${mybool} ${myboolother} ${myundef}
 
-My own URL is ${this.url} which links to <a href="${this.url}">here</a>
+My own URL is ${this.url} which links to
 
-${tags}
+<a href="${this.url}">here</a>
 
 ${unknown variable}
 

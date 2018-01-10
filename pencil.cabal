@@ -24,6 +24,7 @@ library
                      , directory
                      , filepath
                      , hsass
+                     , pandoc
                      , parsec
                      , mtl
                      , tagsoup
@@ -46,6 +47,7 @@ executable pencil-exe
                      , filepath
                      , hsass
                      , mtl
+                     , pandoc
                      , parsec
                      , tagsoup
                      , text
