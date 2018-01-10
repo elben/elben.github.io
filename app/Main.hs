@@ -9,7 +9,6 @@ import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-import qualified CMark as CM
 import qualified Text.Pandoc as P
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as H

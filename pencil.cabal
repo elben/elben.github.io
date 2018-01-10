@@ -20,7 +20,6 @@ library
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
-                     , cmark
                      , directory
                      , filepath
                      , hsass
@@ -42,7 +41,6 @@ executable pencil-exe
                      , pencil
                      , aeson
                      , bytestring
-                     , cmark
                      , directory
                      , filepath
                      , hsass
