@@ -4,7 +4,7 @@ module Main where
 
 import Pencil.Parser
 import Pencil.Env
-import Control.Monad (forM_, foldM)
+import Control.Monad (forM_, foldM, filterM)
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
@@ -248,6 +248,63 @@ main = do
   -- Render CSS file
   renderCss "stylesheets/default.scss"
 
+  -- Render /p/ mini sites
+  loadDir "p/clojure-primer-js/" True >>= (\pages -> forM_ pages renderPage)
+  loadDir "p/curvey/" True >>= (\pages -> forM_ pages renderPage)
+  loadDir "p/makersquare-clustering/" True >>= (\pages -> forM_ pages renderPage)
+
+  clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
+  forM_ clojurePrimerJsPages renderPage
+  -- https://hackage.haskell.org/package/directory-1.3.1.5/docs/System-Directory.html
+  -- listDirectory
+
+-- TODO don't do this "raw". Use our loadPage etc so that it's generalize.
+-- I think we want to use oadPage/parsePage/loadFile, and turn it into a Page
+-- as everything else, then render it.
+--
+-- Hakyll allows globs, which they parse manually.
+-- https://github.com/jaspervdj/hakyll/blob/293c379e1634b39315cf6a8cab80470aa3c50ad0/lib/Hakyll/Core/Identifier/Pattern.hs#L239
+--
+--
+-- I think here is a good point to stop and think about the bigger design
+-- picture. What is the overall architecture?
+-- 1. load Pages in some specified way: the filepath, conversions (e.g. HTML,
+--    raw)
+-- 2. define How to render those pages (e.g. Structures)
+-- 3. where to do it (the out fp), and then
+-- 4. render/write it
+
+loadDir :: FilePath -> Bool -> IO [Page]
+loadDir dir recursive = do
+  fps <- listDir recursive dir
+  mapM (\f -> loadPage (dir ++ f)) fps
+
+-- List files in directory, optionally recursively. Returns paths that does not
+-- include the given dir.
+listDir :: Bool -> FilePath -> IO [FilePath]
+listDir recursive dir = do
+  -- List files (just the filename, without the fp directory prefix)
+  listing <- D.listDirectory (sitePrefix ++ dir)
+  -- Filter only for files (we have to add the right directory prefixes to the
+  -- file check)
+  files <- filterM (\f -> D.doesFileExist (sitePrefix ++ dir ++ f)) listing
+  dirs <- filterM (\f -> D.doesDirectoryExist (sitePrefix ++ dir ++ f)) listing
+
+  innerFiles <- if recursive
+                  then mapM
+                         (\d -> do
+                           ff <- listDir recursive (dir ++ d ++ "/")
+                           -- Add the inner directory as a prefix
+                           return (map (\f -> d ++ "/" ++ f) ff))
+                         dirs
+                  else return []
+
+  return $ files ++ concat innerFiles
+
+copyFileStatic :: FilePath -> IO ()
+copyFileStatic fp =
+  D.copyFile (sitePrefix ++ fp) (outPrefix ++ fp)
+
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
 
@@ -298,6 +355,9 @@ loadPage :: FilePath
          -> IO Page
 loadPage = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
+loadPageId :: FilePath -> IO Page
+loadPageId = loadPageWithFileModifier id
+
 loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Page
 loadPageWithFileModifier fpf fp = do
   (content, nodes) <- parsePage fp
@@ -331,9 +391,13 @@ markdownWriterOptions =
     P.writerHighlight = True
   }
 
+loadFile :: FilePath -> IO T.Text
+loadFile fp =
+  TIO.readFile (sitePrefix ++ fp)
+
 parsePage :: FilePath -> IO (T.Text, [PNode])
 parsePage fp = do
-  content <- TIO.readFile (sitePrefix ++ fp)
+  content <- loadFile fp
   content' <-
     case toExtension fp of
       Markdown ->

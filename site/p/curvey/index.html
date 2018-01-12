@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Curvey - a b-spline sandbox that doesn't suck (as much)</title>
+    <link rel="stylesheet" href="resources/style.css" type="text/css">
+  </head>
+  <body>
+    <div id="structure">
+      <div id="header">
+        <h1>Curvey</h1>
+        <div id="subtitle">A b-spline sandbox that doesn't suck (as much).</div>
+        <p>by <a href="http://elbenshira.com">Elben Shira</a></p>
+        <p><a href="http://github.com/elben/curvey/">Download source.</a></p>
+      </div>
+
+      <div id="abstract" class="section">
+        <h2>Abstract</h2>
+        <p>Gaining an intuitive understanding for b-splines is difficult without
+        directly seeing the effects of different knot vectors and control point
+        positions.</p>
+
+        <p>Curvey allows you to build b-spline curves by specifying the degree
+        of the curve, control points, and the knot vector. This allows the user
+        to see b-spline curves in its most general sense.</p>
+      </div>
+
+      <div id="background" class="section">
+        <h2>Background</h2>
+        <p>Many applications exist for playing around with
+        b-splines, but they are all limited in one to all of the following
+        ways:</p>
+
+        <ol>
+          <li>A fixed number of control points.</li>
+          <li>Only uniform b-splines.</li>
+          <li>No control of knot vector.</li>
+          <li>Does not use polar notation.</li>
+        </ol>
+
+        <p>Curvey uses the polar notation introduced by Lyle Ramshaw.</p>
+
+        <h3>Polar Notation</h3>
+
+        <p>This section introduces b-spline curves using the polar notation.
+        We assume that you have a basic understanding of b-spline curves.</p>
+
+        <p>A b-spline curve can be defined by a set of control points and a knot
+        vector. Consider the example below:</p>
+
+        <img src="resources/example1.png">
+
+        <p>Here we have a cubic b-spline curve with five control points, <span
+          class="code">(-4,-2), (-2,3), (3,4), (3,-2), (5,-3)</span> and knot
+        vector <span class="code">[0, 0, 0, 1, 2, 2, 2]</span>. The control
+        points are labeled with the control point number and with the
+        <dfn>polar values</dfn>. For example, the control point at <span
+          class="code">(3,4)</span> is the 3rd control point with polar values
+        <span class="code">p(0, 1, 2)</span>.
+        </p>
+
+        <p>More formally, consider a degree <i>n</i> b-spline over the paramater
+        interval <i>[a,b]</i>. We can give polar values to each control point using
+        <i>n</i> consecutive knots from the knot vector</p>
+        <p class="formula"><img src="resources/knotvector.png"></p>
+        <p>Polar values are symmetric:</p>
+        <p class="formula"><img src="resources/symmetric.png"></p>
+        <p>And finally, we can calculate the (x,y) position of any polar value
+        <i>c</i> that is between <i>a</i> and <i>b</i>:</p>
+        <p class="formula"><img src="resources/affine_combination.png"></p>
+        <p>More in-depth discussion can be found in [1].</p>
+
+        <h3>Knot Insertion &amp; de Boor</h3>
+
+        <p>We can evalute the (x,y) values of a knot <i>t</i> between the
+        paramater space <i>[a,b]</i> by inserting <i>t</i> into the knot vector
+        such that there are <i>n</i> instances of <i>t</i> in the knot vector.</p>
+
+        <p>In the example below, we evaluate <i>t = 0.6</i>. We start with the
+        knot vector <span class="code">[0,0,0,1,1,1]</span>. We then insert
+        <i>0.6</i> into the knot vector to produce <span
+        class="code">[0,0,0,0.6,1,1,1]</span>. We then calculate new control
+        points <span class="code">p(0,0,0.6)</span>, <span
+        class="code">p(0,0.6,1)</span>, and <span
+        class="code">p(0.6,1,1)</span>. We throw away <span
+        class="code">p(0,0,1)</span> and <span class="code">p(0,1,1)</span>. We
+        evaluate the control point positions using the interpolation equation discussed
+        above.</p>
+
+        <p>Inserting <i>0.6</i> twice more will give us the knot vector <span
+        class="code">[0,0,0,0.6,0.6,0.6,1,1,1]</span>. The final control
+        points are colored red in the figure below.</p>
+        <img src="resources/de_boor_final.png">
+
+      </div>
+
+      <div id="curvey" class="section">
+
+        <h2>Curvey</h2>
+
+        <p>Curvey uses the de Boor algorithm to evaluate the b-spline curves. It
+        uses a simple "walk" by inserting <span class="code">p(u,u,u)</span>
+        every <i>delta</i> as defined by the
+        user.</p>
+
+        <h3>Setting Up</h3>
+
+        <p>Download the latest stable version: <a
+          href="https://github.com/elben/curvey/archives/master">https://github.com/elben/curvey/archives/master</a></p>
+
+        <p>If you like living on the edge, you can download the latest git
+        snapshot:</p>
+        <div class="code">$ git clone git://github.com/elben/curvey.git</div>
+
+        <p>Curvey depends on Python an the Tkinter library, which is included in
+        standard Python distributions. It has been tested on Python 2.6.</p>
+
+        <h3>Using</h3>
+
+        <p>To run the GUI version of Curvey, download the source and type:</p>
+        <div class="code">$ python curvey.py --ui</div>
+
+        <p>You can also give Curvey an input file:</p>
+        <div class="code">$ python curvey.py file</div>
+
+        <h3>Tutorial</h3>
+        
+        <p>This is a short tutorial on how to use the Curvey UI.</p>
+
+        <p>We first run Curvey:</p>
+        <div class="code">$ python curvey.py --ui</div>
+
+        <p>Now, hit "Render". You should see something like:</p>
+        <img class="full" src="resources/tutorial/2.png">
+
+        <p>Note the left text panel. It contains:</p>
+        <pre class="code">degree=3
+dt=0.2
+(1, 3)
+(2, 4)
+(6, 3)
+(5, 1)
+(2, 1)
+(0, 2)
+[0,0,0,1,3,4,4,4] </pre>
+        <p>Curvey has rendered the curve specified.</p>
+
+        <p>Press "Clear" to erase the canvas. Now, using your mouse, click on
+        the canvas to create a control point. Hit "Render". You should get an
+        error:</p>
+        <img class="full" src="resources/tutorial/3.png">
+
+        <p>This is because we don't have the right number of control points for
+        the degree and knot vector specified.</p>
+
+        <p><span class="important">Important</span> Curvey has two main methods
+        of inserting control points. The first is through the text box. The
+        second is by clicking on the canvas. When a control point is added via
+        clicking, the text box control points become irrelevant and are
+        ignored. Other information in the text box (e.g. dt, degree) are still
+        used, however. To use the text box control points, you must erase all
+        control points by hitting "Clear".</p> 
+
+        <p>Add a total of six control points by clicking on points on the
+        canvas. Curvey should automatically render the spline.</p>
+        <img class="full" src="resources/tutorial/4.png">
+
+        <p>You can render labels by clicking on the "Control point labels"
+        checkbox and hitting "Render". The labels show the control point order
+        and the control point's polar values:</p>
+        <img class="full" src="resources/tutorial/5.png">
+
+        <p><span class="important">Important</span> You can move a control point by right clicking on the control point
+        you want to move. Place it anywhere on the canvas. You can delete a
+        control point by double clicking on the control point.</p>
+
+        <p>Curvey was designed to support complex b-spline specifications. Here
+        is an example of a 4 degree spline with 11 control points:</p>
+        <img class="full" src="resources/tutorial/6.png">
+
+        <h3>Limitations and Known Bugs</h3>
+
+        <p><b>Not working on OS X 10.6 using Python 2.7</b>. There are screwed up
+        dependencies with OS X 10.6 and Tk, so Python 2.7 64bit does not come with Tk.
+        Use Python 2.7 32bit instead:</p>
+        <div class="code">$ python2.7-32 curvey.py --ui</div>
+
+      </div>
+
+      <div id="references" class="section">
+        <h2>References</h2>
+        <ol>
+          <li>An Introduction to Polar Forms.  (2001) pp. 1-20</li>
+          <li>Ramshaw and Digital Equipment Corporation. Systems Research
+          Center. Blossoming: A connect-the-dots approach to splines.
+          (1987)</li>
+          <li>B-Spline Curves.  (2007) pp. 1-21</li>
+          <li>Sederberg. An Introduction to B-Spline Curves.  (2005) pp. 1-12</li>
+          <li>Andersson and Kvernes. Bezier and B-spline Technology.  (2003)</li>
+        </ol>
+      </div>
+    </div>
+  </body>
+<html>
