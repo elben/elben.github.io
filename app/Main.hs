@@ -4,7 +4,10 @@ module Main where
 
 import Pencil.Parser
 import Pencil.Env
-import Control.Monad (forM_, foldM, filterM)
+import Control.Exception (tryJust)
+import Control.Monad (forM_, foldM, filterM, liftM)
+import GHC.IO.Exception (IOException(ioe_description))
+import Data.Typeable     ( Typeable )
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
@@ -108,7 +111,7 @@ modifyEnvVar (Page nodes env fp) f k =
 
 renderBlogPost :: H.HashMap T.Text Page -> NonEmpty Page -> FilePath -> IO ()
 renderBlogPost tagMap structure fp = do
-  page@(Page _ env _) <- loadPageWithFileModifier blogPostUrl fp
+  page@(Page _ env _) <- liftM forceRight (loadPageWithFileModifier blogPostUrl fp)
   let tagEnvList =
         case H.lookup "tags" env of
           Just (EArray tags) ->
@@ -133,7 +136,7 @@ renderBlogPost tagMap structure fp = do
 
 loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
 loadAndApplyPage structure fp = do
-  page <- loadPage fp
+  page <- liftM forceRight (loadPageAsHtml fp)
   applyPage globalEnv (NE.cons page structure) >>= renderPage
 
 sortByVar :: T.Text
@@ -193,14 +196,18 @@ groupByTagVar var =
     )
     H.empty
 
+forceRight :: Show e => Either e a -> a
+forceRight (Right a) = a
+forceRight (Left e) = error (show e)
+
 main :: IO ()
 main = do
-  pageLayout <- loadPage "layouts/default.html"
-  pagePartial <- loadPage "partials/post.html"
+  pageLayout <- liftM forceRight (loadPageAsHtml "layouts/default.html")
+  pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
 
   -- Load posts
   posts <- mapM
-    (loadPageWithFileModifier blogPostUrl)
+    (liftM forceRight . loadPageWithFileModifier blogPostUrl)
     [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
     , "blog/2010-04-16-singleton-pattern-in-python.markdown"
     , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
@@ -216,7 +223,7 @@ main = do
   -- Build a mapping of tag to the tag list Page
   tagPages <- foldM
     (\acc (tag, taggedPosts) -> do
-      tagPage <- loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
+      tagPage <- liftM forceRight $ loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
       let tagEnv = (insertEnvList "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) globalEnv
       return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
     )
@@ -239,7 +246,7 @@ main = do
   -- Index
   -- Function composition
   let postsEnv = (insertEnvList "posts" sortedPosts . insertEnvList "recommendedPosts" recommendedPosts) globalEnv
-  indexPage <- loadPage "index.html"
+  indexPage <- liftM forceRight $ loadPageAsHtml "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
   -- Render tag list pages
@@ -249,17 +256,17 @@ main = do
   renderCss "stylesheets/default.scss"
 
   -- Render /p/ mini sites
-  loadDir "p/clojure-primer-js/" True >>= (\pages -> forM_ pages renderPage)
-  loadDir "p/curvey/" True >>= (\pages -> forM_ pages renderPage)
-  loadDir "p/makersquare-clustering/" True >>= (\pages -> forM_ pages renderPage)
-
-  clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
-  forM_ clojurePrimerJsPages renderPage
+  -- loadDir "p/clojure-primer-js/" True >>= (\pages -> forM_ pages renderPage)
+  -- loadDir "p/curvey/" True >>= (\pages -> forM_ pages renderPage)
+  -- loadDir "p/makersquare-clustering/" True >>= (\pages -> forM_ pages renderPage)
+  --
+  -- clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
+  -- forM_ clojurePrimerJsPages renderPage
   -- https://hackage.haskell.org/package/directory-1.3.1.5/docs/System-Directory.html
   -- listDirectory
 
--- TODO don't do this "raw". Use our loadPage etc so that it's generalize.
--- I think we want to use oadPage/parsePage/loadFile, and turn it into a Page
+-- TODO don't do this "raw". Use our loadPageAsHtml etc so that it's generalize.
+-- I think we want to use oadPage/parseTextFile/loadTextFile, and turn it into a Page
 -- as everything else, then render it.
 --
 -- Hakyll allows globs, which they parse manually.
@@ -273,11 +280,16 @@ main = do
 -- 2. define How to render those pages (e.g. Structures)
 -- 3. where to do it (the out fp), and then
 -- 4. render/write it
-
-loadDir :: FilePath -> Bool -> IO [Page]
+--
+-- TODO problem here is that this doesn't work for non-text files, cuz
+-- loadPageAsHtml
+-- thinks it's text-readable. We need a BEFORE step, that just knows the file we
+-- are going to load. Then when we load we can choose the type of the file
+-- Righ now we are getting: pencil-exe: site/p/curvey/resources/affine_combination.png: hGetContents: invalid argument (invalid byte sequence)
+loadDir :: FilePath -> Bool -> IO [Either LoadFileException Page]
 loadDir dir recursive = do
   fps <- listDir recursive dir
-  mapM (\f -> loadPage (dir ++ f)) fps
+  mapM (\f -> loadPageId (dir ++ f)) fps
 
 -- List files in directory, optionally recursively. Returns paths that does not
 -- include the given dir.
@@ -338,6 +350,29 @@ data Page = Page
   -- ^ The rendered output path of this page. Defaults to the input file path.
   } deriving (Eq, Show)
 
+data Resource
+  = TextResource Page
+  | BinaryResource FilePath FilePath
+  -- ^ in and out file paths
+
+renderResource :: Resource -> IO ()
+renderResource (TextResource page) = renderPage page
+renderResource (BinaryResource fpIn fpOut) =
+  D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
+
+loadResourceAsHtml :: FilePath -> IO Resource
+loadResourceAsHtml = loadResourceWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
+
+loadResourceId :: FilePath -> IO Resource
+loadResourceId = loadResourceWithFileModifier id
+
+loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Resource
+loadResourceWithFileModifier fpf fp = do
+  eitherPage <- loadPageWithFileModifier fpf fp
+  case eitherPage of
+    Left (NotTextFile _) -> return $ BinaryResource fp (fpf fp)
+    Right page -> return (TextResource page)
+
 renderPage :: Page -> IO ()
 renderPage (Page nodes _ fpOut) = do
   let noFileName = FP.takeBaseName fpOut == ""
@@ -351,20 +386,23 @@ renderPage (Page nodes _ fpOut) = do
 --
 -- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
 -- filepath is "/foo/bar/hello.html".
-loadPage :: FilePath
-         -> IO Page
-loadPage = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
+loadPageAsHtml :: FilePath
+         -> IO (Either LoadFileException Page)
+loadPageAsHtml = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
-loadPageId :: FilePath -> IO Page
+loadPageId :: FilePath -> IO (Either LoadFileException Page)
 loadPageId = loadPageWithFileModifier id
 
-loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Page
+loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO (Either LoadFileException Page)
 loadPageWithFileModifier fpf fp = do
-  (content, nodes) <- parsePage fp
-  let env = aesonToEnv $ loadVariables (TS.parseTags content)
-  let fp' = "/" ++ fpf fp
-  let env' = H.insert "this.url" (EText (T.pack fp')) env
-  return $ Page nodes env' ("/" ++ fpf fp)
+  eitherContent <- parseTextFile fp
+  case eitherContent of
+    Left e -> return $ Left e
+    Right (content, nodes) -> do
+      let env = aesonToEnv $ loadVariables (TS.parseTags content)
+      let fp' = "/" ++ fpf fp
+      let env' = H.insert "this.url" (EText (T.pack fp')) env
+      return $ Right $ Page nodes env' ("/" ++ fpf fp)
 
 data Extension = Markdown
                | Sass
@@ -391,30 +429,46 @@ markdownWriterOptions =
     P.writerHighlight = True
   }
 
-loadFile :: FilePath -> IO T.Text
-loadFile fp =
-  TIO.readFile (sitePrefix ++ fp)
+data LoadFileException
+  = NotTextFile IOError
+  -- ^ Failed to read a file as a text file.
+  deriving (Typeable, Show)
 
-parsePage :: FilePath -> IO (T.Text, [PNode])
-parsePage fp = do
-  content <- loadFile fp
-  content' <-
-    case toExtension fp of
-      Markdown ->
-        case P.readMarkdown P.def (T.unpack content) of
-          Left _ -> return content
-          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
-      Sass -> do
-         -- Use compileFile so that SASS @import works
-         result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
-         case result of
-           Left _ -> return content
-           Right byteStr -> return $ decodeUtf8 byteStr
-      Other -> return content
-  let nodes = case runParser content' of
-                Left _ -> []
-                Right n -> n
-  return (content', nodes)
+loadTextFile :: FilePath -> IO (Either LoadFileException T.Text)
+loadTextFile fp =
+  tryJust toLoadFileException
+          (TIO.readFile (sitePrefix ++ fp))
+
+toLoadFileException :: IOError -> Maybe LoadFileException
+toLoadFileException e = if isInvalidByteSequence e then Just (NotTextFile e) else Nothing
+
+isInvalidByteSequence :: IOError -> Bool
+isInvalidByteSequence e = ioe_description e == "invalid byte sequence"
+
+parseTextFile :: FilePath -> IO (Either LoadFileException (T.Text, [PNode]))
+parseTextFile fp = do
+  -- TODO here it may not be a text file. May be PNG, binary, etc
+  eitherContent <- loadTextFile fp
+  case eitherContent of
+    Left e -> return $ Left e
+    Right content -> do
+      content' <-
+        case toExtension fp of
+          Markdown ->
+            case P.readMarkdown P.def (T.unpack content) of
+              Left _ -> return content
+              Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
+          Sass -> do
+             -- Use compileFile so that SASS @import works
+             result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
+             case result of
+               Left _ -> return content
+               Right byteStr -> return $ decodeUtf8 byteStr
+          Other -> return content
+      let nodes = case runParser content' of
+                    Left _ -> []
+                    Right n -> n
+      return $ Right (content', nodes)
 
 -- | Evaluate the nodes in the given environment. Note that it returns an IO
 -- because of ${partial(..)} calls that requires us to load a file.
@@ -455,7 +509,7 @@ evalNodes env (PFor var nodes : rest) = do
     -- Var is not an EEnvList; everything inside the for-statement is thrown away
     Just _ -> return rest'
 evalNodes env (PPartial fp : rest) = do
-  (_, nodes) <- parsePage (T.unpack fp)
+  (_, nodes) <- liftM forceRight $ parseTextFile (T.unpack fp)
   nodes' <- evalNodes env nodes
   rest' <- evalNodes env rest
   return $ nodes' ++ rest'
@@ -487,7 +541,7 @@ renderCss :: FilePath -> IO ()
 renderCss fp = do
   -- True flag is to create parents too
   D.createDirectoryIfMissing True (outPrefix ++ FP.takeDirectory fp)
-  (content, _) <- parsePage fp
+  (content, _) <- liftM forceRight (parseTextFile fp)
   -- Drop .scss/sass extension and replace with .css.
   TIO.writeFile (outPrefix ++ FP.dropExtension fp ++ ".css") content
 
