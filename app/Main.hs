@@ -256,40 +256,27 @@ main = do
   renderCss "stylesheets/default.scss"
 
   -- Render /p/ mini sites
-  -- loadDir "p/clojure-primer-js/" True >>= (\pages -> forM_ pages renderPage)
-  -- loadDir "p/curvey/" True >>= (\pages -> forM_ pages renderPage)
-  -- loadDir "p/makersquare-clustering/" True >>= (\pages -> forM_ pages renderPage)
+  loadDir True "p/clojure-primer-js/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True "p/curvey/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True "p/makersquare-clustering/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True "p/makersquare-trie-autocomplete/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True "p/true-cost/" >>= (\resources -> forM_ resources renderResource)
+
+  -- TODO this one is problematic because loadResource is trying to evaluate the
+  -- files if it's a text file (e.g. variables like $foo), so it breaks the
+  -- "strictly copy the file". We need a way to say, please just do a straight
+  -- copy, with no transformations
+  loadDir True "p/planjure/" >>= (\resources -> forM_ resources renderResource)
   --
   -- clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
   -- forM_ clojurePrimerJsPages renderPage
   -- https://hackage.haskell.org/package/directory-1.3.1.5/docs/System-Directory.html
   -- listDirectory
 
--- TODO don't do this "raw". Use our loadPageAsHtml etc so that it's generalize.
--- I think we want to use oadPage/parseTextFile/loadTextFile, and turn it into a Page
--- as everything else, then render it.
---
--- Hakyll allows globs, which they parse manually.
--- https://github.com/jaspervdj/hakyll/blob/293c379e1634b39315cf6a8cab80470aa3c50ad0/lib/Hakyll/Core/Identifier/Pattern.hs#L239
---
---
--- I think here is a good point to stop and think about the bigger design
--- picture. What is the overall architecture?
--- 1. load Pages in some specified way: the filepath, conversions (e.g. HTML,
---    raw)
--- 2. define How to render those pages (e.g. Structures)
--- 3. where to do it (the out fp), and then
--- 4. render/write it
---
--- TODO problem here is that this doesn't work for non-text files, cuz
--- loadPageAsHtml
--- thinks it's text-readable. We need a BEFORE step, that just knows the file we
--- are going to load. Then when we load we can choose the type of the file
--- Righ now we are getting: pencil-exe: site/p/curvey/resources/affine_combination.png: hGetContents: invalid argument (invalid byte sequence)
-loadDir :: FilePath -> Bool -> IO [Either LoadFileException Page]
-loadDir dir recursive = do
+loadDir :: Bool -> FilePath -> IO [Resource]
+loadDir recursive dir = do
   fps <- listDir recursive dir
-  mapM (\f -> loadPageId (dir ++ f)) fps
+  mapM (\f -> loadResourceId (dir ++ f)) fps
 
 -- List files in directory, optionally recursively. Returns paths that does not
 -- include the given dir.
@@ -312,10 +299,6 @@ listDir recursive dir = do
                   else return []
 
   return $ files ++ concat innerFiles
-
-copyFileStatic :: FilePath -> IO ()
-copyFileStatic fp =
-  D.copyFile (sitePrefix ++ fp) (outPrefix ++ fp)
 
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
@@ -357,8 +340,13 @@ data Resource
 
 renderResource :: Resource -> IO ()
 renderResource (TextResource page) = renderPage page
-renderResource (BinaryResource fpIn fpOut) =
+renderResource (BinaryResource fpIn fpOut) = copyFile fpIn fpOut
+
+copyFile :: FilePath -> FilePath -> IO ()
+copyFile fpIn fpOut = do
+  D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
   D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
+
 
 loadResourceAsHtml :: FilePath -> IO Resource
 loadResourceAsHtml = loadResourceWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
