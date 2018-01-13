@@ -51,7 +51,7 @@ data PTag =
   | PTagWarning T.Text   -- Meta: parse warning
   | PTagPosition Int Int -- Meta: row, col
 
--- | Convert Tokens to PNode AST.o
+-- | Convert Tokens to PNode AST.
 --
 -- >>> transform [TokText "hello", TokText "world"]
 -- ([PText "hello",PText "world"],[])
@@ -90,15 +90,25 @@ data PTag =
 -- >>> transform [TokText "begin", TokText "now", TokIf "title", TokText "hello", TokText "world", TokIf "body", TokVar "body", TokVar "someothervar", TokText "wahh", TokEnd, TokText "final", TokText "thing", TokEnd, TokText "the", TokText "lastline"]
 -- ([PText "begin",PText "now",PIf "title" [PText "hello",PText "world",PIf "body" [PVar "body",PVar "someothervar",PText "wahh"],PText "final",PText "thing"],PText "the",PText "lastline"],[])
 --
-transform :: [Token] -> ([PNode], [Token])
+transform :: [Token] -> [PNode]
 transform toks =
-  let (stack, leftovers) = ast [] toks
-  in (reverse stack, leftovers)
+  let stack = ast [] toks
+  in reverse stack
 
+-- | Converts Tokens, which is just the raw list of parsed tokens, into PNodes
+-- which are the tree-structure expressions (i.e. if/for nesting)
+--
+-- This function works by using a stack to keep track of where we are for nested
+-- expressions such as if and for statements. When a token that starts a nesting
+-- is found (like a TokIf), a "meta" expression (PMetaIf) is pushed into the
+-- stack. When we finally see an end token (TokEnd), we pop all the expressions
+-- off the stack until the first meta tag (e.g PMetaIf) is reached. All the
+-- expressions popped off are now known to be nested inside that if statement.
+--
 ast :: [PNode] -- stack
     -> [Token] -- remaining
-    -> ([PNode], [Token]) -- (AST, remaining)
-ast stack [] = (stack, [])
+    -> [PNode] -- (AST, remaining)
+ast stack [] = stack
 ast stack (TokText t : toks) = ast (PText t : stack) toks
 ast stack (TokVar t : toks)  = ast (PVar t : stack) toks
 ast stack (TokPartial fp : toks) = ast (PPartial fp : stack) toks
@@ -187,7 +197,7 @@ renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
 runParser :: T.Text -> Either ParseError [PNode]
 runParser text = do
   toks <- parse parseEverything (T.unpack "") (T.unpack text)
-  return $ fst $ transform toks
+  return $ transform toks
 
 -- | Parse everything.
 --
