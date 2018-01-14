@@ -109,8 +109,8 @@ modifyEnvVar (Page nodes env fp) f k =
   let env' = H.adjust f k env
   in Page nodes env' fp
 
-prepareBlogPost :: H.HashMap T.Text Page -> Resource -> Resource
-prepareBlogPost tagMap (Single page@(Page _ env _)) =
+prepareBlogPost :: H.HashMap T.Text Page -> Page -> Page
+prepareBlogPost tagMap page@(Page _ env _) =
   let tagEnvList =
         case H.lookup "tags" env of
           Just (EArray tags) ->
@@ -130,31 +130,7 @@ prepareBlogPost tagMap (Single page@(Page _ env _)) =
       -- loaded Tag index pages. This is so that when we render the blog posts, we
       -- have access to the URL of the Tag index.
       env' = H.insert "tags" tagEnvList env
-  in Single $ page { getPageEnv = env' }
-
-renderBlogPost :: H.HashMap T.Text Page -> NonEmpty Page -> Page -> IO ()
-renderBlogPost tagMap structure page@(Page _ env _) = do
-  let tagEnvList =
-        case H.lookup "tags" env of
-          Just (EArray tags) ->
-            EEnvList $
-              L.foldl'
-                (\acc envData ->
-                  case envData of
-                    EText tag ->
-                      case H.lookup tag tagMap of
-                        Just tagIndexPage -> getPageEnv tagIndexPage : acc
-                        _ -> acc
-                    _ -> acc)
-                [] tags
-          _ -> EEnvList []
-
-  -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
-  -- loaded Tag index pages. This is so that when we render the blog posts, we
-  -- have access to the URL of the Tag index.
-  let env' = H.insert "tags" tagEnvList env
-
-  applyPage globalEnv (NE.cons (page { getPageEnv = env' }) structure) >>= renderPage
+  in page { getPageEnv = env' }
 
 loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
 loadAndApplyPage structure fp = do
@@ -242,13 +218,8 @@ main = do
   pageLayout <- liftM forceRight (loadPageAsHtml "layouts/default.html")
   pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
 
+  -- Load posts
   postFps <- listDir False "blog/"
-
-  -- Load post resource (new way)
-  postResources <- mapM (loadResourceWithFileModifier blogPostUrl) postFps
-  let sortedPostResources = sortByVar "date" dateOrdering postResources
-
-  -- Load posts (old way)
   posts <- mapM
     (liftM forceRight . loadPageWithFileModifier blogPostUrl)
     postFps
@@ -273,11 +244,10 @@ main = do
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
-  let postResources' = map (injectIntoStructure (pagePartial :| [pageLayout]) . prepareBlogPost tagPages) postResources
+  let posts' = map (structurePage (pagePartial :| [pageLayout]) . prepareBlogPost tagPages) posts
 
   -- Render blog posts
-  forM_ postResources' (applyResource globalEnv >=> renderResource)
-  -- forM_ posts (renderBlogPost tagPages (pagePartial :| [pageLayout]))
+  forM_ posts' (applyPage globalEnv >=> renderPage)
 
   -- Index
   -- Function composition
@@ -355,18 +325,6 @@ maybeInsertIntoEnv env k v =
 aesonToEnv :: A.Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
--- TODO where does structure go in this?
-runPlan :: Plan -> FilePath -> IO ()
-runPlan p fp = do
-  let fpOut = getPlanFilePathTransform p fp
-  resource <- getPlanParse p fp
-  renderResource resource
-
-data Plan = Plan
-  { getPlanFilePathTransform :: FilePath -> FilePath
-  , getPlanParse :: FilePath -> IO Resource
-  }
-
 -- Describes a loaded page, with the page's template nodes, loaded environment
 -- from the preamble, and where the page was loaded from.
 data Page = Page
@@ -380,16 +338,8 @@ data Page = Page
 
 data Resource
   = Single Page
-  | Structured (NonEmpty Page)
   | Passthrough FilePath FilePath
   -- ^ in and out file paths
-
-applyResource :: Env -> Resource -> IO Resource
-applyResource env (Single page) =
-  -- Run the application, then put the returned page into Single.
-  liftM Single (applyPage env (page :| []))
-applyResource env (Structured pages) = liftM Single (applyPage env pages)
-applyResource _ e = return e
 
 renderResource :: Resource -> IO ()
 renderResource (Single page) = renderPage page
@@ -398,8 +348,8 @@ renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
 renderResources :: [Resource] -> IO ()
 renderResources resources = forM_ resources renderResource
 
-injectIntoStructure :: NonEmpty Page -> Resource -> Resource
-injectIntoStructure structure (Single page) = Structured $ NE.cons page structure
+structurePage :: NonEmpty Page -> Page -> NonEmpty Page
+structurePage structure page = NE.cons page structure
 
 copyFile :: FilePath -> FilePath -> IO ()
 copyFile fpIn fpOut = do
