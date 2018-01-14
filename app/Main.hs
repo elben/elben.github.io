@@ -142,24 +142,9 @@ sortByVar :: T.Text
           -> (EnvData -> EnvData -> Ordering)
           -- ^ Ordering function to compare EnvData against. If the variable is
           -- not in the Env, the Page will be placed at the bottom of the order.
-          -> [Resource]
-          -> [Resource]
+          -> [Page]
+          -> [Page]
 sortByVar var ordering =
-  L.sortBy
-    (\ra rb ->
-      case (ra, rb) of
-        (Single (Page _ enva _), Single (Page _ envb _)) ->
-          maybeOrdering ordering (H.lookup var enva) (H.lookup var envb)
-        _ -> EQ)
-
-sortPagesByVar :: T.Text
-          -- ^ Variable name to look up in Env.
-          -> (EnvData -> EnvData -> Ordering)
-          -- ^ Ordering function to compare EnvData against. If the variable is
-          -- not in the Env, the Page will be placed at the bottom of the order.
-          -> [Page]
-          -> [Page]
-sortPagesByVar var ordering =
   L.sortBy
     (\(Page _ enva _) (Page _ envb _) ->
       maybeOrdering ordering (H.lookup var enva) (H.lookup var envb))
@@ -220,11 +205,8 @@ main = do
 
   -- Load posts
   postFps <- listDir False "blog/"
-  posts <- mapM
-    (liftM forceRight . loadPageWithFileModifier blogPostUrl)
-    postFps
+  posts <- liftM (sortByVar "date" dateOrdering) (mapM (liftM forceRight . loadPageWithFileModifier blogPostUrl) postFps)
 
-  let sortedPosts = sortPagesByVar "date" dateOrdering posts
   let recommendedPosts = filterByVar "tags"
                            (arrayContainsString "recommended")
                            posts
@@ -251,7 +233,7 @@ main = do
 
   -- Index
   -- Function composition
-  let postsEnv = (insertEnvListPage "posts" sortedPosts . insertEnvListPage "recommendedPosts" recommendedPosts) globalEnv
+  let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) globalEnv
   indexPage <- liftM forceRight $ loadPageAsHtml "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
@@ -260,17 +242,16 @@ main = do
 
   -- Render blog post archive
   archivePage <- liftM forceRight $ loadPageWithFileModifier (const "blog/") "partials/post-archive.html"
-  let postsArchiveEnv = insertEnvListPage "posts" sortedPosts globalEnv
+  let postsArchiveEnv = insertEnvListPage "posts" posts globalEnv
   applyPage postsArchiveEnv (archivePage :| [pageLayout]) >>= renderPage
 
   -- Render CSS file
   renderCss "stylesheets/default.scss"
 
-  -- Render /p/ mini sites
+  -- Render static directories
   loadDir True True "p/" >>= renderResources
-
-  -- Render fonts
   loadDir True True "stylesheets/fonts/" >>= renderResources
+  loadDir True True "images/" >>= renderResources
 
 loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
 loadDir recursive strict dir = do
@@ -545,7 +526,7 @@ findPreambleComment (_ : rest) =
 renderCss :: FilePath -> IO ()
 renderCss fp = do
   -- Drop .scss/sass extension and replace with .css.
-  eitherPage <- loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".css") fp
+  eitherPage <- loadPageWithFileModifier (\f -> FP.dropExtension f ++ ".css") fp
   case eitherPage of
     Right page -> renderPage page
     Left _ -> return ()
