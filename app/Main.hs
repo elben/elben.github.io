@@ -5,7 +5,7 @@ module Main where
 import Pencil.Parser
 import Pencil.Env
 import Control.Exception (tryJust)
-import Control.Monad (forM_, foldM, filterM, liftM)
+import Control.Monad (forM_, foldM, filterM, liftM, (>=>))
 import GHC.IO.Exception (IOException(ioe_description))
 import Data.Typeable     ( Typeable )
 import Data.Aeson.Types (Parser, parseMaybe)
@@ -109,9 +109,31 @@ modifyEnvVar (Page nodes env fp) f k =
   let env' = H.adjust f k env
   in Page nodes env' fp
 
-renderBlogPost :: H.HashMap T.Text Page -> NonEmpty Page -> FilePath -> IO ()
-renderBlogPost tagMap structure fp = do
-  page@(Page _ env _) <- liftM forceRight (loadPageWithFileModifier blogPostUrl fp)
+prepareBlogPost :: H.HashMap T.Text Page -> Resource -> Resource
+prepareBlogPost tagMap (Single page@(Page _ env _)) =
+  let tagEnvList =
+        case H.lookup "tags" env of
+          Just (EArray tags) ->
+            EEnvList $
+              L.foldl'
+                (\acc envData ->
+                  case envData of
+                    EText tag ->
+                      case H.lookup tag tagMap of
+                        Just tagIndexPage -> getPageEnv tagIndexPage : acc
+                        _ -> acc
+                    _ -> acc)
+                [] tags
+          _ -> EEnvList []
+
+      -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
+      -- loaded Tag index pages. This is so that when we render the blog posts, we
+      -- have access to the URL of the Tag index.
+      env' = H.insert "tags" tagEnvList env
+  in Single $ page { getPageEnv = env' }
+
+renderBlogPost :: H.HashMap T.Text Page -> NonEmpty Page -> Page -> IO ()
+renderBlogPost tagMap structure page@(Page _ env _) = do
   let tagEnvList =
         case H.lookup "tags" env of
           Just (EArray tags) ->
@@ -205,6 +227,9 @@ main = do
   pageLayout <- liftM forceRight (loadPageAsHtml "layouts/default.html")
   pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
 
+  postFps <- listDir False "blog/"
+  postResources <- mapM (loadResourceWithFileModifier blogPostUrl) postFps
+
   -- Load posts
   posts <- mapM
     (liftM forceRight . loadPageWithFileModifier blogPostUrl)
@@ -230,12 +255,13 @@ main = do
     H.empty
     (H.toList tagMap)
 
-  forM_
-    [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
-    , "blog/2010-04-16-singleton-pattern-in-python.markdown"
-    , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
-    ]
-    (renderBlogPost tagPages (pagePartial :| [pageLayout]))
+  -- Prepare blog posts. Add tag info into each blog post page, and then inject
+  -- into the correct structure.
+  let postResources' = map (injectIntoStructure (pagePartial :| [pageLayout]) . prepareBlogPost tagPages) postResources
+
+  -- Render blog posts
+  forM_ postResources' (applyResource globalEnv >=> renderResource)
+  -- forM_ posts (renderBlogPost tagPages (pagePartial :| [pageLayout]))
 
   -- Index
   -- Function composition
@@ -270,12 +296,17 @@ main = do
 loadDir :: Bool -> FilePath -> IO [Resource]
 loadDir recursive dir = do
   fps <- listDir recursive dir
-  mapM (\f -> loadResourceId (dir ++ f)) fps
+  mapM loadResourceId fps
 
--- List files in directory, optionally recursively. Returns paths that does not
--- include the given dir.
+-- List files in directory, optionally recursively. Returns paths that include
+-- the given dir.
 listDir :: Bool -> FilePath -> IO [FilePath]
 listDir recursive dir = do
+  fps <- listDir' recursive dir
+  return $ map (dir ++) fps
+
+listDir' :: Bool -> FilePath -> IO [FilePath]
+listDir' recursive dir = do
   -- List files (just the filename, without the fp directory prefix)
   listing <- D.listDirectory (sitePrefix ++ dir)
   -- Filter only for files (we have to add the right directory prefixes to the
@@ -286,7 +317,7 @@ listDir recursive dir = do
   innerFiles <- if recursive
                   then mapM
                          (\d -> do
-                           ff <- listDir recursive (dir ++ d ++ "/")
+                           ff <- listDir' recursive (dir ++ d ++ "/")
                            -- Add the inner directory as a prefix
                            return (map (\f -> d ++ "/" ++ f) ff))
                          dirs
@@ -318,6 +349,18 @@ maybeInsertIntoEnv env k v =
 aesonToEnv :: A.Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
+-- TODO where does structure go in this?
+runPlan :: Plan -> FilePath -> IO ()
+runPlan p fp = do
+  let fpOut = getPlanFilePathTransform p fp
+  resource <- getPlanParse p fp
+  renderResource resource
+
+data Plan = Plan
+  { getPlanFilePathTransform :: FilePath -> FilePath
+  , getPlanParse :: FilePath -> IO Resource
+  }
+
 -- Describes a loaded page, with the page's template nodes, loaded environment
 -- from the preamble, and where the page was loaded from.
 data Page = Page
@@ -325,16 +368,29 @@ data Page = Page
   , getPageEnv       :: Env
   , getPageFilePath  :: String
   -- ^ The rendered output path of this page. Defaults to the input file path.
+  -- This file path is used to generate the self URL that is injected into the
+  -- environment.
   } deriving (Eq, Show)
 
 data Resource
-  = TextResource Page
-  | BinaryResource FilePath FilePath
+  = Single Page
+  | Structured (NonEmpty Page)
+  | Passthrough FilePath FilePath
   -- ^ in and out file paths
 
+applyResource :: Env -> Resource -> IO Resource
+applyResource env (Single page) =
+  -- Run the application, then put the returned page into Single.
+  liftM Single (applyPage env (page :| []))
+applyResource env (Structured pages) = liftM Single (applyPage env pages)
+applyResource _ e = return e
+
 renderResource :: Resource -> IO ()
-renderResource (TextResource page) = renderPage page
-renderResource (BinaryResource fpIn fpOut) = copyFile fpIn fpOut
+renderResource (Single page) = renderPage page
+renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
+
+injectIntoStructure :: NonEmpty Page -> Resource -> Resource
+injectIntoStructure structure (Single page) = Structured $ NE.cons page structure
 
 copyFile :: FilePath -> FilePath -> IO ()
 copyFile fpIn fpOut = do
@@ -352,8 +408,8 @@ loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Resourc
 loadResourceWithFileModifier fpf fp = do
   eitherPage <- loadPageWithFileModifier fpf fp
   case eitherPage of
-    Left (NotTextFile _) -> return $ BinaryResource fp (fpf fp)
-    Right page -> return (TextResource page)
+    Left (NotTextFile _) -> return $ Passthrough fp (fpf fp)
+    Right page -> return (Single page)
 
 renderPage :: Page -> IO ()
 renderPage (Page nodes _ fpOut) = do
