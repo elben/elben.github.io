@@ -166,9 +166,24 @@ sortByVar :: T.Text
           -> (EnvData -> EnvData -> Ordering)
           -- ^ Ordering function to compare EnvData against. If the variable is
           -- not in the Env, the Page will be placed at the bottom of the order.
-          -> [Page]
-          -> [Page]
+          -> [Resource]
+          -> [Resource]
 sortByVar var ordering =
+  L.sortBy
+    (\ra rb ->
+      case (ra, rb) of
+        (Single (Page _ enva _), Single (Page _ envb _)) ->
+          maybeOrdering ordering (H.lookup var enva) (H.lookup var envb)
+        _ -> EQ)
+
+sortPagesByVar :: T.Text
+          -- ^ Variable name to look up in Env.
+          -> (EnvData -> EnvData -> Ordering)
+          -- ^ Ordering function to compare EnvData against. If the variable is
+          -- not in the Env, the Page will be placed at the bottom of the order.
+          -> [Page]
+          -> [Page]
+sortPagesByVar var ordering =
   L.sortBy
     (\(Page _ enva _) (Page _ envb _) ->
       maybeOrdering ordering (H.lookup var enva) (H.lookup var envb))
@@ -228,16 +243,17 @@ main = do
   pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
 
   postFps <- listDir False "blog/"
-  postResources <- mapM (loadResourceWithFileModifier blogPostUrl) postFps
 
-  -- Load posts
+  -- Load post resource (new way)
+  postResources <- mapM (loadResourceWithFileModifier blogPostUrl) postFps
+  let sortedPostResources = sortByVar "date" dateOrdering postResources
+
+  -- Load posts (old way)
   posts <- mapM
     (liftM forceRight . loadPageWithFileModifier blogPostUrl)
-    [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
-    , "blog/2010-04-16-singleton-pattern-in-python.markdown"
-    , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
-    ]
-  let sortedPosts = sortByVar "date" dateOrdering posts
+    postFps
+
+  let sortedPosts = sortPagesByVar "date" dateOrdering posts
   let recommendedPosts = filterByVar "tags"
                            (arrayContainsString "recommended")
                            posts
@@ -249,7 +265,7 @@ main = do
   tagPages <- foldM
     (\acc (tag, taggedPosts) -> do
       tagPage <- liftM forceRight $ loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
-      let tagEnv = (insertEnvList "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) globalEnv
+      let tagEnv = (insertEnvListPage "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) globalEnv
       return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
     )
     H.empty
@@ -265,7 +281,7 @@ main = do
 
   -- Index
   -- Function composition
-  let postsEnv = (insertEnvList "posts" sortedPosts . insertEnvList "recommendedPosts" recommendedPosts) globalEnv
+  let postsEnv = (insertEnvListPage "posts" sortedPosts . insertEnvListPage "recommendedPosts" recommendedPosts) globalEnv
   indexPage <- liftM forceRight $ loadPageAsHtml "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
@@ -276,27 +292,29 @@ main = do
   renderCss "stylesheets/default.scss"
 
   -- Render /p/ mini sites
-  loadDir True "p/clojure-primer-js/" >>= (\resources -> forM_ resources renderResource)
-  loadDir True "p/curvey/" >>= (\resources -> forM_ resources renderResource)
-  loadDir True "p/makersquare-clustering/" >>= (\resources -> forM_ resources renderResource)
-  loadDir True "p/makersquare-trie-autocomplete/" >>= (\resources -> forM_ resources renderResource)
-  loadDir True "p/true-cost/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True True "p/clojure-primer-js/" >>= renderResources
+  loadDir True True "p/curvey/" >>= renderResources
+  loadDir True True "p/makersquare-clustering/" >>= renderResources
+  loadDir True True "p/makersquare-trie-autocomplete/" >>= renderResources
+  loadDir True True "p/true-cost/" >>= renderResources
 
   -- TODO this one is problematic because loadResource is trying to evaluate the
   -- files if it's a text file (e.g. variables like $foo), so it breaks the
   -- "strictly copy the file". We need a way to say, please just do a straight
   -- copy, with no transformations
-  loadDir True "p/planjure/" >>= (\resources -> forM_ resources renderResource)
+  loadDir True True "p/planjure/" >>= renderResources
   --
   -- clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
   -- forM_ clojurePrimerJsPages renderPage
   -- https://hackage.haskell.org/package/directory-1.3.1.5/docs/System-Directory.html
   -- listDirectory
 
-loadDir :: Bool -> FilePath -> IO [Resource]
-loadDir recursive dir = do
+loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
+loadDir recursive strict dir = do
   fps <- listDir recursive dir
-  mapM loadResourceId fps
+  if strict
+    then return $ map (\fp -> Passthrough fp fp) fps
+    else mapM loadResourceId fps
 
 -- List files in directory, optionally recursively. Returns paths that include
 -- the given dir.
@@ -328,8 +346,11 @@ listDir' recursive dir = do
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
 
-insertEnvList :: T.Text -> [Page] -> Env -> Env
-insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
+insertEnvListPage :: T.Text -> [Page] -> Env -> Env
+insertEnvListPage var posts = H.insert var (EEnvList (map getPageEnv posts))
+
+-- insertEnvList :: T.Text -> [Resource] -> Env -> Env
+-- insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
 
 -- | Merge two envs together, biased towards the left-hand env on duplicates.
 insertEnv :: Env -> Env -> Env
@@ -388,6 +409,9 @@ applyResource _ e = return e
 renderResource :: Resource -> IO ()
 renderResource (Single page) = renderPage page
 renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
+
+renderResources :: [Resource] -> IO ()
+renderResources resources = forM_ resources renderResource
 
 injectIntoStructure :: NonEmpty Page -> Resource -> Resource
 injectIntoStructure structure (Single page) = Structured $ NE.cons page structure
