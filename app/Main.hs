@@ -269,6 +269,9 @@ main = do
   -- Render /p/ mini sites
   loadDir True True "p/" >>= renderResources
 
+  -- Render fonts
+  loadDir True True "stylesheets/fonts/" >>= renderResources
+
 loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
 loadDir recursive strict dir = do
   fps <- listDir recursive dir
@@ -280,8 +283,9 @@ loadDir recursive strict dir = do
 -- the given dir.
 listDir :: Bool -> FilePath -> IO [FilePath]
 listDir recursive dir = do
-  fps <- listDir' recursive dir
-  return $ map (dir ++) fps
+  let dir' = FP.addTrailingPathSeparator dir
+  fps <- listDir' recursive dir'
+  return $ map (dir' ++) fps
 
 listDir' :: Bool -> FilePath -> IO [FilePath]
 listDir' recursive dir = do
