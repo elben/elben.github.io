@@ -536,11 +536,11 @@ findPreambleComment (_ : rest) =
 -- | Copy specified file from site to out.
 renderCss :: FilePath -> IO ()
 renderCss fp = do
-  -- True flag is to create parents too
-  D.createDirectoryIfMissing True (outPrefix ++ FP.takeDirectory fp)
-  (content, _) <- liftM forceRight (parseTextFile fp)
   -- Drop .scss/sass extension and replace with .css.
-  TIO.writeFile (outPrefix ++ FP.dropExtension fp ++ ".css") content
+  eitherPage <- loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".css") fp
+  case eitherPage of
+    Right page -> renderPage page
+    Left _ -> return ()
 
 cssTag :: T.Text -> Tags
 cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
