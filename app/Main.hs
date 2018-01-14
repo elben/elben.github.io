@@ -292,22 +292,7 @@ main = do
   renderCss "stylesheets/default.scss"
 
   -- Render /p/ mini sites
-  loadDir True True "p/clojure-primer-js/" >>= renderResources
-  loadDir True True "p/curvey/" >>= renderResources
-  loadDir True True "p/makersquare-clustering/" >>= renderResources
-  loadDir True True "p/makersquare-trie-autocomplete/" >>= renderResources
-  loadDir True True "p/true-cost/" >>= renderResources
-
-  -- TODO this one is problematic because loadResource is trying to evaluate the
-  -- files if it's a text file (e.g. variables like $foo), so it breaks the
-  -- "strictly copy the file". We need a way to say, please just do a straight
-  -- copy, with no transformations
-  loadDir True True "p/planjure/" >>= renderResources
-  --
-  -- clojurePrimerJsPages <- loadDir "p/clojure-primer-js/" True
-  -- forM_ clojurePrimerJsPages renderPage
-  -- https://hackage.haskell.org/package/directory-1.3.1.5/docs/System-Directory.html
-  -- listDirectory
+  loadDir True True "p/" >>= renderResources
 
 loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
 loadDir recursive strict dir = do
