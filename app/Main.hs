@@ -258,6 +258,11 @@ main = do
   -- Render tag list pages
   forM_ (H.elems tagPages) (\page -> applyPage globalEnv (page :| [pageLayout]) >>= renderPage)
 
+  -- Render blog post archive
+  archivePage <- liftM forceRight $ loadPageWithFileModifier (const "blog/") "partials/post-archive.html"
+  let postsArchiveEnv = insertEnvListPage "posts" sortedPosts globalEnv
+  applyPage postsArchiveEnv (archivePage :| [pageLayout]) >>= renderPage
+
   -- Render CSS file
   renderCss "stylesheets/default.scss"
 
@@ -444,7 +449,6 @@ isInvalidByteSequence e = ioe_description e == "invalid byte sequence"
 
 parseTextFile :: FilePath -> IO (Either LoadFileException (T.Text, [PNode]))
 parseTextFile fp = do
-  -- TODO here it may not be a text file. May be PNG, binary, etc
   eitherContent <- loadTextFile fp
   case eitherContent of
     Left e -> return $ Left e
