@@ -230,19 +230,6 @@ main = do
     H.empty
     (H.toList tagMap)
 
-  -- TODO we need to _modify_ the posts pages and inject the URLs to the tag
-  -- pages, which we now know. Then render that instead.
-  --
-  -- This means we need to convert the "tag" variable from an EArray to an
-  -- EEnvList.
-
-  forM_
-    [ "blog/2010-01-30-behind-pythons-unittest-main.markdown"
-    , "blog/2010-04-16-singleton-pattern-in-python.markdown"
-    , "blog/2015-11-22-the-end-of-dynamic-languages.markdown"
-    ]
-    (renderBlogPost tagPages (pagePartial :| [pageLayout]))
-
   -- Index
   -- Function composition
   let postsEnv = (insertEnvList "posts" sortedPosts . insertEnvList "recommendedPosts" recommendedPosts) globalEnv
