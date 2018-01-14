@@ -34,8 +34,11 @@ sitePrefix = "site/"
 outPrefix :: String
 outPrefix = "out/"
 
+websiteTitle :: T.Text
+websiteTitle = "Elben Shira"
+
 globalEnv :: Env
-globalEnv = H.fromList [("title", EText "Elben Shira's Awesome Website")]
+globalEnv = H.fromList [("title", EText websiteTitle)]
 
 -- | Apply the environment variables on the given pages.
 --
@@ -125,11 +128,14 @@ prepareBlogPost tagMap page@(Page _ env _) =
                     _ -> acc)
                 [] tags
           _ -> EEnvList []
+      pageTitle = case (H.lookup "postTitle" env) of
+                       Just (EText title) -> T.append (T.append title " - ") websiteTitle
+                       _ -> websiteTitle
 
       -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
       -- loaded Tag index pages. This is so that when we render the blog posts, we
       -- have access to the URL of the Tag index.
-      env' = H.insert "tags" tagEnvList env
+      env' = (insertEnvData "tags" tagEnvList . insertEnvText "title" pageTitle) env
   in page { getPageEnv = env' }
 
 loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
@@ -287,6 +293,9 @@ listDir' recursive dir = do
                   else return []
 
   return $ files ++ concat innerFiles
+
+insertEnvData :: T.Text -> EnvData -> Env -> Env
+insertEnvData = H.insert
 
 insertEnvText :: T.Text -> T.Text -> Env -> Env
 insertEnvText var val = H.insert var (EText val)
