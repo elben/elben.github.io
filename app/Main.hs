@@ -255,6 +255,10 @@ main = do
   let postsArchiveEnv = insertEnvListPage "posts" posts globalEnv
   applyPage postsArchiveEnv (archivePage :| [pageLayout]) >>= renderPage
 
+  -- /projects/
+  projectsPage <- liftM forceRight $ loadPageWithFileModifier (const "projects/") "projects.html"
+  applyPage globalEnv (projectsPage :| [pageLayout]) >>= renderPage
+
   -- Render CSS file
   renderCss "stylesheets/default.scss"
 
