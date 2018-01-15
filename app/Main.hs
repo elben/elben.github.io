@@ -155,15 +155,16 @@ sortByVar var ordering =
     (\(Page _ enva _) (Page _ envb _) ->
       maybeOrdering ordering (H.lookup var enva) (H.lookup var envb))
 
--- | Filter by a variable's value in the environment. If missing, it is not
--- included in the final result.
-filterByVar :: T.Text
+-- | Filter by a variable's value in the environment.
+filterByVar :: Bool
+            -- ^ If true, include pages without the specified variable.
+            -> T.Text
             -> (EnvData -> Bool)
             -> [Page]
             -> [Page]
-filterByVar var f =
+filterByVar includeMissing var f =
   L.filter
-   (\(Page _ env _) -> M.fromMaybe False (H.lookup var env >>= (Just . f)))
+   (\(Page _ env _) -> M.fromMaybe includeMissing (H.lookup var env >>= (Just . f)))
 
 -- | Given a variable (whose value is assumed to be an array of EText) and list
 -- of pages, group the pages by the EText found in the variable.
@@ -211,9 +212,12 @@ main = do
 
   -- Load posts
   postFps <- listDir False "blog/"
-  posts <- liftM (sortByVar "date" dateOrdering) (mapM (liftM forceRight . loadPageWithFileModifier blogPostUrl) postFps)
 
-  let recommendedPosts = filterByVar "tags"
+  -- Sort by date and filter out drafts
+  posts <- liftM (filterByVar True "draft" (EBool True /=) . sortByVar "date" dateOrdering)
+                 (mapM (liftM forceRight . loadPageWithFileModifier blogPostUrl) postFps)
+
+  let recommendedPosts = filterByVar False "tags"
                            (arrayContainsString "recommended")
                            posts
 
