@@ -31,12 +31,12 @@ the user from instantiating a `OneOnly` object. Instead, the user must use
 `OneOnly.get()` to get access to the one and only `OneOnly` instance.
 
 This way of executing the singleton pattern is impossible in Python due to the
-fact that Python does not have an equivalent to Java's `final` keyword.
+fact that Python does not have an equivalent to Java’s `final` keyword.
 
 A well-defined singleton pattern, however, is possible in Python. The Wikipedia
 entry on the singleton pattern [1] presents a clever way of doing it in Python.
-I reproduced Wikipedia's Python example below and added some more code to
-explain what's going on under the hood.
+I reproduced Wikipedia’s Python example below and added some more code to
+explain what’s going on under the hood.
 
 ```{.python .numberLines}
 def singleton(cls):
@@ -73,12 +73,12 @@ But why does `getinstance()` work? The most amazing part is that the `getinstanc
 that is set to `Counter` is a specific `getinstance()` that “closes over” the
 variables `cls` and `instances`. That is, when we define `getinstance()` inside of
 singleton(), `getinstance()` still has access to `cls` and `instances,` even after we
-exit singleton(). Thus, we don't have to create a new `instances` dictionary every
+exit singleton(). Thus, we don’t have to create a new `instances` dictionary every
 time. This only happens once, at line 2. We get to line 2 through the call at
 line 16, which only happens once (for `Counter`).
 
-Why does `instances` have to be a dictionary? Well, it doesn't. The only thing
-that matters is that we don't set the `instances` reference to a new object
+Why does `instances` have to be a dictionary? Well, it doesn’t. The only thing
+that matters is that we don’t set the `instances` reference to a new object
 somewhere inside `getinstance()`. If we do, we lose the closure over the
 `instances` defined on line 2. Thus, `instances` should be a mutable object such
 as a dictionary or a list.
@@ -95,7 +95,7 @@ Great! We now have a very powerful construct to build classes that adhere to the
 singleton pattern. If we want to create another one-instance-only class named
 `Puppeteer`, we simply set `Puppeteer = singleton(Puppeteer)` after the class
 definition. `Puppeteer` will then get its own `getinstance()` function and its own
-`instances` dictionary, separate from `Counter`'s.
+`instances` dictionary, separate from `Counter`’s.
 
 ## Decorating
 
@@ -115,13 +115,13 @@ class Counter:
 print type(Counter) # <type 'function'>
 ```
 
-If you haven't seen decorators before, you should now realize that a decorator
+If you haven’t seen decorators before, you should now realize that a decorator
 `@singleton` will simply set the class name (in our case, `Counter`) to the
 value returned by `singleton(Counter)`.
 
 ## Conclusion
 
-So yes, Python's open nature is sometimes unwanted. But with closures (e.g.
+So yes, Python’s open nature is sometimes unwanted. But with closures (e.g.
 `getinstance()` closing over `cls` and `instances`) and first-class functions
 and classes (i.e. passing around classes and functions as ordinary objects),
 Python allows us to device beautiful, clever constructs.
@@ -130,7 +130,7 @@ Python allows us to device beautiful, clever constructs.
 
 [1] http://en.wikipedia.org/wiki/Singleton_pattern
 
-[2] Python Decorators Don't Have to be (that) Scary. http://www.siafoo.net/article/68
+[2] Python Decorators Don’t Have to be (that) Scary. http://www.siafoo.net/article/68
 
 ### Archived comments; imported from Posterous
 

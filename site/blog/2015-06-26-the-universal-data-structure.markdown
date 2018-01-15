@@ -86,7 +86,7 @@ OK, you’re all-in on the idea that a hash is the most useful data structure ma
 
 I usually try to avoid the rigorous thinking type of articles because why should we water down good analogies with rigor? Why spend hours working through difficult exercises when I can just show you a comic of a caterpillar eating a spider to describe some abstract concept? Let’s all admit that most of the time, the caterpillar analogies are sufficient, and we render LaTeX only to play Mathematician.
 
-But I’m going to risk some academic stuff because I think it's important enough to delve into the theory. And for once, it's not too much work. It’s a proof for the common programmer, not just those ivy tower theorists.
+But I’m going to risk some academic stuff because I think it’s important enough to delve into the theory. And for once, its not too much work. It’s a proof for the common programmer, not just those ivy tower theorists.
 
 The proof is so easy it’s a snore.
 
@@ -106,7 +106,7 @@ OK, let’s QED this part and move on.
 
 ## Implementing other data structures on the UniversalHash
 
-The theorem above proved that every data structure is just a hash. In this section, I'll show some examples of how different data structures can be implemented on top of a universal hash.
+The theorem above proved that every data structure is just a hash. In this section, I’ll show some examples of how different data structures can be implemented on top of a universal hash.
 
 (By the way, a *theorem* is academic lingo for a truth backed by a *proof*, which is academic lingo for an irrefutable argument using our God-given logic, other proven theorems and a couple of God-given *axioms*, which is academic lingo for a *truth* we accept purely by our God-given logic, like: if something is not true then it is false, something cannot exist in an empty set, something logical is logical.)
 
@@ -183,7 +183,7 @@ Now, our program can just read the `tag` and know what to do with the string val
 
 And to blow your minds even more, note that we’re implementing hashes with hashes.
 
-(Some of you may question how we got the first implementation of a hash to begin with. When you type `{}`, the compiler surely puts that in a hash. But where did the *compiler’s* hash come from? This is where *mathematical induction* comes in. It’s a big math word that basically means that if you can prove that the bottom rung of your ladder exists, and you can get from rung *n* to rung *(n-1)*, then you'll eventually get off the ladder. Well, we know main memory is really just a `Hash[Int, String]`. And since we can implement hashes with hashes, this means that a hash can be implemented.)
+(Some of you may question how we got the first implementation of a hash to begin with. When you type `{}`, the compiler surely puts that in a hash. But where did the *compiler’s* hash come from? This is where *mathematical induction* comes in. It’s a big math word that basically means that if you can prove that the bottom rung of your ladder exists, and you can get from rung *n* to rung *(n-1)*, then you’ll eventually get off the ladder. Well, we know main memory is really just a `Hash[Int, String]`. And since we can implement hashes with hashes, this means that a hash can be implemented.)
 
 ## Practical implications
 

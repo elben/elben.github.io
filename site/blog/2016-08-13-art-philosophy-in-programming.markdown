@@ -74,7 +74,7 @@ If we have learned from Plato, then our answer is not to readily accept everythi
 
 ## The return to the cave
 
-In Plato’s cave, the prisoner eventually goes back into the cave. Not because he prefers the chains, but because he pities the other prisoners and wants to free them. But having been accustomed to the light, he stumbles blind into the cave.  The other prisoners observe that the outside world has blinded him and, according to Plato, ignore the free man's pleading and refuse to leave. The desire for comfort, once more, overwhelms truth.
+In Plato’s cave, the prisoner eventually goes back into the cave. Not because he prefers the chains, but because he pities the other prisoners and wants to free them. But having been accustomed to the light, he stumbles blind into the cave.  The other prisoners observe that the outside world has blinded him and, according to Plato, ignore the free man’s pleading and refuse to leave. The desire for comfort, once more, overwhelms truth.
 
 What we can take away from this is *how* we communicate new ideas is important.
 

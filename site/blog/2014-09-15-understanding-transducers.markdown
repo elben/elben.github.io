@@ -8,9 +8,9 @@
 
 What are transducers? Using transducers is easy enough—but how do they work underneath the hood?
 
-This article explores transducers by ignoring transducers. Instead we will examine two ordinary functions, `map` and `filter`. We'll play with them and scrutinize them. And we'll marvel at the power of higher-order functions as we apply abstractions. And perhaps, if we're lucky, we'll bump into transducers along the way.
+This article explores transducers by ignoring transducers. Instead we will examine two ordinary functions, `map` and `filter`. We’ll play with them and scrutinize them. And we’ll marvel at the power of higher-order functions as we apply abstractions. And perhaps, if we’re lucky, we’ll bump into transducers along the way.
 
-And since we ignore transducers, you won't need to know what transducers are to follow along. If you don't know Clojure or a Lisp, [this quick primer](/p/clojure-primer-js/) may help.
+And since we ignore transducers, you won’t need to know what transducers are to follow along. If you don’t know Clojure or a Lisp, [this quick primer](/p/clojure-primer-js/) may help.
 
 Lastly, I encourage you to type these examples into your REPL, or use [clojurescript.net](http://clojurescript.net/). The source code from this post can be found [here](https://gist.github.com/elben/da8864e120c373e5fcf0).
 
@@ -29,7 +29,7 @@ You are probably familiar with `map` and `filter`, and know that we can combine 
 ; ⇒ (2 4 6 8 10)
 ```
 
-A key insight, however, is that `map` and `filter` can be defined using `reduce`. Let's implement the expression `(map inc (range 10))` in terms of `reduce`:
+A key insight, however, is that `map` and `filter` can be defined using `reduce`. Let’s implement the expression `(map inc (range 10))` in terms of `reduce`:
 
 ```clojure
 (defn map-inc-reducer
@@ -40,7 +40,7 @@ A key insight, however, is that `map` and `filter` can be defined using `reduce`
 ; ⇒ [1 2 3 4 5 6 7 8 9 10]
 ```
 
-But note `map-inc-reducer`'s explicit use of `inc` as its transformer. What if we extract that out and let the user pass in whatever function they want? We can define a new function that takes a transforming function like `inc` and returns a new function.
+But note `map-inc-reducer`’s explicit use of `inc` as its transformer. What if we extract that out and let the user pass in whatever function they want? We can define a new function that takes a transforming function like `inc` and returns a new function.
 
 ```clojure
 (defn map-reducer
@@ -52,7 +52,7 @@ But note `map-inc-reducer`'s explicit use of `inc` as its transformer. What if w
 ; ⇒ [1 2 3 4 5 6 7 8 9 10]
 ```
 
-Functions like `map-reducer` are called a higher-order functions because they accept functions and return functions. Let's play around:
+Functions like `map-reducer` are called a higher-order functions because they accept functions and return functions. Let’s play around:
 
 ```clojure
 (reduce (map-reducer dec) [] (range 10))
@@ -62,7 +62,7 @@ Functions like `map-reducer` are called a higher-order functions because they ac
 ; ⇒ [0 1 4 9 16 25 36 49 64 81]
 ```
 
-Let's also implement the expression `(filter even? '(1 2 3 4 5 6 7 8 9 10))` in terms of `reduce`:
+Let’s also implement the expression `(filter even? '(1 2 3 4 5 6 7 8 9 10))` in terms of `reduce`:
 
 ```clojure
 (defn filter-even-reducer
@@ -75,7 +75,7 @@ Let's also implement the expression `(filter even? '(1 2 3 4 5 6 7 8 9 10))` in 
 ; ⇒ [2 4 6 8 10]
 ```
 
-Again, notice that `filter-even-reducer` explicitly uses `even?` as its predicate. As before, let's extract that out and let the user pass in whatever they want.
+Again, notice that `filter-even-reducer` explicitly uses `even?` as its predicate. As before, let’s extract that out and let the user pass in whatever they want.
 
 ```clojure
 (defn filter-reducer
@@ -115,7 +115,7 @@ Both versions, however, required intermediate vectors—one for map and one for 
 
 ## Another step in abstraction
 
-Let's scrutinize `map-reducer` and `filter-reducer`. Here they are again:
+Let’s scrutinize `map-reducer` and `filter-reducer`. Here they are again:
 
 ```clojure
 (defn map-reducer
@@ -131,7 +131,7 @@ Let's scrutinize `map-reducer` and `filter-reducer`. Here they are again:
       result)))
 ```
 
-What do you observe? `conj` is used in both of them. Why? What's so special about it? Can we use other functions in place of `conj`?
+What do you observe? `conj` is used in both of them. Why? What’s so special about it? Can we use other functions in place of `conj`?
 
 Well, notice that `result` and `input` can be of any type. If `result` is `10` and `input` is `1`, `conj` would not work here; `(conj 10 1)` throws an error. Instead of `conj`, we would want something like `+`, because `(+ 10 1)` makes sense.
 
@@ -147,7 +147,7 @@ We can say that `conj` and `+` are both **reducing functions**. Reducing functio
 
 Now, instead of always using `conj` in `map-reducer` and `filter-reducer`, what if we let the user pass in whatever reducing function they want?
 
-This will result in another higher-order function that takes our map's transform function and filter's predicate function, as usual. But we now will return a function that accepts a reducing function. Let's use the names `mapping` and `filtering` for our new functions.
+This will result in another higher-order function that takes our map’s transform function and filter’s predicate function, as usual. But we now will return a function that accepts a reducing function. Let’s use the names `mapping` and `filtering` for our new functions.
 
 ```clojure
 (defn mapping
@@ -165,7 +165,7 @@ This will result in another higher-order function that takes our map's transform
         result))))
 ```
 
-And now let's use them as before:
+And now let’s use them as before:
 
 ```clojure
 (reduce
@@ -218,13 +218,13 @@ It turns out, this function *also* has the type `result, input -> result`. It is
 ; ⇒ [2 4 6 8 10]
 ```
 
-This is a bit messy, so let's clean it up by using `comp` instead. Recall that `(comp a b c d)` returns the function
+This is a bit messy, so let’s clean it up by using `comp` instead. Recall that `(comp a b c d)` returns the function
 
 ```clojure
 (fn [r] (a (b (c (d r)))))
 ```
 
-Here's the cleaned up version, using `comp`:
+Here’s the cleaned up version, using `comp`:
 
 ```clojure
 (def xform
@@ -268,7 +268,7 @@ Also observe that no intermediate collections are created when we evaluate `(red
 
 ## A more intuitive understanding
 
-It may be difficult to understand why the `xform` transducer works because it's quite complicated. Let's try to get a better understanding. Here's `xform` as before:
+It may be difficult to understand why the `xform` transducer works because it’s quite complicated. Let’s try to get a better understanding. Here’s `xform` as before:
 
 ```clojure
 (defn square [x] (* x x))
@@ -300,13 +300,13 @@ But if the input in question is `6`, it would pass both filters and arrive at th
 ; ⇒ [1 5 17 37 65]
 ```
 
-Being able to compose transducers is important. We see that it's quite simple to do, and that ordinary functions power all of it.
+Being able to compose transducers is important. We see that it’s quite simple to do, and that ordinary functions power all of it.
 
 ## Transducers in core.async
 
 Another major selling point of transducers is that a transducer can work across core.async channels. For example, we should be able to take our `xform` transducer and use it to filter and transform items in a channel.
 
-Using Clojure's transducer library:
+Using Clojure’s transducer library:
 
 ```clojure
 (defn square [x] (* x x))
@@ -340,19 +340,19 @@ But if a transducer `xform` is supplied, core.async will use `add!` as the reduc
 (xform add!)
 ```
 
-This means that any item put into a channel will first be transformed by our transducer. And if the transducer filters out an item (e.g. due to `(filter even?)`), then the final reducing function `add!` is never called. Thus the item is never added to the channel's buffer and no takers ever see it.
+This means that any item put into a channel will first be transformed by our transducer. And if the transducer filters out an item (e.g. due to `(filter even?)`), then the final reducing function `add!` is never called. Thus the item is never added to the channel’s buffer and no takers ever see it.
 
 The pertinent code can be found in the core.async sources, [here](https://github.com/clojure/core.async/blob/ac0f1bfb40237a18dc0f03c0db5df41657cd23a6/src/main/clojure/clojure/core/async/impl/channels.clj#L287).
 
 ## Conclusion
 
-We've come a long ways. We started with regular `map` and `filter` and observed how they can be implemented using `reduce`. We then abstracted our reducing functions until we found ourselves with transducer-building functions, `mapping` and `filtering`.
+We’ve come a long ways. We started with regular `map` and `filter` and observed how they can be implemented using `reduce`. We then abstracted our reducing functions until we found ourselves with transducer-building functions, `mapping` and `filtering`.
 
 By building, analyzing and using transducers, I hope that you gained a better understanding of how they work. They are, after all, just functions.
 
 # Problem sets
 
-If you're interested in learning more, I encourage you to tackle the problems below. [Solutions can be found here](https://gist.github.com/elben/da8864e120c373e5fcf0#file-understanding-transducers-clj-L204).
+If you’re interested in learning more, I encourage you to tackle the problems below. [Solutions can be found here](https://gist.github.com/elben/da8864e120c373e5fcf0#file-understanding-transducers-clj-L204).
 
 **Write a `transduce` helper function**
 
@@ -365,7 +365,7 @@ Right now, our use of `reduce` is a bit clunky. Write a function `transduce` tha
 
 **The Caesar Cipher**
 
-In our examples above, we used `conj` and `+` as reducing functions. Let's write a more complex one.
+In our examples above, we used `conj` and `+` as reducing functions. Let’s write a more complex one.
 
 Given a string, use transducers to:
 

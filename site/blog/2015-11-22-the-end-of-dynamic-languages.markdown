@@ -12,7 +12,7 @@ Ruby frustrated me at once. Working in Ruby is fine if you’re just *adding* a 
 
 But my brand-new, clean-slate weekend project in Clojure… Ah, Clojure! A breath of fresh air! A land green with libraries rolling in composible functions, immutable data structures, and kind people. How beautiful is your syntax, and how wise are your sensibilities! Your middleware is just a function that takes a map and returns a map. And so is your SQL generator and DB migrator and HTML parser and URL router—a psychedelic circle of maps passed to-and-fro to the beat of the CPU, tick-tocking like a well-tuned Swiss watch.
 
-To be back in Clojure after such a long time away was to feel, instantly, back home. It restored my programmer's soul.
+To be back in Clojure after such a long time away was to feel, instantly, back home. It restored my programmer’s soul.
 
 But then crept in me a peculiar emotion I did not expect: **uncertainty**.
 
@@ -38,10 +38,10 @@ It went something like this:
 
 This uncertainty wrecks productivity. Every library function you call, unless you have it memorized, requires hunting down the source or test files for examples on how to use it. Every map you get back requires a `println` to know what it contains.
 
-Yes, Clojure is powerful. But power without support, without someone showing us how to wield that power, can only corrupt. I'm not talking about human philosophy here—just code. Which one of us has not suffered from Ruby's metaprogramming, or Clojure's maps? We are both inflictor and victim.
+Yes, Clojure is powerful. But power without support, without someone showing us how to wield that power, can only corrupt. I’m not talking about human philosophy here—just code. Which one of us has not suffered from Ruby’s metaprogramming, or Clojure’s maps? We are both inflictor and victim.
 
 ### An example: do DSLs empower or confuse?
-Let's talk about the corrupting power of Clojure DSLs. Clojurians love DSLs, and Clojure data structures lend itself well to be used in that way.
+Let’s talk about the corrupting power of Clojure DSLs. Clojurians love DSLs, and Clojure data structures lend itself well to be used in that way.
 
 But I think there is something wrong with this.
 
@@ -63,7 +63,7 @@ But HTML is the perfect DSL for writing HTML—why replace it for another DSL wi
 
 But a larger problem with using data structures as DSL is that there is no way for me to know if I’m conforming to your DSL until I get a confusing runtime error.
 
-Let’s pick on [bidi](https://github.com/juxt/bidi), a lovely little URL routing library. It's fun to use, but there is a big, gaping problem with these DSLs.
+Let’s pick on [bidi](https://github.com/juxt/bidi), a lovely little URL routing library. It’s fun to use, but there is a big, gaping problem with these DSLs.
 
 Say we want to route `GET /notes`. In bidi, you would define your route like this:
 
@@ -109,7 +109,7 @@ I have a feeling that REPL is going to get a *lot* of use.
 ## The problem with uncertainty
 Now, don’t get me wrong, negative feelings do arise when writing in typed languages like Haskell and Scala. Confusion, frustration, hopelessness. But uncertainty is perhaps worse than all the others. You can resolve all the others by sitting down and learning the thing. But how does one resolve *uncertainty*? Only with more certainty. But what if the language does not provide a way to make certain of the uncertain?
 
-Let's examine some current attempts.
+Let’s examine some current attempts.
 
 ### Gradual typing
 There is a frantic rush to bolt-on a type system to every dynamic language out there. Typed Racket, Typed Clojure, TypeScript, Typed Lua. Even Python has “type hints”.
@@ -128,11 +128,11 @@ The fundamental problem, you see, is that a programming language is not just abo
 
 What about unit tests, property tests, linters, runtime contracts, pair programming and PR reviews? What a plethora of tools! Surely they are sufficient.
 
-I'm afraid they are not. Unit and property tests are of most value when they test functionality, not when they are used to test whether or not the shape of the result conforms to your expectation. Runtime contracts can diverge from the actual intent and are still runtime problems, and pair programming and PRs still have the fallible human in the picture.
+I’m afraid they are not. Unit and property tests are of most value when they test functionality, not when they are used to test whether or not the shape of the result conforms to your expectation. Runtime contracts can diverge from the actual intent and are still runtime problems, and pair programming and PRs still have the fallible human in the picture.
 
-Linters for dynamic languages are crippled to the point of being more about vanity and less about quality. If your argument for using your linter is that it finds whitespace issues, I'm not sure that's solving important problems.
+Linters for dynamic languages are crippled to the point of being more about vanity and less about quality. If your argument for using your linter is that it finds whitespace issues, I’m not sure that’s solving important problems.
 
-Using Haskell's `hlint`, however, is like programming in the future. Because Haskell is a typed language, the linter knows a lot more about your program than just syntax. It can find *structural* problems too, like:
+Using Haskell’s `hlint`, however, is like programming in the future. Because Haskell is a typed language, the linter knows a lot more about your program than just syntax. It can find *structural* problems too, like:
 
 - When two equivalent anonymous functions that can be extracted out
 - When a library method already exists for an expression
@@ -144,7 +144,7 @@ Does that sound like something you want?
 
 ## A short story
 
-OK, enough ranting. Let's pause. Here is a story of how we used our *programming language* to help us eradicate a certain class of bugs from a production code base.
+OK, enough ranting. Let’s pause. Here is a story of how we used our *programming language* to help us eradicate a certain class of bugs from a production code base.
 
 Last week, I was frustrated at a particular Scala code base because it was so easy to write bugs that wrote wrong values into a Solr search cluster. For example, Solr silently allows `null` to be written to a boolean field. I spent a week refactoring that messy, bug-prone monolith into small, composible chunks that passed around immutable data structures ala Clojure. At first I thought it was great work. The new code was nice-to-read and well-tested. Yet I found myself writing the same runtime bugs I was writing before. One even involved breaking our porn filter (quick, what do you do when `isItPorn` returns `null`?).
 
@@ -158,13 +158,13 @@ Today, I updated one of my client projects to use this refactored library. <span
 
 Such power will never be available in a language like Ruby, and likely not Clojure either. But such power does exist. And you can have it too.
 
-Let's be clear: I am not suggesting that you and your team will start writing better, more-certain code the day you move away from Ruby. In fact, there will be a noticable dip in productivity and a noticable rise in audible profanity. But that is a growing pain, and it is only expected when learning anything new. What we should look forward to, however, is the inevitable improvement and confidence to come.
+Let’s be clear: I am not suggesting that you and your team will start writing better, more-certain code the day you move away from Ruby. In fact, there will be a noticable dip in productivity and a noticable rise in audible profanity. But that is a growing pain, and it is only expected when learning anything new. What we should look forward to, however, is the inevitable improvement and confidence to come.
 
 ## The end of an era
 
-This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We've learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. And above all, we've learned that we want our languages to be enjoyable.
+This is my bet: **the age of dynamic languages is over**. There will be no new successful ones. Indeed we have learned a lot from them. We’ve learned that library code should be extendable by the programmer (mixins and meta-programming), that we want to control the structure (macros), that we disdain verbosity. And above all, we’ve learned that we want our languages to be enjoyable.
 
-But it's time to move on. We will see a flourishing of languages that *feel* like you’re writing in a Clojure, but typed. Included will be a suite of powerful tools that we've never seen before, tools so convincing that only ascetics will ignore.
+But it’s time to move on. We will see a flourishing of languages that *feel* like you’re writing in a Clojure, but typed. Included will be a suite of powerful tools that we’ve never seen before, tools so convincing that only ascetics will ignore.
 
 To do this, we need to feed our tools the information they need to help us; a psychologist cannot help the silent patient. We begin by adding types, by restricting the space of possibilities to free ourselves from the self-made burden of uncertainty. New languages like Elm and Crystal are on the right track, and of course established ones like Haskell and Scala. We need more languages like these.
 
