@@ -267,6 +267,8 @@ main = do
   loadDir True True "stylesheets/fonts/" >>= renderResources
   loadDir True True "images/" >>= renderResources
 
+  loadResourceId "CNAME" >>= renderResource
+
 loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
 loadDir recursive strict dir = do
   fps <- listDir recursive dir
