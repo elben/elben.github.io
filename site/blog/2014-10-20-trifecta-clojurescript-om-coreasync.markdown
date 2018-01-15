@@ -1,4 +1,4 @@
-<!--PREAMBLE’
+<!--PREAMBLE
 {
 "postTitle": "The Trifecta of ClojureScript, Om and core.async",
 "date": "2014-10-20",

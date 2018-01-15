@@ -5,6 +5,7 @@ module Pencil.Parser where
 import Text.ParserCombinators.Parsec
 import qualified Data.Text as T
 import qualified Text.HTML.TagSoup as TS
+import qualified Text.Parsec as P
 import qualified Data.List as DL
 
 -- Doctest setup.
@@ -54,13 +55,13 @@ data PTag =
 -- | Convert Tokens to PNode AST.
 --
 -- >>> transform [TokText "hello", TokText "world"]
--- ([PText "hello",PText "world"],[])
+-- [PText "hello",PText "world"]
 --
 -- >>> transform [TokIf "title", TokEnd]
--- ([PIf "title" []],[])
+-- [PIf "title" []]
 --
 -- >>> transform [TokIf "title", TokText "hello", TokText "world", TokEnd]
--- ([PIf "title" [PText "hello",PText "world"]],[])
+-- [PIf "title" [PText "hello",PText "world"]]
 --
 -- ${if(title)}
 --   ${for(posts)}
@@ -69,7 +70,7 @@ data PTag =
 -- ${end}
 --
 -- >>> transform [TokIf "title", TokFor "posts", TokText "world", TokEnd, TokEnd]
--- ([PIf "title" [PFor "posts" [PText "world"]]],[])
+-- [PIf "title" [PFor "posts" [PText "world"]]]
 --
 -- begin
 -- now
@@ -88,7 +89,7 @@ data PTag =
 -- lastline
 --
 -- >>> transform [TokText "begin", TokText "now", TokIf "title", TokText "hello", TokText "world", TokIf "body", TokVar "body", TokVar "someothervar", TokText "wahh", TokEnd, TokText "final", TokText "thing", TokEnd, TokText "the", TokText "lastline"]
--- ([PText "begin",PText "now",PIf "title" [PText "hello",PText "world",PIf "body" [PVar "body",PVar "someothervar",PText "wahh"],PText "final",PText "thing"],PText "the",PText "lastline"],[])
+-- [PText "begin",PText "now",PIf "title" [PText "hello",PText "world",PIf "body" [PVar "body",PVar "someothervar",PText "wahh"],PText "final",PText "thing"],PText "the",PText "lastline"]
 --
 transform :: [Token] -> [PNode]
 transform toks =
@@ -210,8 +211,8 @@ runParser text = do
 -- >>> parse parseEverything "" "Hi ${for(people)} ${name}, ${end} everyone!"
 -- Right [TokText "Hi ",TokFor "people",TokText " ",TokVar "name",TokText ", ",TokEnd,TokText " everyone!"]
 --
--- >>> parse parseEverything "" "<b>this $$escape works</b> ${realvar}"
--- Right [TokText "<b>this ",TokText "$",TokText "escape works</b> ",TokVar "realvar"]
+-- >>> parse parseEverything "" "${realvar} $.get(javascript) $$ $$$ $} $( $45.50 $$escape wonderful life! ${truth}"
+-- Right [TokVar "realvar",TokText " $.get(javascript) $$ $$$ $} $( $45.50 $$escape wonderful life! ",TokVar "truth"]
 --
 -- | This is a degenerate case that we will just allow (for now) to go sideways:
 -- >>> parse parseEverything "" "<b>this ${var never closes</b> ${realvar}"
@@ -222,7 +223,6 @@ parseEverything =
   -- Note that order matters here. We want "most general" to be last (variable
   -- names).
   many1 (parseContent
-     <|> try parseEscape
      <|> try parseEnd
      <|> try parseFor
      <|> try parseIf
@@ -269,33 +269,31 @@ parsePartial = do
 -- >>> parse parseContent "" "hello ${ffwe} you!"
 -- Right (TokText "hello ")
 --
+-- >>> parse parseContent "" "hello $.get() $ $( $$ you!"
+-- Right (TokText "hello $.get() $ $( $$ you!")
+--
+-- Because of our first parser to grab a character that is not a $, we can't
+-- grab strings that start with a $, even if it's text. It's a bug, just deal
+-- with it for now.
+-- >>> isLeft $ parse parseContent "" "$$$ what"
+-- True
+--
 -- >>> isLeft $ parse parseContent "" "${name}!!"
 -- True
 --
--- https://stackoverflow.com/questions/20730488/parsec-read-text-ended-by-a-string
--- https://github.com/jaspervdj/hakyll/blob/32e34f435c7911f36acdf4a62eec1f56faf0b269/src/Hakyll/Web/Template/Internal/Element.hs#L137
 parseContent :: Parser Token
 parseContent = do
-  -- stuff <- manyTill anyChar (try (string "${"))
-  -- stuff <- try (manyTill anyChar parseVar) -- <|> (many1 anyChar)
-  stuff <- many1 (noneOf "$")
-  -- stuff <- manyTill anyChar (eof <|> lookAhead (parseVar >> return ()))
-  return $ TokText (T.pack stuff)
+  -- The manyTill big parser below will accept an empty string, which is bad. So
+  -- grab a single character to start things off.
+  h <- noneOf "$"
 
--- | Parse "$$" to escape as "$".
---
--- >>> parse parseEscape "" "$$"
--- Right (TokText "$")
---
--- >>> isLeft $ parse parseEscape "" "$"
--- True
---
--- >>> parse parseEscape "" "$$$"
--- Right (TokText "$")
-parseEscape :: Parser Token
-parseEscape = do
-  _ <- try (string "$$")
-  return $ TokText "$"
+  -- Grab chars until we see something that looks like a ${...}, or eof. Use
+  -- both lookAhead (does not consume successful "${" found) and try (does not
+  -- consume failure to find "${"). Not having both produces bugs, so.
+  --
+  -- https://stackoverflow.com/questions/20020350/parsec-difference-between-try-and-lookahead
+  stuff <- manyTill anyChar (try (lookAhead (string "${")) <|> (eof >> return " "))
+  return $ TokText (T.pack (h : stuff))
 
 -- | Parse for loop declaration.
 --
@@ -348,3 +346,11 @@ parseFakeVar = do
   n <- noneOf "{"
   rest <- many1 (noneOf "$")
   return $ TokText (T.pack ("$" ++ [n] ++ rest))
+
+-- From https://hackage.haskell.org/package/pandoc-1.10.0.4/docs/Text-Pandoc-Parsing.html
+many1Till :: P.Stream s m t => P.ParsecT s u m a -> P.ParsecT s u m end -> P.ParsecT s u m [a]
+many1Till p end = do
+  first <- p
+  rest <- manyTill p end
+  return (first : rest)
+
