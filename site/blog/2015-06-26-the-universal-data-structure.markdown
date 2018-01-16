@@ -12,7 +12,7 @@ Specifically, the only hash you need is this one:
 
 `UniversalHash = Hash[String|Int, UniversalHash|String]`
 
-(If you’re not one of those Haskell or Scalaz guys, the complicated expression above tells us that a "universal hash" is a hash where the keys are either strings and integers, and the values are either universal hashes or strings.)
+(If you’re not one of those Haskell or Scalaz guys, the complicated expression above tells us that a “universal hash” is a hash where the keys are either strings and integers, and the values are either universal hashes or strings.)
 
 The universal hash obsoletes not just all other hash structures, but all other data structures. In this article, I’ll show you why this is a good thing, and why you’ll want to use the universal hash everywhere.
 
@@ -74,7 +74,7 @@ Given the abysmal state of of today’s software engineering, I believe that a f
 
 First of all, a hash is simple to understand. JSON, for example, is the most-famous of all hash-based DSLs. And anyone can read JSON—even your product manager!
 
-Second, hashes are fast. Hashes are always O(1) reads, inserts and writes. Why try to understand logarithms when "1" is not only much *easier* but also *faster*. (Note: there’s something about amortized complexity, but that’s a rare anomaly over billions of hits).
+Second, hashes are fast. Hashes are always O(1) reads, inserts and writes. Why try to understand logarithms when “1” is not only much *easier* but also *faster*. (Note: there’s something about amortized complexity, but that’s a rare anomaly over billions of hits).
 
 Third, every modern language (e.g. Ruby, CoffeeScript) comes with a good hash implementation and an easy-to-type syntax. There ain’t nothing easier than typing `{}` to initialize a database. I mean, show me a language with easy-to-type, first-class support for, God-forbid, finger trees. Can you even do that in ASCII? Thankfully, progressive language designers learned something post-Java: save curly braces for hashes.
 

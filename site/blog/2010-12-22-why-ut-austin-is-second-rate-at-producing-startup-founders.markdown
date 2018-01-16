@@ -790,5 +790,3 @@ May 24 2011, 3:31 PM
 Joleen responded:
 
 There’s a lot of comments here, so if this has already been spoken of - oops. FYI - UT will have a brand new class Fall 2011 called 1 Semester Startup. It is being led by Bob Metcalfe, Joshua Baer and Johnny Butler. http://www.1semesterstartup.com/
-
-’

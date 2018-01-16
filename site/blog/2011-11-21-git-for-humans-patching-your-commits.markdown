@@ -12,7 +12,7 @@ fix, we may see a method vulnerable for refactoring. So we refactor it.
 
  And now we have to commit a bug fix and a method refactor, and they’re both in
  the same file. The lazy way out would be to commit the file with a nice
- message: "fixed bug #183 and refactored method_name".
+ message: “fixed bug #183 and refactored method_name”.
 
 
 But can we do better? Yes. With the `--patch` option, we can precisely choose

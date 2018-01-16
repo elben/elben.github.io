@@ -170,6 +170,6 @@ To do this, we need to feed our tools the information they need to help us; a ps
 
 We think we have seen everything under the sun, that there are no new ideas worth learning. Worse yet, we refuse to learn anything unfamiliar. (Yuck, look at that syntax!) But remember how *hard* it was when we first learned to code? Was it not worth the effort? We should not be afraid to embark on that familiar journey once again.
 
-The Christian theologian Gerhardus Vos described the tension of this life as "already but not yet." That is, a Christian is at once made into a new creation by their faith, but at the same time still carries the burdens and sorrows of this life.
+The Christian theologian Gerhardus Vos described the tension of this life as “already but not yet.” That is, a Christian is at once made into a new creation by their faith, but at the same time still carries the burdens and sorrows of this life.
 
 What an apt description of where we are today. From a distance, we can envision what productive, empowering and confident languages would look and feel like. Many that exist today is on its way, but we are not there yet. Surely we can do better.
