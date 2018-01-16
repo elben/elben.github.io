@@ -1,0 +1,44 @@
+# This is the configuration file for circleci.com (CI which builds the site)
+
+machine:
+  pre:
+    # https://github.com/commercialhaskell/stack/issues/1658
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 10
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 10
+
+# https://gist.github.com/dbp/bef96402ea07001dfed2
+dependencies:
+  cache_directories:
+    - "~/.stack"
+  pre:
+    - wget https://github.com/commercialhaskell/stack/releases/download/v1.6.3/stack-1.6.3-linux-x86_64.tar.gz
+    - tar -xzf stack-1.6.3-linux-x86_64.tar.gz
+    - sudo mv stack-1.6.3-linux-x86_64.tar.gz /usr/bin/stack
+  override:
+    - stack setup
+    - stack build: # build exec
+        # Longer timeout (seconds) for downloading packages
+        timeout: 3000
+
+# Compile pages during the test stage
+test:
+  override:
+    # See Makefile
+    - "make all"
+
+deployment:
+  production:
+    branch: source
+    commands:
+    # See Makefile
+    - "make deploy"
+
+general:
+  branches:
+    ignore:
+      # Don't build master since that's for GitHub pages
+      - master
+
+
