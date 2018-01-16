@@ -5,8 +5,8 @@ dependencies:
   cache_directories:
     - "~/.stack"
   pre:
-    - sudo apt-get update
-    - curl -sSL https://get.haskellstack.org/ | sh
+    # CircleCI comes with stack preinstalled; just update it
+    - stack upgrade
   override:
     - stack setup
     - stack build: # build exec
