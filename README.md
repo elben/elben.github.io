@@ -1,5 +1,11 @@
 # Pencil
 
+# Generate
+
+```bash
+make
+```
+
 # Development
 
 ```bash
