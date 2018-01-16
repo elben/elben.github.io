@@ -10,6 +10,7 @@ import GHC.IO.Exception (IOException(ioe_description))
 import Data.Typeable     ( Typeable )
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
+import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import qualified Text.Pandoc as P
@@ -263,18 +264,29 @@ main = do
   renderCss "stylesheets/default.scss"
 
   -- Render static directories
-  loadDir True True "p/" >>= renderResources
-  loadDir True True "stylesheets/fonts/" >>= renderResources
-  loadDir True True "images/" >>= renderResources
+  loadDirWithFileModifier True False fileModifierToHtml "p/" >>= renderResources
+  loadDirId True True "stylesheets/fonts/" >>= renderResources
+  loadDirId True True "images/" >>= renderResources
 
   loadResourceId "CNAME" >>= renderResource
 
-loadDir :: Bool -> Bool -> FilePath -> IO [Resource]
-loadDir recursive strict dir = do
+-- | A file modifier that renames to HTML files that will be rendered to HTML.
+fileModifierToHtml :: FilePath -> FilePath
+fileModifierToHtml fp =
+  case toExtension fp of
+    Markdown -> FP.dropExtension fp ++ ".html"
+    _ -> fp
+
+loadDirId :: Bool -> Bool -> FilePath -> IO [Resource]
+loadDirId recursive strict = loadDirWithFileModifier recursive strict id
+
+-- | Load directory as Resources.
+loadDirWithFileModifier :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> IO [Resource]
+loadDirWithFileModifier recursive strict fpf dir = do
   fps <- listDir recursive dir
   if strict
     then return $ map (\fp -> Passthrough fp fp) fps
-    else mapM loadResourceId fps
+    else mapM (loadResourceWithFileModifier fpf) fps
 
 -- List files in directory, optionally recursively. Returns paths that include
 -- the given dir.
@@ -365,7 +377,6 @@ copyFile fpIn fpOut = do
   D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
   D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
 
-
 loadResourceAsHtml :: FilePath -> IO Resource
 loadResourceAsHtml = loadResourceWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
@@ -410,21 +421,23 @@ loadPageWithFileModifier fpf fp = do
       let env' = H.insert "this.url" (EText (T.pack fp')) env
       return $ Right $ Page nodes env' ("/" ++ fpf fp)
 
-data Extension = Markdown
-               | Sass
-               | Other
+data FileType = Markdown
+              | Sass
+              | Html
+              | Other
 
-extensionMap :: H.HashMap String Extension
+extensionMap :: H.HashMap String FileType
 extensionMap = H.fromList
   [ ("markdown", Markdown)
   , ("md", Markdown)
+  , ("html", Html)
   , ("sass", Sass)
   , ("scss", Sass)]
 
-toExtension :: String -> Extension
+toExtension :: FilePath -> FileType
 toExtension fp =
   -- takeExtension returns ".markdown", so drop the "."
-  M.fromMaybe Other (H.lookup (drop 1 (FP.takeExtension fp)) extensionMap)
+  M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) extensionMap)
 
 sassOptions :: Sass.SassOptions
 sassOptions = Text.Sass.Options.defaultSassOptions
@@ -469,7 +482,7 @@ parseTextFile fp = do
              case result of
                Left _ -> return content
                Right byteStr -> return $ decodeUtf8 byteStr
-          Other -> return content
+          _ -> return content
       let nodes = case runParser content' of
                     Left _ -> []
                     Right n -> n
