@@ -3,10 +3,10 @@
 module Pencil.Parser where
 
 import Text.ParserCombinators.Parsec
+import qualified Data.List as DL
 import qualified Data.Text as T
 import qualified Text.HTML.TagSoup as TS
 import qualified Text.Parsec as P
-import qualified Data.List as DL
 
 -- Doctest setup.
 --
@@ -41,6 +41,8 @@ data Token =
   | TokPartial T.Text
   | TokEnd
   deriving (Show, Eq)
+
+type PTags = [PTag]
 
 -- | Data structure that mirrors the tagsoup @Tag@ data. We need more data types for our variables.
 data PTag =
@@ -195,8 +197,8 @@ renderToken (TokFor t) = T.append (T.append "${for(" t) ")}"
 renderToken (TokEnd) = "${end}"
 renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
 
-runParser :: T.Text -> Either ParseError [PNode]
-runParser text = do
+parseText :: T.Text -> Either ParseError [PNode]
+parseText text = do
   toks <- parse parseEverything (T.unpack "") (T.unpack text)
   return $ transform toks
 
