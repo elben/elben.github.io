@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Singleton Pattern in Python",
-"date": "2010-04-16",
-"tags": ["python"]
-}
+postTitle: "Singleton Pattern in Python"
+date: 2010-04-16
+tags:
+  - python
 -->
 
 Sometimes, you find that you only want one instance of a class to be created.

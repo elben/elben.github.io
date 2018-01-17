@@ -8,13 +8,12 @@ import Control.Exception (tryJust)
 import Control.Monad (forM_, foldM, filterM, liftM, (>=>))
 import GHC.IO.Exception (IOException(ioe_description))
 import Data.Typeable     ( Typeable )
-import Data.Aeson.Types (Parser, parseMaybe)
 import Data.ByteString.Lazy (fromStrict)
 import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import qualified Text.Pandoc as P
-import qualified Data.Aeson as A
+import qualified Data.Yaml as A
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
@@ -178,7 +177,7 @@ filterByVar includeMissing var f =
 groupByTagVar :: T.Text
            -> [Page]
            -> H.HashMap T.Text [Page]
-groupByTagVar var =
+groupByTagVar var pages =
   -- This outer fold takes the list of pages, and accumulates the giant HashMap.
   L.foldl'
     (\acc page@(Page _ env _) ->
@@ -201,6 +200,9 @@ groupByTagVar var =
            _ -> acc
     )
     H.empty
+    (reverse pages)
+    -- ^ Reverse to keep ordering consistent inside hash map, since the fold
+    -- prepends into accumulated list.
 
 forceRight :: Show e => Either e a -> a
 forceRight (Right a) = a
@@ -214,7 +216,7 @@ main = do
   -- Load posts
   postFps <- listDir False "blog/"
 
-  -- Sort by date and filter out drafts
+  -- Sort by date (newest first) and filter out drafts
   posts <- liftM (filterByVar True "draft" (EBool True /=) . sortByVar "date" dateOrdering)
                  (mapM (liftM forceRight . loadPageWithFileModifier blogPostUrl) postFps)
 
@@ -333,7 +335,7 @@ insertEnv :: Env -> Env -> Env
 insertEnv = H.union
 
 parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
-parseMaybeText k = parseMaybe (\o -> o A..: k :: Parser T.Text)
+parseMaybeText k = A.parseMaybe (\o -> o A..: k :: A.Parser T.Text)
 
 -- | Convert known Aeson types into known Env types.
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
@@ -541,7 +543,7 @@ loadVariables tags =
   case findPreambleComment tags of
     Nothing -> H.empty
     Just commentText ->
-      let v = A.decode (fromStrict $ encodeUtf8 (T.strip commentText)) :: Maybe A.Object
+      let v = A.decode (encodeUtf8 (T.strip commentText)) :: Maybe A.Object
        in M.fromMaybe H.empty v
 
 findPreambleComment :: Tags -> Maybe T.Text

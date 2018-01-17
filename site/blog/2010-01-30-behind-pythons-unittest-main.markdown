@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Behind Python’s unittest.main()",
-"date": "2010-01-30",
-"tags": ["python"]
-}
+postTitle: "Behind Python's unittest.main()"
+date: 2010-01-30
+tags:
+  - python
 -->
 
 Is Python magical? Consider the trivial unit test below:

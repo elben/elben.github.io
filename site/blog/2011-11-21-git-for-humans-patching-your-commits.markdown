@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Git for Humans: Patching Your Commits",
-"date": "2011-11-21",
-"tags": ["git"]
-}
+postTitle: "Git for Humans: Patching Your Commits"
+date: 2011-11-21
+tags:
+  - git
 -->
 
 Ideally, every git commit would contain one logical work. But we don’t work this

@@ -1,9 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "Why UT Austin is second-rate at producing startup founders",
-"date": "2010-12-22",
-"tags": ["startups", "recommended"]
-}
+postTitle: "Why UT Austin is second-rate at producing startup founders"
+date: 2010-12-22
+tags:
+  - startups
+  - recommended
 -->
 
 _The author is a fourth-year student doing a Bachelor’s and Master’s in CS at the

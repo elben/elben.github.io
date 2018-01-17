@@ -14,7 +14,7 @@ generate: build clean
 	stack exec pencil-exe
 
 clean:
-	rm -rf out/
+	rm -rf out/*
 
 # Deploy generated out/ folder to Github Pages
 #

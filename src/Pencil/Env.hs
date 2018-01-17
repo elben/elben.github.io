@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import qualified Data.Time.Clock as TC
 import qualified Data.Time.Format as TF
 import qualified Text.HTML.TagSoup as TS
-import qualified Data.Aeson as A
+import qualified Data.Yaml as A
 import qualified Data.Vector as V
 
 type Tags = [TS.Tag T.Text]

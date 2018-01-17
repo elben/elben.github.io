@@ -18,6 +18,16 @@ stack exec doctest src/
 stack build && stack exec pencil-exe
 cd out && python -m SimpleHTTPServer 8000
 open localhost:8000
+
+stack install hasktags
+hasktags --ignore-close-implementation --ctags .
+```
+
+Ctags:
+
+```bash
+stack install hasktags
+hasktags --ignore-close-implementation --ctags .
 ```
 
 # Notes
