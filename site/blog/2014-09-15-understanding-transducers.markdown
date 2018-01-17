@@ -1,9 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "Understanding Transducers",
-"date": "2014-09-15",
-"tags": ["clojure", "recommended"]
-}
+postTitle: "Understanding Transducers"
+date: 2014-09-15
+tags:
+  - clojure
+  - recommended
 -->
 
 What are transducers? Using transducers is easy enough—but how do they work underneath the hood?

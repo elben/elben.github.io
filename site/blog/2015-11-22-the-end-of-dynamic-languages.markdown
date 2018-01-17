@@ -1,9 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "The End of Dynamic Languages",
-"date": "2015-11-22",
-"tags": ["programming-languages", "recommended"]
-}
+postTitle: "The End of Dynamic Languages"
+date: 2015-11-22
+tags:
+  - programming-languages
+  - recommended
 -->
 
 For the past several months, I’ve been programming almost exclusively in Scala (for work) and Haskell (for pleasure). But this week, I was also saturated in Ruby (for work) and Clojure (for pleasure).

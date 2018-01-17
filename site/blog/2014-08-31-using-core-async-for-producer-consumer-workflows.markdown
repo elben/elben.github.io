@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Using core.async for Producer-Consumer Workflows",
-"date": "2014-08-31",
-"tags": ["clojure"]
-}
+postTitle: "Using core.async for Producer-Consumer Workflows"
+date: 2014-08-31
+tags:
+  - clojure
 -->
 
 I’ve found core.async to be versatile for many workflows. One that I’ve used on several occasions is a producer-consumer model to distribute work among multiple consumers.

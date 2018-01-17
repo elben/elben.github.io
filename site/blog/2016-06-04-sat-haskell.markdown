@@ -1,10 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "SAT in Haskell",
-"date": "2016-06-04",
-"draft": true,
-"tags": ["programming-languages"]
-}
+postTitle: "SAT in Haskell"
+date: 2016-06-04
+draft: true
+tags:
+  - programming-languages
 -->
 
 *Inspired by Felienne Hermans’ [Quarto](https://github.com/Felienne/Quarto) talk at LambdaConf 2016.*

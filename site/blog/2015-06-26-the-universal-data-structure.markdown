@@ -1,9 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "The Universal Data Structure",
-"date": "2015-06-26",
-"tags": ["bad-theory", "recommended"]
-}
+postTitle: "The Universal Data Structure"
+date: 2015-06-26
+tags:
+  - bad-theory
+  - recommended
 -->
 
 Whether you write compilers, web services or Django admin panels, you probably use **hash maps** more than all other data structures combined. In fact, you may not remember the last time you used anything else. This is not a coincidence: **any conceivable data structure can be implemented with a hash map; therefore, there is no need to use any other data structure**.

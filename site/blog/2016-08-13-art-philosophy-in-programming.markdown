@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Art and Philosophy in Programming",
-"date": "2016-08-13",
-"tags": ["recommended"]
-}
+postTitle: "Art and Philosophy in Programming"
+date: 2016-08-13
+tags:
+  - recommended
 -->
 
 If art does not console, and if philosophy does not teach, then what are they for?

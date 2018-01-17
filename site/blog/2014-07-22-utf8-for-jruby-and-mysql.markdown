@@ -1,9 +1,7 @@
 <!--PREAMBLE
-{
-"postTitle": "UTF-8 for JRuby and MySQL",
-"date": "2014-07-22",
-"tags": []
-}
+postTitle: "UTF-8 for JRuby and MySQL"
+date: 2014-07-22
+tags:
 -->
 
 As we all know, string encoding is fun and pleasant.

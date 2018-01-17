@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "The Trifecta of ClojureScript, Om and core.async",
-"date": "2014-10-20",
-"tags": ["clojure"]
-}
+postTitle: "The Trifecta of ClojureScript, Om and core.async"
+date: 2014-10-20
+tags:
+  - clojure
 -->
 
 *This post is an adaptation of my lighting talk given at Austin JS and Austin Clojure Meetup.*

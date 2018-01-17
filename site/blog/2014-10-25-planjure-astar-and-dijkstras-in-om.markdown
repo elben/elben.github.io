@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Planjure: A* and Dijkstra’s in Om",
-"date": "2014-10-25",
-"tags": ["clojure"]
-}
+postTitle: "Planjure: A* and Dijkstra’s in Om"
+date: 2014-10-25
+tags:
+  - clojure
 -->
 
 I wrote [Planjure](/p/planjure/) to learn ClojureScript and Om. It’s a fun little program. You paint islands on a canvas and run path-planning algorithms to find the optimal path for your ship to traverse from start to finish. Sailing across blue ocean is faster than hiking through green islands. The three algorithms implemented are Dijkstra’s, A\* and depth-first.

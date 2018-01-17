@@ -1,9 +1,8 @@
 <!--PREAMBLE
-{
-"postTitle": "Smarter Help: Our Programming Tools",
-"date": "2016-05-31",
-"tags": ["programming-languages"]
-}
+postTitle: "Smarter Help: Our Programming Tools"
+date: 2016-05-31
+tags:
+  - programming-languages
 -->
 
 In [The End of Dynamic Languages](http://elbenshira.com/blog/the-end-of-dynamic-languages/), I argued that one of the gains of statically-typed languages is superior tooling.

@@ -1,9 +1,9 @@
 <!--PREAMBLE
-{
-"postTitle": "The Best Introduction to Haskell",
-"date": "2015-01-09",
-"tags": ["haskell", "programming-languages"]
-}
+postTitle: "The Best Introduction to Haskell"
+date: 2015-01-09
+tags:
+  - haskell
+  - programming-languages
 -->
 
 When I mention that I’m learning Haskell, many people reference Learn You a Haskell. It’s a fine book, but I found it too slow for an experienced programmer. And the cute cartoons and verbose style got in the way.
