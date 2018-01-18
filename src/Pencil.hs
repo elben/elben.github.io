@@ -23,7 +23,6 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Yaml as A
 import qualified System.Directory as D
 import qualified System.FilePath as FP
-import qualified Text.HTML.TagSoup as TS
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
@@ -471,38 +470,3 @@ renderCss fp = do
     Right page -> renderPage page
     Left _ -> return ()
 
-cssTag :: T.Text -> Tags
-cssTag file = TS.parseTags $ T.append "<link rel=\"stylesheet\" href=\"" $ T.append file "\" />"
-
--- Inject tags into the body tag, at the ${body} annotation location.
-injectIntoBodyVar :: Tags -> Tags -> Tags
-injectIntoBodyVar _ [] = []
-injectIntoBodyVar inject (tag @ (TS.TagText str) : rest) =
-  if T.isInfixOf "${body}" str
-  then
-    -- Found the body var. Replace with the injection.
-    let (a, b) = T.breakOn "${body}" str
-    in TS.TagText a : inject ++ (TS.TagText (T.replace "${body}" "" b) : rest)
-  else tag : injectIntoBodyVar inject rest
-injectIntoBodyVar inject (tag : rest) =
-  tag : injectIntoBodyVar inject rest
-
--- Inject the first set of tags into the template (second argument) right after
--- the body tag.
-injectIntoBody :: Tags -> Tags -> Tags
-injectIntoBody = injectInto "body"
-
--- | Inject tags into the HTML <head> element.
-injectIntoHead :: Tags -- Tags to inject
-               -> Tags -- Tags with <head> being injected into
-               -> Tags -- Resulting tags
-injectIntoHead = injectInto "head"
-
-injectInto :: T.Text -> Tags -> Tags -> Tags
-injectInto _ _ [] = []
-injectInto tagName inject (tagOpen @ (TS.TagOpen tag _) : rest) =
-  if tag == tagName
-  then tagOpen : inject ++ rest
-  else tagOpen : injectInto tagName inject rest
-injectInto tagName inject (tag : rest) =
-  tag : injectInto tagName inject rest

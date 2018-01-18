@@ -8,9 +8,6 @@ import qualified Data.Time.Clock as TC
 import qualified Data.Time.Format as TF
 import qualified Data.Vector as V
 import qualified Data.Yaml as A
-import qualified Text.HTML.TagSoup as TS
-
-type Tags = [TS.Tag T.Text]
 
 -- We should use that hack that allows ppl to extend this with their own types?
 -- Example: we want a "tags" type for a list of blog post tags

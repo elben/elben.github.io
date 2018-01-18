@@ -26,7 +26,6 @@ library
                      , mtl
                      , pandoc
                      , parsec
-                     , tagsoup
                      , text
                      , time
                      , vector
@@ -47,7 +46,6 @@ executable pencil-exe
                      , mtl
                      , pandoc
                      , parsec
-                     , tagsoup
                      , text
                      , time
                      , unordered-containers

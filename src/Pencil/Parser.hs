@@ -5,7 +5,6 @@ module Pencil.Parser where
 import Text.ParserCombinators.Parsec
 import qualified Data.List as DL
 import qualified Data.Text as T
-import qualified Text.HTML.TagSoup as TS
 import qualified Text.Parsec as P
 
 -- Doctest setup.
@@ -43,18 +42,6 @@ data Token =
   | TokPreamble T.Text
   | TokEnd
   deriving (Show, Eq)
-
-type PTags = [PTag]
-
--- | Data structure that mirrors the tagsoup @Tag@ data. We need more data types for our variables.
-data PTag =
-  PTagOpen T.Text [TS.Attribute T.Text]
-  | PTagClose T.Text
-  | PTagText T.Text
-  | PTagComment T.Text
-  | PTagVariable T.Text
-  | PTagWarning T.Text   -- Meta: parse warning
-  | PTagPosition Int Int -- Meta: row, col
 
 -- | Convert Tokens to PNode AST.
 --
@@ -152,32 +139,6 @@ popNodes' popped [] = (PMetaEnd, popped, [])
 popNodes' popped (PMetaIf t : rest) = (PMetaIf t, popped, rest)
 popNodes' popped (PMetaFor t : rest) = (PMetaFor t, popped, rest)
 popNodes' popped (t : rest) = popNodes' (t : popped) rest
-
-parsePTags :: T.Text -> [PTag]
-parsePTags t = fromTagsoup (TS.parseTags t)
-
-fromTagsoup :: [TS.Tag T.Text] -> [PTag]
-fromTagsoup = map fromTagsoup'
-
-fromTagsoup' :: TS.Tag T.Text -> PTag
-fromTagsoup' (TS.TagOpen t attrs) = PTagOpen t attrs
-fromTagsoup' (TS.TagClose t) = PTagClose t
-fromTagsoup' (TS.TagText t) = PTagText t
-fromTagsoup' (TS.TagComment t) = PTagComment t
-fromTagsoup' (TS.TagWarning t) = PTagWarning t
-fromTagsoup' (TS.TagPosition r c) = PTagPosition r c
-
-toTagsoup :: [PTag] -> [TS.Tag T.Text]
-toTagsoup = map toTagsoup'
-
-toTagsoup' :: PTag -> TS.Tag T.Text
-toTagsoup' (PTagOpen t attrs) = TS.TagOpen t attrs
-toTagsoup' (PTagClose t) = TS.TagClose t
-toTagsoup' (PTagText t) = TS.TagText t
-toTagsoup' (PTagComment t) = TS.TagComment t
-toTagsoup' (PTagVariable t) = TS.TagText (T.append "${" (T.append t "}"))
-toTagsoup' (PTagWarning _) = TS.TagText ""
-toTagsoup' (PTagPosition _ _) = TS.TagText ""
 
 renderNodes :: [PNode] -> T.Text
 renderNodes = DL.foldl' (\str n -> (T.append str (renderNode n))) ""
