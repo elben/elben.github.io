@@ -442,10 +442,25 @@ loadPageWithFileModifier fpf fp = do
   case eitherContent of
     Left e -> return $ Left e
     Right (content, nodes) -> do
-      let env = aesonToEnv $ loadVariables (TS.parseTags content)
+      let env = findPreamble nodes
       let fp' = "/" ++ fpf fp
       let env' = H.insert "this.url" (EText (T.pack fp')) env
       return $ Right $ Page nodes env' ("/" ++ fpf fp)
+
+findPreamble :: [PNode] -> Env
+findPreamble nodes =
+  aesonToEnv $ M.fromMaybe H.empty (findPreambleText nodes >>= (A.decode . encodeUtf8 . T.strip))
+
+findPreambleText :: [PNode] -> Maybe T.Text
+findPreambleText nodes = L.find isPreamble nodes >>= preambleText
+
+isPreamble :: PNode -> Bool
+isPreamble (PPreamble _) = True
+isPreamble _ = False
+
+preambleText :: PNode -> Maybe T.Text
+preambleText (PPreamble t) = Just t
+preambleText _ = Nothing
 
 -- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
 loadVariables :: Tags -> A.Object

@@ -21,6 +21,7 @@ data PNode =
   | PFor T.Text [PNode]
   | PIf T.Text [PNode]
   | PPartial T.Text
+  | PPreamble T.Text
 
   -- Signals a If/For expression in the stack waiting for expressions. So that we
   -- can find the next unused open if/for-statement in nested if/for-statements.
@@ -39,6 +40,7 @@ data Token =
   | TokFor T.Text
   | TokIf T.Text
   | TokPartial T.Text
+  | TokPreamble T.Text
   | TokEnd
   deriving (Show, Eq)
 
@@ -93,6 +95,17 @@ data PTag =
 -- >>> transform [TokText "begin", TokText "now", TokIf "title", TokText "hello", TokText "world", TokIf "body", TokVar "body", TokVar "someothervar", TokText "wahh", TokEnd, TokText "final", TokText "thing", TokEnd, TokText "the", TokText "lastline"]
 -- [PText "begin",PText "now",PIf "title" [PText "hello",PText "world",PIf "body" [PVar "body",PVar "someothervar",PText "wahh"],PText "final",PText "thing"],PText "the",PText "lastline"]
 --
+-- <!--PREAMBLE
+-- foo: bar
+-- do:
+--   - re
+--   - me
+-- -->
+-- Hello world ${foo}
+--
+-- >>> transform [TokPreamble "foo: bar\ndo:\n  - re\n  -me", TokText "Hello world ", TokVar "foo"]
+-- [PPreamble "foo: bar\ndo:\n  - re\n  -me",PText "Hello world ",PVar "foo"]
+--
 transform :: [Token] -> [PNode]
 transform toks =
   let stack = ast [] toks
@@ -115,6 +128,7 @@ ast stack [] = stack
 ast stack (TokText t : toks) = ast (PText t : stack) toks
 ast stack (TokVar t : toks)  = ast (PVar t : stack) toks
 ast stack (TokPartial fp : toks) = ast (PPartial fp : stack) toks
+ast stack (TokPreamble t : toks) = ast (PPreamble t : stack) toks
 ast stack (TokIf t : toks)   = ast (PMetaIf t : stack) toks
 ast stack (TokFor t : toks)  = ast (PMetaFor t : stack) toks
 ast stack (TokEnd : toks) =
@@ -185,6 +199,7 @@ renderNode (PPartial file) = T.append (T.append "${partial(" file) ")}"
 renderNode (PMetaIf v) = renderNode (PIf v [])
 renderNode (PMetaFor v) = renderNode (PFor v [])
 renderNode PMetaEnd = ""
+renderNode (PPreamble _) = "" -- Don't render the PREAMBLE
 
 renderTokens :: [Token] -> T.Text
 renderTokens = DL.foldl' (\str n -> (T.append str (renderToken n))) ""
@@ -196,6 +211,7 @@ renderToken (TokPartial fp) = T.append (T.append "${partial(\"" fp) "\"}"
 renderToken (TokFor t) = T.append (T.append "${for(" t) ")}"
 renderToken (TokEnd) = "${end}"
 renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
+renderToken (TokPreamble _) = "" -- Hide preamble content
 
 parseText :: T.Text -> Either ParseError [PNode]
 parseText text = do
@@ -216,6 +232,12 @@ parseText text = do
 -- >>> parse parseEverything "" "${realvar} $.get(javascript) $$ $$$ $} $( $45.50 $$escape wonderful life! ${truth}"
 -- Right [TokVar "realvar",TokText " $.get(javascript) $$ $$$ $} $( $45.50 $$escape wonderful life! ",TokVar "truth"]
 --
+-- >>> parse parseEverything "" "<!--PREAMBLE  \n  foo: bar\ndo:\n  - re\n  -me\n  -->waffle house ${lyfe}"
+-- Right [TokPreamble "  \n  foo: bar\ndo:\n  - re\n  -me\n  ",TokText "waffle house ",TokVar "lyfe"]
+--
+-- >>> parse parseEverything "" "YO ${foo} <!--PREAMBLE  \n  ${foo}: bar\ndo:\n  - re\n  -me\n  -->waffle house ${lyfe}"
+-- Right [TokText "YO ",TokVar "foo",TokText " ",TokPreamble "  \n  ${foo}: bar\ndo:\n  - re\n  -me\n  ",TokText "waffle house ",TokVar "lyfe"]
+--
 -- | This is a degenerate case that we will just allow (for now) to go sideways:
 -- >>> parse parseEverything "" "<b>this ${var never closes</b> ${realvar}"
 -- Right [TokText "<b>this ",TokVar "var never closes</b> ${realvar"]
@@ -224,7 +246,8 @@ parseEverything :: Parser [Token]
 parseEverything =
   -- Note that order matters here. We want "most general" to be last (variable
   -- names).
-  many1 (parseContent
+  many1 (try parsePreamble
+     <|> try parseContent
      <|> try parseEnd
      <|> try parseFor
      <|> try parseIf
@@ -253,6 +276,20 @@ parseVar = try $ do
   varName <- many1 (noneOf "}")
   _ <- char '}'
   return $ TokVar (T.pack varName)
+
+parsePreamble :: Parser Token
+parsePreamble = do
+  _ <- parsePreambleStart
+
+  -- "Note the overlapping parsers anyChar and string "-->", and therefore the
+  -- use of the try combinator."
+  -- (https://hackage.haskell.org/package/parsec-3.1.11/docs/Text-Parsec.html)
+  content <- manyTill anyChar (try (string "-->"))
+  return $ TokPreamble (T.pack content)
+
+parsePreambleStart :: Parser String
+parsePreambleStart = string "<!--PREAMBLE"
+
 
 -- | Parse partial commands.
 --
@@ -294,7 +331,7 @@ parseContent = do
   -- consume failure to find "${"). Not having both produces bugs, so.
   --
   -- https://stackoverflow.com/questions/20020350/parsec-difference-between-try-and-lookahead
-  stuff <- manyTill anyChar (try (lookAhead (string "${")) <|> (eof >> return " "))
+  stuff <- manyTill anyChar (try (lookAhead (string "${")) <|> try (lookAhead parsePreambleStart) <|> (eof >> return " "))
   return $ TokText (T.pack (h : stuff))
 
 -- | Parse for loop declaration.
