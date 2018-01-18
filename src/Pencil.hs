@@ -7,6 +7,7 @@ import Pencil.Parser
 
 import Control.Exception (tryJust)
 import Control.Monad (forM_, foldM, filterM, liftM)
+import Control.Monad.Reader
 import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -26,19 +27,13 @@ import qualified Text.HTML.TagSoup as TS
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
--- TODO ReaderT-ify
-
-sitePrefix :: String
-sitePrefix = "site/"
-
-outPrefix :: String
-outPrefix = "out/"
-
 websiteTitle :: T.Text
 websiteTitle = "Elben Shira"
 
 globalEnv :: Env
 globalEnv = H.fromList [("title", EText websiteTitle)]
+
+type PencilApp = ReaderT Config IO
 
 data Config =
   Config
@@ -130,12 +125,12 @@ data Page = Page
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-applyPage :: Env -> NonEmpty Page -> IO Page
+applyPage :: Env -> NonEmpty Page -> PencilApp Page
 applyPage env pages = applyPage' env (NE.reverse pages)
 
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
-applyPage' :: Env -> NonEmpty Page -> IO Page
+applyPage' :: Env -> NonEmpty Page -> PencilApp Page
 applyPage' env (Page nodes penv fp :| []) = do
   let env' = H.union penv env -- LHS overrides RHS
   nodes' <- evalNodes env' nodes
@@ -148,9 +143,10 @@ applyPage' env (Page nodes penv _ :| (headp : rest)) = do
   -- Page.
   return $ Page nodes'' env'' fpInner
 
-loadTextFile :: FilePath -> IO (Either LoadFileException T.Text)
-loadTextFile fp =
-  tryJust toLoadFileException (TIO.readFile (sitePrefix ++ fp))
+loadTextFile :: FilePath -> PencilApp (Either LoadFileException T.Text)
+loadTextFile fp = do
+  sitePrefix <- asks cSitePrefix
+  liftIO $ tryJust toLoadFileException (TIO.readFile (sitePrefix ++ fp))
 
 toLoadFileException :: IOError -> Maybe LoadFileException
 toLoadFileException e = if isInvalidByteSequence e then Just (NotTextFile e) else Nothing
@@ -167,7 +163,7 @@ markdownWriterOptions =
     P.writerHighlight = True
   }
 
-parseTextFile :: FilePath -> IO (Either LoadFileException (T.Text, [PNode]))
+parseTextFile :: FilePath -> PencilApp (Either LoadFileException (T.Text, [PNode]))
 parseTextFile fp = do
   eitherContent <- loadTextFile fp
   case eitherContent of
@@ -180,11 +176,12 @@ parseTextFile fp = do
               Left _ -> return content
               Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
           Sass -> do
-             -- Use compileFile so that SASS @import works
-             result <- Sass.compileFile (sitePrefix ++ fp) sassOptions
-             case result of
-               Left _ -> return content
-               Right byteStr -> return $ decodeUtf8 byteStr
+            sitePrefix <- asks cSitePrefix
+            -- Use compileFile so that SASS @import works
+            result <- liftIO $ Sass.compileFile (sitePrefix ++ fp) sassOptions
+            case result of
+              Left _ -> return content
+              Right byteStr -> return $ decodeUtf8 byteStr
           _ -> return content
       let nodes = case parseText content' of
                     Left _ -> []
@@ -193,7 +190,7 @@ parseTextFile fp = do
 
 -- | Evaluate the nodes in the given environment. Note that it returns an IO
 -- because of ${partial(..)} calls that requires us to load a file.
-evalNodes :: Env -> [PNode] -> IO [PNode]
+evalNodes :: Env -> [PNode] -> PencilApp [PNode]
 evalNodes _ [] = return []
 evalNodes env (PVar var : rest) = do
   nodes <- evalNodes env rest
@@ -244,10 +241,11 @@ modifyEnvVar (Page nodes env fp) f k =
   let env' = H.adjust f k env
   in Page nodes env' fp
 
-loadAndApplyPage :: NonEmpty Page -> FilePath -> IO ()
+loadAndApplyPage :: NonEmpty Page -> FilePath -> PencilApp ()
 loadAndApplyPage structure fp = do
+  env <- asks cEnv
   page <- liftM forceRight (loadPageAsHtml fp)
-  applyPage globalEnv (NE.cons page structure) >>= renderPage
+  applyPage env (NE.cons page structure) >>= renderPage
 
 sortByVar :: T.Text
           -- ^ Variable name to look up in Env.
@@ -317,11 +315,11 @@ fileModifierToHtml fp =
     Markdown -> FP.dropExtension fp ++ ".html"
     _ -> fp
 
-loadDirId :: Bool -> Bool -> FilePath -> IO [Resource]
+loadDirId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
 loadDirId recursive strict = loadDirWithFileModifier recursive strict id
 
 -- | Load directory as Resources.
-loadDirWithFileModifier :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> IO [Resource]
+loadDirWithFileModifier :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
 loadDirWithFileModifier recursive strict fpf dir = do
   fps <- listDir recursive dir
   if strict
@@ -330,20 +328,21 @@ loadDirWithFileModifier recursive strict fpf dir = do
 
 -- List files in directory, optionally recursively. Returns paths that include
 -- the given dir.
-listDir :: Bool -> FilePath -> IO [FilePath]
+listDir :: Bool -> FilePath -> PencilApp [FilePath]
 listDir recursive dir = do
   let dir' = FP.addTrailingPathSeparator dir
   fps <- listDir' recursive dir'
   return $ map (dir' ++) fps
 
-listDir' :: Bool -> FilePath -> IO [FilePath]
+listDir' :: Bool -> FilePath -> PencilApp [FilePath]
 listDir' recursive dir = do
+  sitePrefix <- asks cSitePrefix
   -- List files (just the filename, without the fp directory prefix)
-  listing <- D.listDirectory (sitePrefix ++ dir)
+  listing <- liftIO $ D.listDirectory (sitePrefix ++ dir)
   -- Filter only for files (we have to add the right directory prefixes to the
   -- file check)
-  files <- filterM (\f -> D.doesFileExist (sitePrefix ++ dir ++ f)) listing
-  dirs <- filterM (\f -> D.doesDirectoryExist (sitePrefix ++ dir ++ f)) listing
+  files <- liftIO $ filterM (\f -> D.doesFileExist (sitePrefix ++ dir ++ f)) listing
+  dirs <- liftIO $ filterM (\f -> D.doesDirectoryExist (sitePrefix ++ dir ++ f)) listing
 
   innerFiles <- if recursive
                   then mapM
@@ -392,40 +391,43 @@ data Resource
   | Passthrough FilePath FilePath
   -- ^ in and out file paths
 
-renderResource :: Resource -> IO ()
+renderResource :: Resource -> PencilApp ()
 renderResource (Single page) = renderPage page
 renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
 
-renderResources :: [Resource] -> IO ()
+renderResources :: [Resource] -> PencilApp ()
 renderResources resources = forM_ resources renderResource
 
 structurePage :: NonEmpty Page -> Page -> NonEmpty Page
 structurePage structure page = NE.cons page structure
 
-copyFile :: FilePath -> FilePath -> IO ()
+copyFile :: FilePath -> FilePath -> PencilApp ()
 copyFile fpIn fpOut = do
-  D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
-  D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
+  sitePrefix <- asks cSitePrefix
+  outPrefix <- asks cOutPrefix
+  liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
+  liftIO $ D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
 
-loadResourceAsHtml :: FilePath -> IO Resource
+loadResourceAsHtml :: FilePath -> PencilApp Resource
 loadResourceAsHtml = loadResourceWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
-loadResourceId :: FilePath -> IO Resource
+loadResourceId :: FilePath -> PencilApp Resource
 loadResourceId = loadResourceWithFileModifier id
 
-loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO Resource
+loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
 loadResourceWithFileModifier fpf fp = do
   eitherPage <- loadPageWithFileModifier fpf fp
   case eitherPage of
     Left (NotTextFile _) -> return $ Passthrough fp (fpf fp)
     Right page -> return (Single page)
 
-renderPage :: Page -> IO ()
+renderPage :: Page -> PencilApp ()
 renderPage (Page nodes _ fpOut) = do
+  outPrefix <- asks cOutPrefix
   let noFileName = FP.takeBaseName fpOut == ""
   let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
-  D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
-  TIO.writeFile fpOut' (renderNodes nodes)
+  liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
+  liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
 
 -- | Load page, extracting the tags and preamble variables. Renders Markdown
 -- files into HTML. Defaults the page output file path to the given input file
@@ -434,13 +436,13 @@ renderPage (Page nodes _ fpOut) = do
 -- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
 -- filepath is "/foo/bar/hello.html".
 loadPageAsHtml :: FilePath
-         -> IO (Either LoadFileException Page)
+         -> PencilApp (Either LoadFileException Page)
 loadPageAsHtml = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
-loadPageId :: FilePath -> IO (Either LoadFileException Page)
+loadPageId :: FilePath -> PencilApp (Either LoadFileException Page)
 loadPageId = loadPageWithFileModifier id
 
-loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> IO (Either LoadFileException Page)
+loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp (Either LoadFileException Page)
 loadPageWithFileModifier fpf fp = do
   eitherContent <- parseTextFile fp
   case eitherContent of
@@ -471,7 +473,7 @@ findPreambleComment (_ : rest) =
   findPreambleComment rest
 
 -- | Copy specified file from site to out.
-renderCss :: FilePath -> IO ()
+renderCss :: FilePath -> PencilApp ()
 renderCss fp = do
   -- Drop .scss/sass extension and replace with .css.
   eitherPage <- loadPageWithFileModifier (\f -> FP.dropExtension f ++ ".css") fp
