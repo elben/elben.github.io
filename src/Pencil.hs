@@ -27,12 +27,6 @@ import qualified Text.HTML.TagSoup as TS
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
-websiteTitle :: T.Text
-websiteTitle = "Elben Shira"
-
-globalEnv :: Env
-globalEnv = H.fromList [("title", EText websiteTitle)]
-
 type PencilApp = ReaderT Config IO
 
 data Config =

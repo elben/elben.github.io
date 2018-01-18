@@ -6,6 +6,7 @@ import Pencil
 import Pencil.Env
 import Control.Monad (forM_, foldM, liftM, (>=>))
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
+import Control.Monad.Reader (runReaderT)
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -42,8 +43,25 @@ prepareBlogPost tagMap page@(Page _ env _) =
       env' = (insertEnvData "tags" tagEnvList . insertEnvText "title" pageTitle) env
   in page { getPageEnv = env' }
 
+websiteTitle :: T.Text
+websiteTitle = "Elben Shira"
+
+globalEnv :: Env
+globalEnv = H.fromList [("title", EText websiteTitle)]
+
+config :: Config
+config = Config {
+    cSitePrefix = "site/"
+  , cOutPrefix = "out/"
+  , cEnv = globalEnv
+}
+
 main :: IO ()
-main = do
+main =
+  runReaderT app config
+
+app :: PencilApp ()
+app = do
   pageLayout <- liftM forceRight (loadPageAsHtml "layouts/default.html")
   pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
 
