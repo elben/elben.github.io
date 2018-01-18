@@ -11,7 +11,7 @@ make
 ```bash
 stack install hindent
 
-stack build
+stack build --pedantic
 stack test
 stack exec doctest src/
 

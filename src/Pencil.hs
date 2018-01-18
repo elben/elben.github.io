@@ -441,7 +441,7 @@ loadPageWithFileModifier fpf fp = do
   eitherContent <- parseTextFile fp
   case eitherContent of
     Left e -> return $ Left e
-    Right (content, nodes) -> do
+    Right (_, nodes) -> do
       let env = findPreamble nodes
       let fp' = "/" ++ fpf fp
       let env' = H.insert "this.url" (EText (T.pack fp')) env
@@ -461,25 +461,6 @@ isPreamble _ = False
 preambleText :: PNode -> Maybe T.Text
 preambleText (PPreamble t) = Just t
 preambleText _ = Nothing
-
--- Find the PREAMBLE JSON section, parse it, and return as an Aeson Object.
-loadVariables :: Tags -> A.Object
-loadVariables tags =
-  case findPreambleComment tags of
-    Nothing -> H.empty
-    Just commentText ->
-      let v = A.decode (encodeUtf8 (T.strip commentText)) :: Maybe A.Object
-       in M.fromMaybe H.empty v
-
-findPreambleComment :: Tags -> Maybe T.Text
-findPreambleComment [] = Nothing
-findPreambleComment (TS.TagComment str : rest) =
-  if T.isPrefixOf "PREAMBLE" (T.strip str)
-     then let (_, b) = T.breakOn "PREAMBLE" str
-           in Just $ T.replace "PREAMBLE" "" b
-  else findPreambleComment rest
-findPreambleComment (_ : rest) =
-  findPreambleComment rest
 
 -- | Copy specified file from site to out.
 renderCss :: FilePath -> PencilApp ()
