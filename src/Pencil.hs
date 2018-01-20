@@ -8,6 +8,7 @@ import Pencil.Parser
 import Control.Exception (tryJust)
 import Control.Monad (forM_, foldM, filterM, liftM)
 import Control.Monad.Reader
+import Control.Monad.Except
 import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -26,7 +27,7 @@ import qualified System.FilePath as FP
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
-type PencilApp = ReaderT Config IO
+type PencilApp = ReaderT Config (ExceptT LoadFileException IO)
 
 data Config =
   Config
@@ -156,11 +157,11 @@ markdownWriterOptions =
     P.writerHighlight = True
   }
 
-parseTextFile :: FilePath -> PencilApp (Either LoadFileException (T.Text, [PNode]))
+parseTextFile :: FilePath -> PencilApp (T.Text, [PNode])
 parseTextFile fp = do
   eitherContent <- loadTextFile fp
   case eitherContent of
-    Left e -> return $ Left e
+    Left e -> return $ throwError $ Left e
     Right content -> do
       content' <-
         case toExtension fp of
@@ -179,7 +180,7 @@ parseTextFile fp = do
       let nodes = case parseText content' of
                     Left _ -> []
                     Right n -> n
-      return $ Right (content', nodes)
+      return (content', nodes)
 
 -- | Evaluate the nodes in the given environment. Note that it returns an IO
 -- because of ${partial(..)} calls that requires us to load a file.
@@ -220,7 +221,7 @@ evalNodes env (PFor var nodes : rest) = do
     -- Var is not an EEnvList; everything inside the for-statement is thrown away
     Just _ -> return rest'
 evalNodes env (PPartial fp : rest) = do
-  (_, nodes) <- liftM forceRight $ parseTextFile (T.unpack fp)
+  (_, nodes) <- parseTextFile (T.unpack fp)
   nodes' <- evalNodes env nodes
   rest' <- evalNodes env rest
   return $ nodes' ++ rest'
@@ -429,22 +430,19 @@ renderPage (Page nodes _ fpOut) = do
 -- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
 -- filepath is "/foo/bar/hello.html".
 loadPageAsHtml :: FilePath
-         -> PencilApp (Either LoadFileException Page)
+         -> PencilApp Page
 loadPageAsHtml = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
-loadPageId :: FilePath -> PencilApp (Either LoadFileException Page)
+loadPageId :: FilePath -> PencilApp Page
 loadPageId = loadPageWithFileModifier id
 
-loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp (Either LoadFileException Page)
+loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
 loadPageWithFileModifier fpf fp = do
-  eitherContent <- parseTextFile fp
-  case eitherContent of
-    Left e -> return $ Left e
-    Right (_, nodes) -> do
-      let env = findPreamble nodes
-      let fp' = "/" ++ fpf fp
-      let env' = H.insert "this.url" (EText (T.pack fp')) env
-      return $ Right $ Page nodes env' ("/" ++ fpf fp)
+  (_, nodes) <- parseTextFile fp
+  let env = findPreamble nodes
+  let fp' = "/" ++ fpf fp
+  let env' = H.insert "this.url" (EText (T.pack fp')) env
+  return $ Page nodes env' ("/" ++ fpf fp)
 
 findPreamble :: [PNode] -> Env
 findPreamble nodes =
