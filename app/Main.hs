@@ -55,7 +55,7 @@ config = Config {
 
 main :: IO ()
 main =
-  runPencil app config
+  run app config
 
 app :: PencilApp ()
 app = do

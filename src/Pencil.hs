@@ -14,8 +14,9 @@ import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Typeable (Typeable)
-import GHC.IO.Exception (IOException(ioe_description))
+import GHC.IO.Exception (IOException(ioe_description, ioe_filename, ioe_type), IOErrorType(NoSuchThing))
 import Text.Sass.Options (defaultSassOptions)
+import Text.EditDistance (levenshteinDistance, defaultEditCosts)
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
@@ -29,6 +30,11 @@ import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
 -- PencilApp a = Config -> IO (Except PencilException a)
+--
+-- Allows us to catch "checked" exceptions; errors that we know how to handle,
+-- in PencilException.
+--
+-- Unknown "unchecked" exceptions can still go through IO.
 type PencilApp = ReaderT Config (ExceptT PencilException IO)
 
 data Config =
@@ -38,23 +44,46 @@ data Config =
   , cEnv :: Env
   }
 
--- | A temporary stopgap. Force the rhs of an Either, or fail showing the
--- exception.
-forceRight :: Show e => Either e a -> a
-forceRight (Right a) = a
-forceRight (Left e) = error (show e)
-
-runPencil :: PencilApp a -> Config -> IO ()
-runPencil app config = do
+-- | Run the Pencil app.
+--
+-- Note that this can throw a fatal exception.
+run :: PencilApp a -> Config -> IO ()
+run app config = do
   e <- runExceptT $ runReaderT app config
   case e of
-    Left err -> print $ "Pencil got exception: " ++ show err
+    Left err -> do
+      putStrLn $ "Pencil got exception: " ++ show err
+      case err of
+        FileNotFound mfp ->
+          case mfp of
+            Just fp -> do
+              e2 <- runExceptT $ runReaderT (mostSimilarFile fp) config
+              case e2 of
+                Left _ -> return ()
+                Right mBest ->
+                  case mBest of
+                    Just best -> putStrLn ("Maybe you mean this: " ++ best)
+                    Nothing -> return ()
+            Nothing -> return ()
+        _ -> return ()
     Right _ -> return ()
+
+-- | Given a file path, look at all file paths and find the one that seems most
+-- similar.
+mostSimilarFile :: FilePath -> PencilApp (Maybe FilePath)
+mostSimilarFile fp = do
+  sitePrefix <- asks cSitePrefix
+  fps <- listDir True ""
+  let fps' = map (sitePrefix ++) fps -- add site prefix for distance search
+  let costs = map (\f -> (f, levenshteinDistance defaultEditCosts fp f)) fps'
+  let sorted = L.sortBy (\(_, d1) (_, d2) -> compare d1 d2) costs
+  return $ fst <$> M.listToMaybe sorted
 
 data PencilException
   = NotTextFile IOError
   -- ^ Failed to read a file as a text file.
-  | CustomError String
+  | FileNotFound (Maybe FilePath)
+  -- ^ File not found. We may or may not know the file we were looking for.
   deriving (Typeable, Show)
 
 data FileType = Markdown
@@ -158,11 +187,27 @@ loadTextFile fp = do
     Left e -> throwError e
     Right a -> return a
 
+justLeft :: Either e a -> e
+justLeft (Left e) = e
+justLeft _ = error "not right"
+
+-- How to test errors:
+--
+-- import Control.Exception
+-- import qualified Data.Text.IO as TIO
+--
+-- (\e -> print (ioe_description (e :: IOError)) >> return "") `handle` (TIO.readFile "foo")
 toNotTextFileException :: IOError -> Maybe PencilException
-toNotTextFileException e = if isInvalidByteSequence e then Just (NotTextFile e) else Nothing
+toNotTextFileException e
+  | isInvalidByteSequence e = Just (NotTextFile e)
+  | isNoSuchFile e = Just (FileNotFound (ioe_filename e))
+  | otherwise = Nothing
 
 isInvalidByteSequence :: IOError -> Bool
 isInvalidByteSequence e = ioe_description e == "invalid byte sequence"
+
+isNoSuchFile :: IOError -> Bool
+isNoSuchFile e = ioe_type e == NoSuchThing
 
 sassOptions :: Sass.SassOptions
 sassOptions = Text.Sass.Options.defaultSassOptions
