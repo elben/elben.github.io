@@ -6,7 +6,7 @@ import Pencil
 import Pencil.Env
 import Control.Monad (forM_, foldM, liftM, (>=>))
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
-import Control.Monad.Reader (runReaderT, asks)
+import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.Text as T
@@ -55,19 +55,19 @@ config = Config {
 
 main :: IO ()
 main =
-  runReaderT app config
+  runPencil app config
 
 app :: PencilApp ()
 app = do
-  pageLayout <- liftM forceRight (loadPageAsHtml "layouts/default.html")
-  pagePartial <- liftM forceRight (loadPageAsHtml "partials/post.html")
+  pageLayout <- loadPageAsHtml "layouts/default.html"
+  pagePartial <- loadPageAsHtml "partials/post.html"
 
   -- Load posts
   postFps <- listDir False "blog/"
 
   -- Sort by date (newest first) and filter out drafts
   posts <- liftM (filterByVar True "draft" (EBool True /=) . sortByVar "date" dateOrdering)
-                 (mapM (liftM forceRight . loadPageWithFileModifier blogPostUrl) postFps)
+                 (mapM (loadPageWithFileModifier blogPostUrl) postFps)
 
   let recommendedPosts = filterByVar False "tags"
                            (arrayContainsString "recommended")
@@ -81,7 +81,7 @@ app = do
   -- Build a mapping of tag to the tag list Page
   tagPages <- foldM
     (\acc (tag, taggedPosts) -> do
-      tagPage <- liftM forceRight $ loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
+      tagPage <- loadPageWithFileModifier (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
       let tagEnv = (insertEnvListPage "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) env
       return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
     )
@@ -98,19 +98,19 @@ app = do
   -- Index
   -- Function composition
   let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
-  indexPage <- liftM forceRight $ loadPageAsHtml "index.html"
+  indexPage <- loadPageAsHtml "index.html"
   applyPage postsEnv (indexPage :| [pageLayout]) >>= renderPage
 
   -- Render tag list pages
   forM_ (H.elems tagPages) (\page -> applyPage env (page :| [pageLayout]) >>= renderPage)
 
   -- Render blog post archive
-  archivePage <- liftM forceRight $ loadPageWithFileModifier (const "blog/") "partials/post-archive.html"
+  archivePage <- loadPageWithFileModifier (const "blog/") "partials/post-archive.html"
   let postsArchiveEnv = insertEnvListPage "posts" posts env
   applyPage postsArchiveEnv (archivePage :| [pageLayout]) >>= renderPage
 
   -- /projects/
-  projectsPage <- liftM forceRight $ loadPageWithFileModifier (const "projects/") "projects.html"
+  projectsPage <- loadPageWithFileModifier (const "projects/") "projects.html"
   applyPage env (projectsPage :| [pageLayout]) >>= renderPage
 
   -- Render CSS file

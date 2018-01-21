@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Pencil where
 
@@ -27,7 +28,8 @@ import qualified System.FilePath as FP
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
-type PencilApp = ReaderT Config (ExceptT LoadFileException IO)
+-- PencilApp a = Config -> IO (Except PencilException a)
+type PencilApp = ReaderT Config (ExceptT PencilException IO)
 
 data Config =
   Config
@@ -42,9 +44,17 @@ forceRight :: Show e => Either e a -> a
 forceRight (Right a) = a
 forceRight (Left e) = error (show e)
 
-data LoadFileException
+runPencil :: PencilApp a -> Config -> IO ()
+runPencil app config = do
+  e <- runExceptT $ runReaderT app config
+  case e of
+    Left err -> print $ "Pencil got exception: " ++ show err
+    Right _ -> return ()
+
+data PencilException
   = NotTextFile IOError
   -- ^ Failed to read a file as a text file.
+  | CustomError String
   deriving (Typeable, Show)
 
 data FileType = Markdown
@@ -137,13 +147,19 @@ applyPage' env (Page nodes penv _ :| (headp : rest)) = do
   -- Page.
   return $ Page nodes'' env'' fpInner
 
-loadTextFile :: FilePath -> PencilApp (Either LoadFileException T.Text)
+loadTextFile :: FilePath -> PencilApp T.Text
 loadTextFile fp = do
   sitePrefix <- asks cSitePrefix
-  liftIO $ tryJust toLoadFileException (TIO.readFile (sitePrefix ++ fp))
+  -- Try to read the file. If it fails because it's not a text file, capture the
+  -- exception and convert it to a "checked" exception in the ExceptT stack via
+  -- 'throwError'.
+  eitherContent <- liftIO $ tryJust toNotTextFileException (TIO.readFile (sitePrefix ++ fp))
+  case eitherContent of
+    Left e -> throwError e
+    Right a -> return a
 
-toLoadFileException :: IOError -> Maybe LoadFileException
-toLoadFileException e = if isInvalidByteSequence e then Just (NotTextFile e) else Nothing
+toNotTextFileException :: IOError -> Maybe PencilException
+toNotTextFileException e = if isInvalidByteSequence e then Just (NotTextFile e) else Nothing
 
 isInvalidByteSequence :: IOError -> Bool
 isInvalidByteSequence e = ioe_description e == "invalid byte sequence"
@@ -159,28 +175,25 @@ markdownWriterOptions =
 
 parseTextFile :: FilePath -> PencilApp (T.Text, [PNode])
 parseTextFile fp = do
-  eitherContent <- loadTextFile fp
-  case eitherContent of
-    Left e -> return $ throwError $ Left e
-    Right content -> do
-      content' <-
-        case toExtension fp of
-          Markdown ->
-            case P.readMarkdown P.def (T.unpack content) of
-              Left _ -> return content
-              Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
-          Sass -> do
-            sitePrefix <- asks cSitePrefix
-            -- Use compileFile so that SASS @import works
-            result <- liftIO $ Sass.compileFile (sitePrefix ++ fp) sassOptions
-            case result of
-              Left _ -> return content
-              Right byteStr -> return $ decodeUtf8 byteStr
-          _ -> return content
-      let nodes = case parseText content' of
-                    Left _ -> []
-                    Right n -> n
-      return (content', nodes)
+  content <- loadTextFile fp
+  content' <-
+    case toExtension fp of
+      Markdown ->
+        case P.readMarkdown P.def (T.unpack content) of
+          Left _ -> return content
+          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
+      Sass -> do
+        sitePrefix <- asks cSitePrefix
+        -- Use compileFile so that SASS @import works
+        result <- liftIO $ Sass.compileFile (sitePrefix ++ fp) sassOptions
+        case result of
+          Left _ -> return content
+          Right byteStr -> return $ decodeUtf8 byteStr
+      _ -> return content
+  let nodes = case parseText content' of
+                Left _ -> []
+                Right n -> n
+  return (content', nodes)
 
 -- | Evaluate the nodes in the given environment. Note that it returns an IO
 -- because of ${partial(..)} calls that requires us to load a file.
@@ -238,7 +251,7 @@ modifyEnvVar (Page nodes env fp) f k =
 loadAndApplyPage :: NonEmpty Page -> FilePath -> PencilApp ()
 loadAndApplyPage structure fp = do
   env <- asks cEnv
-  page <- liftM forceRight (loadPageAsHtml fp)
+  page <- loadPageAsHtml fp
   applyPage env (NE.cons page structure) >>= renderPage
 
 sortByVar :: T.Text
@@ -409,11 +422,17 @@ loadResourceId :: FilePath -> PencilApp Resource
 loadResourceId = loadResourceWithFileModifier id
 
 loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
-loadResourceWithFileModifier fpf fp = do
-  eitherPage <- loadPageWithFileModifier fpf fp
-  case eitherPage of
-    Left (NotTextFile _) -> return $ Passthrough fp (fpf fp)
-    Right page -> return (Single page)
+loadResourceWithFileModifier fpf fp =
+  -- If we can load the Page as text file, convert to a Single. Otherwise if it
+  -- wasn't a text file, then return a Passthroguh resource. This is where we
+  -- finally handle the "checked" exception; that is, converting the Left error
+  -- case (NotTextFile) into a Right case (Passthrough).
+  liftM Single (loadPageWithFileModifier fpf fp)
+    `catchError` handle
+  -- 'handle' requires FlexibleContexts
+  where handle e = case e of
+                     NotTextFile _ -> return (Passthrough fp (fpf fp))
+                     _ -> throwError e
 
 renderPage :: Page -> PencilApp ()
 renderPage (Page nodes _ fpOut) = do
@@ -429,8 +448,7 @@ renderPage (Page nodes _ fpOut) = do
 --
 -- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
 -- filepath is "/foo/bar/hello.html".
-loadPageAsHtml :: FilePath
-         -> PencilApp Page
+loadPageAsHtml :: FilePath -> PencilApp Page
 loadPageAsHtml = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
 
 loadPageId :: FilePath -> PencilApp Page
@@ -461,10 +479,7 @@ preambleText _ = Nothing
 
 -- | Copy specified file from site to out.
 renderCss :: FilePath -> PencilApp ()
-renderCss fp = do
+renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
-  eitherPage <- loadPageWithFileModifier (\f -> FP.dropExtension f ++ ".css") fp
-  case eitherPage of
-    Right page -> renderPage page
-    Left _ -> return ()
+  loadPageWithFileModifier (\f -> FP.dropExtension f ++ ".css") fp >>= renderPage
 
