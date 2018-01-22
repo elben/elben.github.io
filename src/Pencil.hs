@@ -158,8 +158,8 @@ data Page = Page
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-applyPage :: Env -> NonEmpty Page -> PencilApp Page
-applyPage env pages = applyPage' env (NE.reverse pages)
+apply :: Env -> NonEmpty Page -> PencilApp Page
+apply env pages = applyPage' env (NE.reverse pages)
 
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
@@ -251,7 +251,7 @@ evalNodes env (PVar var : rest) = do
     -- TODO for date rendering, we want to choose here HOW we want to render,
     -- given what? a type? Or a var name + type? Or should be have injected it
     -- into the env beforehand?
-    Just envData -> return $ PText (envDataToDisplay envData) : nodes
+    Just envData -> return $ PText (toText envData) : nodes
 evalNodes env (PIf var nodes : rest) = do
   rest' <- evalNodes env rest
   case H.lookup var env of
@@ -296,8 +296,8 @@ modifyEnvVar (Page nodes env fp) f k =
 loadAndApplyPage :: NonEmpty Page -> FilePath -> PencilApp ()
 loadAndApplyPage structure fp = do
   env <- asks cEnv
-  page <- loadPageAsHtml fp
-  applyPage env (NE.cons page structure) >>= renderPage
+  page <- loadHtml fp
+  apply env (NE.cons page structure) >>= render
 
 sortByVar :: T.Text
           -- ^ Variable name to look up in Env.
@@ -444,12 +444,13 @@ data Resource
   -- ^ in and out file paths
 
 renderResource :: Resource -> PencilApp ()
-renderResource (Single page) = renderPage page
+renderResource (Single page) = render page
 renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
 
 renderResources :: [Resource] -> PencilApp ()
 renderResources resources = forM_ resources renderResource
 
+-- | Add the given Page into the given structure.
 structurePage :: NonEmpty Page -> Page -> NonEmpty Page
 structurePage structure page = NE.cons page structure
 
@@ -472,20 +473,24 @@ loadResourceWithFileModifier fpf fp =
   -- wasn't a text file, then return a Passthroguh resource. This is where we
   -- finally handle the "checked" exception; that is, converting the Left error
   -- case (NotTextFile) into a Right case (Passthrough).
-  liftM Single (loadPageWithFileModifier fpf fp)
+  liftM Single (load fpf fp)
     `catchError` handle
   -- 'handle' requires FlexibleContexts
   where handle e = case e of
                      NotTextFile _ -> return (Passthrough fp (fpf fp))
                      _ -> throwError e
 
-renderPage :: Page -> PencilApp ()
-renderPage (Page nodes _ fpOut) = do
+render :: Page -> PencilApp ()
+render (Page nodes _ fpOut) = do
   outPrefix <- asks cOutPrefix
   let noFileName = FP.takeBaseName fpOut == ""
   let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
   liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
   liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
+
+-- | Apply and render the structure.
+applyRender :: Env -> NonEmpty Page -> PencilApp ()
+applyRender env structure = apply env structure >>= render
 
 -- | Load page, extracting the tags and preamble variables. Renders Markdown
 -- files into HTML. Defaults the page output file path to the given input file
@@ -493,22 +498,24 @@ renderPage (Page nodes _ fpOut) = do
 --
 -- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
 -- filepath is "/foo/bar/hello.html".
-loadPageAsHtml :: FilePath -> PencilApp Page
-loadPageAsHtml = loadPageWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
+loadHtml :: FilePath -> PencilApp Page
+loadHtml = load (\fp -> FP.dropExtension fp ++ ".html")
 
-loadPageId :: FilePath -> PencilApp Page
-loadPageId = loadPageWithFileModifier id
+loadId :: FilePath -> PencilApp Page
+loadId = load id
 
-loadPageWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
-loadPageWithFileModifier fpf fp = do
+load :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
+load fpf fp = do
   (_, nodes) <- parseTextFile fp
-  let env = findPreamble nodes
+  let env = findEnv nodes
   let fp' = "/" ++ fpf fp
   let env' = H.insert "this.url" (EText (T.pack fp')) env
   return $ Page nodes env' ("/" ++ fpf fp)
 
-findPreamble :: [PNode] -> Env
-findPreamble nodes =
+-- | Find preamble node, and load as an Env. If no preamble is found, return a
+-- blank Env.
+findEnv :: [PNode] -> Env
+findEnv nodes =
   aesonToEnv $ M.fromMaybe H.empty (findPreambleText nodes >>= (A.decode . encodeUtf8 . T.strip))
 
 findPreambleText :: [PNode] -> Maybe T.Text
@@ -526,5 +533,5 @@ preambleText _ = Nothing
 renderCss :: FilePath -> PencilApp ()
 renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
-  loadPageWithFileModifier (\f -> FP.dropExtension f ++ ".css") fp >>= renderPage
+  load (\f -> FP.dropExtension f ++ ".css") fp >>= render
 

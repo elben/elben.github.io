@@ -18,6 +18,7 @@ library
   exposed-modules:     Pencil
                      , Pencil.Env
                      , Pencil.Parser
+                     , Pencil.Blog
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , directory

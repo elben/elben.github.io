@@ -40,13 +40,14 @@ toEnvData (A.Array arr) =
   Just $ EArray (V.toList (V.mapMaybe toEnvData arr))
 toEnvData _ = Nothing
 
-envDataToDisplay :: EnvData -> T.Text
-envDataToDisplay ENull = "null"
-envDataToDisplay (EText t) = t
-envDataToDisplay (EArray arr) = T.unwords $ map envDataToDisplay arr
-envDataToDisplay (EBool b) = if b then "true" else "false"
-envDataToDisplay (EEnvList envs) = T.unwords $ map (T.unwords . map envDataToDisplay . H.elems) envs
-envDataToDisplay (EDateTime dt) =
+-- | Render for human consumption.
+toText :: EnvData -> T.Text
+toText ENull = "null"
+toText (EText t) = t
+toText (EArray arr) = T.unwords $ map toText arr
+toText (EBool b) = if b then "true" else "false"
+toText (EEnvList envs) = T.unwords $ map (T.unwords . map toText . H.elems) envs
+toText (EDateTime dt) =
   -- December 30, 2017
   T.pack $ TF.formatTime TF.defaultTimeLocale "%B %e, %Y" dt
 
