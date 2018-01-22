@@ -61,25 +61,25 @@ app = do
   let posts' = map (structurePage (pagePartial :| [pageLayout]) . prepareBlogPost websiteTitle tagPages) posts
 
   -- Render blog posts
-  forM_ posts' (applyRender env)
+  forM_ posts' (render env)
 
   -- Index
   -- Function composition
   let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
   indexPage <- loadHtml "index.html"
-  applyRender postsEnv (indexPage :| [pageLayout])
+  render postsEnv (indexPage :| [pageLayout])
 
   -- Render tag list pages
-  forM_ (H.elems tagPages) (\page -> applyRender env (page :| [pageLayout]))
+  forM_ (H.elems tagPages) (\page -> render env (page :| [pageLayout]))
 
   -- Render blog post archive
   archivePage <- load (const "blog/") "partials/post-archive.html"
   let postsArchiveEnv = insertEnvListPage "posts" posts env
-  applyRender postsArchiveEnv (archivePage :| [pageLayout])
+  render postsArchiveEnv (archivePage :| [pageLayout])
 
   -- /projects/
   projectsPage <- load (const "projects/") "projects.html"
-  applyRender env (projectsPage :| [pageLayout])
+  render env (projectsPage :| [pageLayout])
 
   -- Render CSS file
   renderCss "stylesheets/default.scss"

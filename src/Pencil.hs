@@ -297,7 +297,7 @@ loadAndApplyPage :: NonEmpty Page -> FilePath -> PencilApp ()
 loadAndApplyPage structure fp = do
   env <- asks cEnv
   page <- loadHtml fp
-  apply env (NE.cons page structure) >>= render
+  apply env (NE.cons page structure) >>= renderPage
 
 sortByVar :: T.Text
           -- ^ Variable name to look up in Env.
@@ -444,7 +444,7 @@ data Resource
   -- ^ in and out file paths
 
 renderResource :: Resource -> PencilApp ()
-renderResource (Single page) = render page
+renderResource (Single page) = renderPage page
 renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
 
 renderResources :: [Resource] -> PencilApp ()
@@ -480,8 +480,8 @@ loadResourceWithFileModifier fpf fp =
                      NotTextFile _ -> return (Passthrough fp (fpf fp))
                      _ -> throwError e
 
-render :: Page -> PencilApp ()
-render (Page nodes _ fpOut) = do
+renderPage :: Page -> PencilApp ()
+renderPage (Page nodes _ fpOut) = do
   outPrefix <- asks cOutPrefix
   let noFileName = FP.takeBaseName fpOut == ""
   let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
@@ -489,8 +489,8 @@ render (Page nodes _ fpOut) = do
   liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
 
 -- | Apply and render the structure.
-applyRender :: Env -> NonEmpty Page -> PencilApp ()
-applyRender env structure = apply env structure >>= render
+render :: Env -> NonEmpty Page -> PencilApp ()
+render env structure = apply env structure >>= renderPage
 
 -- | Load page, extracting the tags and preamble variables. Renders Markdown
 -- files into HTML. Defaults the page output file path to the given input file
@@ -533,5 +533,5 @@ preambleText _ = Nothing
 renderCss :: FilePath -> PencilApp ()
 renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
-  load (\f -> FP.dropExtension f ++ ".css") fp >>= render
+  load (\f -> FP.dropExtension f ++ ".css") fp >>= renderPage
 
