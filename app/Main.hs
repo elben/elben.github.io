@@ -5,7 +5,7 @@ module Main where
 import Pencil
 import Pencil.Env
 import Pencil.Blog
-import Control.Monad (forM_, foldM, liftM)
+import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
@@ -29,12 +29,7 @@ app = do
   pageLayout <- loadHtml "layouts/default.html"
   pagePartial <- loadHtml "partials/post.html"
 
-  -- Load posts
-  postFps <- listDir False "blog/"
-
-  -- Sort by date (newest first) and filter out drafts
-  posts <- liftM (filterByVar True "draft" (EBool True /=) . sortByVar "date" dateOrdering)
-                 (mapM (load blogPostUrl) postFps)
+  posts <- loadBlogPosts "blog/"
 
   let recommendedPosts = filterByVar False "tags"
                            (arrayContainsString "recommended")
@@ -44,20 +39,12 @@ app = do
 
   -- Tags and tag list pages
 
-  let tagMap = groupByTagVar "tags" posts
   -- Build a mapping of tag to the tag list Page
-  tagPages <- foldM
-    (\acc (tag, taggedPosts) -> do
-      tagPage <- load (const ("blog/tags/" ++ T.unpack tag ++ "/")) "partials/post-list-for-tag.html"
-      let tagEnv = (insertEnvListPage "posts" taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) env
-      return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
-    )
-    H.empty
-    (H.toList tagMap)
+  tagPages <- buildTagPages "partials/post-list-for-tag.html" "posts" (\tag _ -> "blog/tags/" ++ T.unpack tag ++ "/") posts
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
-  let posts' = map (structurePage (pageLayout <|| pagePartial) . prepareBlogPost websiteTitle tagPages) posts
+  let posts' = map ((pageLayout <|| pagePartial <|) . injectTagsEnv tagPages . injectTitle websiteTitle) posts
 
   -- Render blog posts
   forM_ posts' (render env)

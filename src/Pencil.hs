@@ -8,15 +8,15 @@ import Pencil.Parser
 
 import Control.Exception (tryJust)
 import Control.Monad (forM_, foldM, filterM, liftM)
-import Control.Monad.Reader
 import Control.Monad.Except
+import Control.Monad.Reader
 import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Typeable (Typeable)
 import GHC.IO.Exception (IOException(ioe_description, ioe_filename, ioe_type), IOErrorType(NoSuchThing))
-import Text.Sass.Options (defaultSassOptions)
 import Text.EditDistance (levenshteinDistance, defaultEditCosts)
+import Text.Sass.Options (defaultSassOptions)
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
@@ -330,10 +330,10 @@ filterByVar includeMissing var f =
 -- second Page has a "tags" variable that is an EArray [EText "a", EText "b"].
 -- The final output would be a map fromList [("a", [page1, page2]), ("b",
 -- [page2])].
-groupByTagVar :: T.Text
-           -> [Page]
-           -> H.HashMap T.Text [Page]
-groupByTagVar var pages =
+groupByElements :: T.Text
+                -> [Page]
+                -> H.HashMap T.Text [Page]
+groupByElements var pages =
   -- This outer fold takes the list of pages, and accumulates the giant HashMap.
   L.foldl'
     (\acc page@(Page _ env _) ->
@@ -450,10 +450,6 @@ renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
 renderResources :: [Resource] -> PencilApp ()
 renderResources resources = forM_ resources renderResource
 
--- | Add the given Page into the given structure.
-structurePage :: NonEmpty Page -> Page -> NonEmpty Page
-structurePage structure page = NE.cons page structure
-
 copyFile :: FilePath -> FilePath -> PencilApp ()
 copyFile fpIn fpOut = do
   sitePrefix <- asks cSitePrefix
@@ -548,3 +544,4 @@ type Structure = NonEmpty Page
 -- | Converts a Page into a Structure.
 toStructure :: Page -> Structure
 toStructure p = p :| []
+
