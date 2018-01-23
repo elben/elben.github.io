@@ -539,7 +539,7 @@ type Structure = NonEmpty Page
 
 -- | Create a new structure from two Pages.
 (<||) :: Page -> Page -> Structure
-(<||) x y = x :| [y]
+(<||) x y = y :| [x]
 
 -- | Stack Page into existing Structure.
 (<|) :: Structure -> Page -> Structure
