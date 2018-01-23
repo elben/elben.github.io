@@ -26,8 +26,8 @@ main =
 
 app :: PencilApp ()
 app = do
-  pageLayout <- loadHtml "layouts/default.html"
-  pagePartial <- loadHtml "partials/post.html"
+  layoutPage <- loadHtml "layouts/default.html"
+  postPage <- loadHtml "partials/post.html"
 
   posts <- loadBlogPosts "blog/"
 
@@ -44,7 +44,7 @@ app = do
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
-  let posts' = map ((pageLayout <|| pagePartial <|) . injectTagsEnv tagPages . injectTitle websiteTitle) posts
+  let posts' = map ((layoutPage <|| postPage <|) . injectTagsEnv tagPages . injectTitle websiteTitle) posts
 
   -- Render blog posts
   forM_ posts' (render env)
@@ -53,19 +53,19 @@ app = do
   -- Function composition
   let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
   indexPage <- loadHtml "index.html"
-  render postsEnv (pageLayout <|| indexPage)
+  render postsEnv (layoutPage <|| indexPage)
 
   -- Render tag list pages
-  forM_ (H.elems tagPages) (\page -> render env (pageLayout <|| page))
+  forM_ (H.elems tagPages) (\page -> render env (layoutPage <|| page))
 
   -- Render blog post archive
   archivePage <- load (const "blog/") "partials/post-archive.html"
   let postsArchiveEnv = insertEnvListPage "posts" posts env
-  render postsArchiveEnv (pageLayout <|| archivePage)
+  render postsArchiveEnv (layoutPage <|| archivePage)
 
   -- /projects/
   projectsPage <- load (const "projects/") "projects.html"
-  render env (pageLayout <|| projectsPage)
+  render env (layoutPage <|| projectsPage)
 
   -- Render CSS file
   renderCss "stylesheets/default.scss"
