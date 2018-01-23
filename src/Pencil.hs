@@ -535,3 +535,16 @@ renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
   load (\f -> FP.dropExtension f ++ ".css") fp >>= renderPage
 
+type Structure = NonEmpty Page
+
+-- | Create a new structure from two Pages.
+(<||) :: Page -> Page -> Structure
+(<||) x y = x :| [y]
+
+-- | Stack Page into existing Structure.
+(<|) :: Structure -> Page -> Structure
+(<|) ne x = NE.cons x ne
+
+-- | Converts a Page into a Structure.
+toStructure :: Page -> Structure
+toStructure p = p :| []

@@ -16,6 +16,8 @@ blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
 prepareBlogPost :: T.Text -> H.HashMap T.Text Page -> Page -> Page
 prepareBlogPost titlePrefix tagMap page@(Page _ env _) =
+  -- Build up an env list of tag to that tag page's env. This is so that we can
+  -- have access to the URL of the tag index pages.
   let tagEnvList =
         case H.lookup "tags" env of
           Just (EArray tags) ->

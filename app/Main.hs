@@ -6,7 +6,6 @@ import Pencil
 import Pencil.Env
 import Pencil.Blog
 import Control.Monad (forM_, foldM, liftM)
-import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
@@ -58,7 +57,7 @@ app = do
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
-  let posts' = map (structurePage (pagePartial :| [pageLayout]) . prepareBlogPost websiteTitle tagPages) posts
+  let posts' = map (structurePage (pageLayout <|| pagePartial) . prepareBlogPost websiteTitle tagPages) posts
 
   -- Render blog posts
   forM_ posts' (render env)
@@ -67,19 +66,19 @@ app = do
   -- Function composition
   let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
   indexPage <- loadHtml "index.html"
-  render postsEnv (indexPage :| [pageLayout])
+  render postsEnv (pageLayout <|| indexPage)
 
   -- Render tag list pages
-  forM_ (H.elems tagPages) (\page -> render env (page :| [pageLayout]))
+  forM_ (H.elems tagPages) (\page -> render env (pageLayout <|| page))
 
   -- Render blog post archive
   archivePage <- load (const "blog/") "partials/post-archive.html"
   let postsArchiveEnv = insertEnvListPage "posts" posts env
-  render postsArchiveEnv (archivePage :| [pageLayout])
+  render postsArchiveEnv (pageLayout <|| archivePage)
 
   -- /projects/
   projectsPage <- load (const "projects/") "projects.html"
-  render env (projectsPage :| [pageLayout])
+  render env (pageLayout <|| projectsPage)
 
   -- Render CSS file
   renderCss "stylesheets/default.scss"
