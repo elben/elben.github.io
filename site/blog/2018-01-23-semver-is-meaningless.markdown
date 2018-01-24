@@ -21,4 +21,6 @@ I don’t have a solution; dependency management is a long-standing problem. But
 
 If we know that some package `vacuum-1.1.0` uses a couple of methods in `left-pad-2.0.4`, then perhaps we could statically analyze which newer versions of `left-pad` we can use, given our *current* usage of `left-pad`. If `left-pad-2.1.0` changed some function we never used, then it won’t affect us. We can build systems that auto-upgrade packages, and run our test suites against them. In essence this is what Haskell’s [Stackage](https://www.stackage.org) does, which provides a global snapshot of packages that are all compatible with each other. Maybe this is the way of the future—it’s easier to depend on one, global version than on many. But a public global snapshot does not solve private dependencies.
 
+Ultimately, this kind of system would solve the programmatic problem that version numbers try to solve, and we can allow version numbers to speak more for humans than machines.
+
 SemVer was a good attempt at trying to solve a big problem. But version numbers are fundamentally not well-suited to convey both its compatibility in relation to other packages, and the amount of work required by a programmer to upgrade. And when we try to use it to solve both, what we get is something rather muddled.
