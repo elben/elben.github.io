@@ -26,7 +26,7 @@ main =
 
 app :: PencilApp ()
 app = do
-  layoutPage <- loadHtml "layouts/default.html"
+  layoutPage <- loadHtml "partials/default-layout.html"
   postPage <- loadHtml "partials/post.html"
 
   posts <- loadBlogPosts "blog/"
