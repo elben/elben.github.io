@@ -14,11 +14,7 @@ websiteTitle :: T.Text
 websiteTitle = "Elben Shira"
 
 config :: Config
-config = Config {
-    cSitePrefix = "site/"
-  , cOutPrefix = "out/"
-  , cEnv = H.fromList [("title", EText websiteTitle)]
-}
+config = setEnv (H.fromList [("title", EText websiteTitle)]) defaultConfig
 
 main :: IO ()
 main =
@@ -35,7 +31,7 @@ app = do
                            (arrayContainsString "recommended")
                            posts
 
-  env <- asks cEnv
+  env <- asks getEnv
 
   -- Tags and tag list pages
 

@@ -19,6 +19,7 @@ library
                      , Pencil.Env
                      , Pencil.Parser
                      , Pencil.Blog
+                     , Pencil.Internal
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , directory

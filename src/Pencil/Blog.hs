@@ -40,12 +40,12 @@ blogPostUrl :: FilePath -> FilePath
 blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
 injectTitle :: T.Text -> Page -> Page
-injectTitle titlePrefix page@(Page _ env _) =
-  let title = case H.lookup "postTitle" env of
+injectTitle titlePrefix page =
+  let title = case H.lookup "postTitle" (getPageEnv page) of
                        Just (EText t) -> T.append (T.append t " - ") titlePrefix
                        _ -> titlePrefix
-      env' = insertEnvText "title" title env
-  in page { getPageEnv = env' }
+      env' = insertEnvText "title" title (getPageEnv page)
+  in setPageEnv env' page
 
 type Tag = T.Text
 
@@ -62,7 +62,7 @@ buildTagPages :: FilePath
               -> [Page]
               -> PencilApp (H.HashMap Tag Page)
 buildTagPages tagPageFp pagesVar fpf pages = do
-  env <- asks cEnv
+  env <- asks getEnv
 
   let tagMap = groupByElements "tags" pages
   -- Build a mapping of tag to the tag list Page
@@ -71,17 +71,17 @@ buildTagPages tagPageFp pagesVar fpf pages = do
     (\acc (tag, taggedPosts) -> do
       tagPage <- load (fpf tag) tagPageFp
       let tagEnv = (insertEnvListPage pagesVar taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) env
-      return $ H.insert tag (tagPage { getPageEnv = tagEnv }) acc
+      return $ H.insert tag (setPageEnv tagEnv tagPage) acc
     )
     H.empty
     (H.toList tagMap)
 
 injectTagsEnv :: H.HashMap Tag Page -> Page -> Page
-injectTagsEnv tagMap page@(Page _ env _) =
+injectTagsEnv tagMap page =
   -- Build up an env list of tag to that tag page's env. This is so that we can
   -- have access to the URL of the tag index pages.
   let tagEnvList =
-        case H.lookup "tags" env of
+        case H.lookup "tags" (getPageEnv page) of
           Just (EArray tags) ->
             EEnvList $
               L.foldl'
@@ -98,6 +98,6 @@ injectTagsEnv tagMap page@(Page _ env _) =
       -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
       -- loaded Tag index pages. This is so that when we render the blog posts, we
       -- have access to the URL of the Tag index.
-      env' = insertEnvData "tags" tagEnvList env
-  in page { getPageEnv = env' }
+      env' = insertEnvData "tags" tagEnvList (getPageEnv page)
+  in setPageEnv env' page
 
