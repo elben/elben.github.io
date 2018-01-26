@@ -22,8 +22,8 @@ main =
 
 app :: PencilApp ()
 app = do
-  layoutPage <- loadHtml "partials/default-layout.html"
-  postPage <- loadHtml "partials/post.html"
+  layoutPage <- load asHtml "partials/default-layout.html"
+  postPage <- load asHtml "partials/post.html"
 
   posts <- loadBlogPosts "blog/"
 
@@ -48,7 +48,7 @@ app = do
   -- Index
   -- Function composition
   let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
-  indexPage <- loadHtml "index.html"
+  indexPage <- load asHtml "index.html"
   render postsEnv (layoutPage <|| indexPage)
 
   -- Render tag list pages
@@ -67,9 +67,9 @@ app = do
   renderCss "stylesheets/default.scss"
 
   -- Render static directories
-  loadDirWithFileModifier True False fileModifierToHtml "p/" >>= renderResources
+  loadDir True False markdownAsHtml "p/" >>= renderResources
   loadDirId True True "stylesheets/fonts/" >>= renderResources
   loadDirId True True "images/" >>= renderResources
 
-  loadResourceId "CNAME" >>= renderResource
+  loadResource id "CNAME" >>= renderResource
 

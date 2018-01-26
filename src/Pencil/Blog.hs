@@ -1,6 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pencil.Blog where
+module Pencil.Blog
+  (
+    loadBlogPosts
+  , blogPostUrl
+  , injectTitle
+  , buildTagPages
+  , injectTagsEnv
+  ) where
 
 import Pencil
 import Pencil.Env

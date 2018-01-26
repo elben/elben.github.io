@@ -9,6 +9,7 @@ module Pencil
   , getOutputDir, setOutputDir
   , getEnv, setEnv
   , getSassOptions, setSassOptions
+  , getMarkdownOptions, setMarkdownOptions
 
   , Page
   , getPageNodes, setPageNodes
@@ -16,30 +17,39 @@ module Pencil
   , getPageFilePath, setPageFilePath
   , apply
   -- apply_
-  , loadTextFile
+  -- , loadTextFile
   , Resource
   , renderResource
   , renderResources
-  , copyFile
-  , loadResourceAsHtml
+  -- , copyFile
+  , asHtml
+  , asDir
+  , markdownAsHtml
+  , loadResource
   , loadResourceId
-  , loadResourceWithFileModifier
   -- , renderPage
   , render
-  , loadHtml
-  , loadId
   , load
-  , findEnv
-  , findPreambleText
-  , isPreamble
-  , preambleText
+  , loadId
+  , loadDirId
+  , loadDir
+  , listDir
+  -- , listDir_
   , renderCss
+
+  -- , findEnv
+  -- , maybeInsertIntoEnv
+  -- , aesonToEnv
+  -- , findPreambleText
+  -- , isPreamble
+  -- , preambleText
+
   , Structure
   , (<||)
   , (<|)
   , toStructure
 
-  , mostSimilarFile
+  -- , mostSimilarFile
 
   , PencilException
   -- , toNotTextFileException
@@ -47,31 +57,22 @@ module Pencil
   -- , isNoSuchFile
 
   , FileType
-  , extensionMap
+  -- , extensionMap
   , toExtension
-  , markdownWriterOptions
+  -- , markdownWriterOptions
 
-  , parseTextFile
-  , evalNodes
+  -- , parseTextFile
+  -- , evalNodes
 
   , modifyEnvVar
   , sortByVar
   , filterByVar
   , groupByElements
-  , fileModifierToHtml
-  , loadDirId
-  , loadDirWithFileModifier
-  , listDir
-  , listDir_
-
   , insertEnv
   , insertEnvData
   , insertEnvText
   , insertEnvListPage
 
-  , parseMaybeText
-  , maybeInsertIntoEnv
-  , aesonToEnv
   ) where
 
 import Pencil.Internal

@@ -41,6 +41,7 @@ data Config = Config
   , configOutputDir :: FilePath
   , configEnv :: Env
   , configSassOptions :: Sass.SassOptions
+  , configMarkdownOptions :: P.WriterOptions
   }
 
 defaultConfig :: Config
@@ -49,6 +50,7 @@ defaultConfig = Config
   , configOutputDir = "out/"
   , configEnv = H.empty
   , configSassOptions = Text.Sass.Options.defaultSassOptions
+  , configMarkdownOptions = P.def { P.writerHighlight = True }
   }
 
 getSourceDir :: Config -> FilePath
@@ -74,6 +76,12 @@ getSassOptions = configSassOptions
 
 setSassOptions :: Sass.SassOptions -> Config -> Config
 setSassOptions env c = c { configSassOptions = env }
+
+getMarkdownOptions :: Config -> P.WriterOptions
+getMarkdownOptions = configMarkdownOptions
+
+setMarkdownOptions :: P.WriterOptions -> Config -> Config
+setMarkdownOptions wo c = c { configMarkdownOptions = wo }
 
 -- | Run the Pencil app.
 --
@@ -397,23 +405,16 @@ groupByElements var pages =
     -- ^ Reverse to keep ordering consistent inside hash map, since the fold
     -- prepends into accumulated list.
 
--- | A file modifier that renames to HTML files that will be rendered to HTML.
-fileModifierToHtml :: FilePath -> FilePath
-fileModifierToHtml fp =
-  case toExtension fp of
-    Markdown -> FP.dropExtension fp ++ ".html"
-    _ -> fp
-
 loadDirId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
-loadDirId recursive strict = loadDirWithFileModifier recursive strict id
+loadDirId recursive strict = loadDir recursive strict id
 
 -- | Load directory as Resources.
-loadDirWithFileModifier :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
-loadDirWithFileModifier recursive strict fpf dir = do
+loadDir :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
+loadDir recursive strict fpf dir = do
   fps <- listDir recursive dir
   if strict
     then return $ map (\fp -> Passthrough fp fp) fps
-    else mapM (loadResourceWithFileModifier fpf) fps
+    else mapM (loadResource fpf) fps
 
 -- List files in directory, optionally recursively. Returns paths that include
 -- the given dir.
@@ -460,9 +461,6 @@ insertEnvListPage var posts = H.insert var (EEnvList (map getPageEnv posts))
 insertEnv :: Env -> Env -> Env
 insertEnv = H.union
 
-parseMaybeText :: T.Text -> A.Object -> Maybe T.Text
-parseMaybeText k = A.parseMaybe (\o -> o A..: k :: A.Parser T.Text)
-
 -- | Convert known Aeson types into known Env types.
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
 maybeInsertIntoEnv env k v =
@@ -494,14 +492,24 @@ copyFile fpIn fpOut = do
   liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
   liftIO $ D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
 
-loadResourceAsHtml :: FilePath -> PencilApp Resource
-loadResourceAsHtml = loadResourceWithFileModifier (\fp -> FP.dropExtension fp ++ ".html")
+asHtml :: FilePath -> FilePath
+asHtml fp = FP.dropExtension fp ++ ".html"
+
+asDir :: FilePath -> FilePath
+asDir fp = FP.dropExtension fp ++ ".html"
+
+-- | A file modifier that renames to HTML files that will be rendered to HTML.
+markdownAsHtml :: FilePath -> FilePath
+markdownAsHtml fp =
+  case toExtension fp of
+    Markdown -> FP.dropExtension fp ++ ".html"
+    _ -> fp
 
 loadResourceId :: FilePath -> PencilApp Resource
-loadResourceId = loadResourceWithFileModifier id
+loadResourceId = loadResource id
 
-loadResourceWithFileModifier :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
-loadResourceWithFileModifier fpf fp =
+loadResource :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
+loadResource fpf fp =
   -- If we can load the Page as text file, convert to a Single. Otherwise if it
   -- wasn't a text file, then return a Passthroguh resource. This is where we
   -- finally handle the "checked" exception; that is, converting the Left error
@@ -525,18 +533,11 @@ renderPage (Page nodes _ fpOut) = do
 render :: Env -> NonEmpty Page -> PencilApp ()
 render env structure = apply env structure >>= renderPage
 
--- | Load page, extracting the tags and preamble variables. Renders Markdown
--- files into HTML. Defaults the page output file path to the given input file
--- path, but as a folder, with an HTML extension.
---
--- As an example, if the given fp is "/foo/bar/hello.markdown", the returned
--- filepath is "/foo/bar/hello.html".
-loadHtml :: FilePath -> PencilApp Page
-loadHtml = load (\fp -> FP.dropExtension fp ++ ".html")
-
 loadId :: FilePath -> PencilApp Page
 loadId = load id
 
+-- | Load page, extracting the tags and preamble variables. Renders Markdown
+-- files into HTML
 load :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
 load fpf fp = do
   (_, nodes) <- parseTextFile fp
