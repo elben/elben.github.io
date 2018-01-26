@@ -228,18 +228,21 @@ setPageFilePath fp p = p { pageFilePath = fp }
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-apply :: Env -> NonEmpty Page -> PencilApp Page
-apply env pages = apply_ env (NE.reverse pages)
+apply :: NonEmpty Page -> PencilApp Page
+apply pages = apply_ (NE.reverse pages)
 
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
-apply_ :: Env -> NonEmpty Page -> PencilApp Page
-apply_ env (Page nodes penv fp :| []) = do
+apply_ :: NonEmpty Page -> PencilApp Page
+apply_ (Page nodes penv fp :| []) = do
+  env <- asks getEnv
   let env' = H.union penv env -- LHS overrides RHS
   nodes' <- evalNodes env' nodes
   return $ Page nodes' env' fp
-apply_ env (Page nodes penv _ :| (headp : rest)) = do
-  Page nodes' env' fpInner <- apply_ (H.union penv env) (headp :| rest)
+apply_ (Page nodes penv _ :| (headp : rest)) = do
+  -- Modify the current env (in the ReaderT) with the one in the page (penv)
+  Page nodes' env' fpInner <- local (\c -> setEnv (H.union penv (getEnv c)) c)
+                                    (apply_ (headp :| rest))
   let env'' = H.insert "body" (EText (renderNodes nodes')) env'
   nodes'' <- evalNodes env'' nodes
   -- Get the inner-most Page's file path, and pass that upwards to the returned
@@ -545,8 +548,8 @@ renderPage (Page nodes _ fpOut) = do
 -- | Apply and render the structure.
 -- TODO instead of passing in Env, get from PencilApp? Then if ppl need to pass
 -- in a modified env, use 'local'
-render :: Env -> NonEmpty Page -> PencilApp ()
-render env structure = apply env structure >>= renderPage
+render :: NonEmpty Page -> PencilApp ()
+render structure = apply structure >>= renderPage
 
 loadId :: FilePath -> PencilApp Page
 loadId = load id
@@ -598,4 +601,5 @@ type Structure = NonEmpty Page
 toStructure :: Page -> Structure
 toStructure p = p :| []
 
-
+withEnv :: Env -> PencilApp a -> PencilApp a
+withEnv env = local (setEnv env)

@@ -76,6 +76,8 @@ module Pencil
   , insertEnvText
   , insertEnvListPage
 
+  , withEnv
+
   ) where
 
 import Pencil.Internal
