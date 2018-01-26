@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pencil.Env where
+module Pencil.Internal.Env where
 
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T

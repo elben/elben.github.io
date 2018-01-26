@@ -1,13 +1,18 @@
 name:                pencil
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis: Static site generator
+description:
+  Pencil is a static site generator. It's a simple way to generate your personal
+  website. Pencil comes pre-loaded with goodies such as easy blog generation,
+  tagging, templating and layouts, Markdown rendering, and Sass/SCSS
+  compilation. But it's also flexible and simple enough for you to extend for
+  your own needs.
 homepage:            https://github.com/elben/pencil
 license:             BSD3
 license-file:        LICENSE
 author:              Elben Shira
 maintainer:          elbenshira@gmail.com
-copyright:           2017 Elben Shira
+copyright:           2018 Elben Shira
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -16,10 +21,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Pencil
-                     , Pencil.Env
-                     , Pencil.Parser
                      , Pencil.Blog
                      , Pencil.Internal
+                     , Pencil.Internal.Env
+                     , Pencil.Internal.Parser
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , directory

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pencil.Parser where
+module Pencil.Internal.Parser where
 
 import Text.ParserCombinators.Parsec
 import qualified Data.List as DL

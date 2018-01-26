@@ -10,7 +10,7 @@ module Pencil.Blog
   ) where
 
 import Pencil
-import Pencil.Env
+import Pencil.Internal.Env
 import Control.Monad (liftM, foldM)
 import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H
@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import qualified System.FilePath as FP
 
 {-|
-Copyright   : (c) Elben Shira, 2017
+Copyright   : (c) Elben Shira, 2018
 License     : TODO
 Maintainer  : Elben Shira <elbenshira@gmail.com>
 Stability   : experimental

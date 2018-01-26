@@ -3,8 +3,8 @@
 module Main where
 
 import Pencil
-import Pencil.Env
 import Pencil.Blog
+import Pencil.Internal.Env
 import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H

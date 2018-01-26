@@ -2,8 +2,8 @@
 
 module Pencil.Internal where
 
-import Pencil.Env
-import Pencil.Parser
+import Pencil.Internal.Env
+import Pencil.Internal.Parser
 
 import Control.Exception (tryJust)
 import Control.Monad (forM_, foldM, filterM, liftM)
@@ -36,6 +36,9 @@ import qualified Text.Sass as Sass
 -- Unknown "unchecked" exceptions can still go through IO.
 type PencilApp = ReaderT Config (ExceptT PencilException IO)
 
+-- | The main Config needed to build your website. See Pencil.Internal
+-- for the full version. Use 'defaultConfig' as a starting point, along with the
+-- config-modification helpers such as 'setSourceDir'.
 data Config = Config
   { configSourceDir :: FilePath
   , configOutputDir :: FilePath
@@ -44,6 +47,20 @@ data Config = Config
   , configMarkdownOptions :: P.WriterOptions
   }
 
+-- | This default Config gives you everything you need to start.
+--
+-- Default values:
+--
+-- @
+-- Config
+--  { 'configSourceDir' = "site/"
+--  , 'configOutputDir' = "out/"
+--  , 'configEnv' = HashMap.empty
+--  , 'configSassOptions' = Text.Sass.Options.defaultSassOptions
+--  , 'configMarkdownOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
+--  }
+-- @
+--
 defaultConfig :: Config
 defaultConfig = Config
   { configSourceDir = "site/"
@@ -56,12 +73,14 @@ defaultConfig = Config
 getSourceDir :: Config -> FilePath
 getSourceDir = configSourceDir
 
+-- | Sets the source directory (where all your source files live).
 setSourceDir :: FilePath -> Config -> Config
 setSourceDir fp c = c { configSourceDir = fp }
 
 getOutputDir :: Config -> FilePath
 getOutputDir = configOutputDir
 
+-- | Sets the output directory (where all your rendered files go).
 setOutputDir :: FilePath -> Config -> Config
 setOutputDir fp c = c { configOutputDir = fp }
 
@@ -143,8 +162,8 @@ toExtension fp =
   -- takeExtension returns ".markdown", so drop the "."
   M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) extensionMap)
 
--- Describes a loaded page, with the page's template nodes, loaded environment
--- from the preamble, and where the page was loaded from.
+-- | A Page is a text file (e.g. Markdown or HTML files) that may have template
+-- directives, and an environment loaded from the preamble.
 data Page = Page
   { pageNodes     :: [PNode]
   , pageEnv       :: Env
@@ -154,17 +173,11 @@ data Page = Page
   -- environment.
   } deriving (Eq, Show)
 
-getPageNodes :: Page -> [PNode]
-getPageNodes = pageNodes
-
 getPageEnv :: Page -> Env
 getPageEnv = pageEnv
 
 getPageFilePath :: Page -> String
 getPageFilePath = pageFilePath
-
-setPageNodes :: [PNode] -> Page -> Page
-setPageNodes nodes p = p { pageNodes = nodes }
 
 setPageEnv :: Env -> Page -> Page
 setPageEnv env p = p { pageEnv = env }
@@ -194,19 +207,19 @@ setPageFilePath fp p = p { pageFilePath = fp }
 -- defines the variables $postTitle and $postDate, and may renderer parent
 -- variables such as ${websiteTitle}.
 --
---   +--------------+
---   |              | <--- default.html
---   |              |      Defines ${websiteTitle}
---   |  +---------+ |
---   |  |         |<+----- blog-post.html
---   |  | +-----+ | |      Renders ${postTitle}, ${postDate}
---   |  | |     | | |
---   |  | |     | | |
---   |  | |     |<+-+----- blog-article-content.markdown
---   |  | |     | | |      Renders ${websiteTitle}
---   |  | +-----+ | |      Defines ${postTitle}, ${postDate}
---   |  +---------+ |
---   +--------------+
+-- > +--------------+
+-- > |              | <--- default.html
+-- > |              |      Defines ${websiteTitle}
+-- > |  +---------+ |
+-- > |  |         |<+----- blog-post.html
+-- > |  | +-----+ | |      Renders ${postTitle}, ${postDate}
+-- > |  | |     | | |
+-- > |  | |     | | |
+-- > |  | |     |<+-+----- blog-article-content.markdown
+-- > |  | |     | | |      Renders ${websiteTitle}
+-- > |  | +-----+ | |      Defines ${postTitle}, ${postDate}
+-- > |  +---------+ |
+-- > +--------------+
 --
 -- In this case, we want to accumulate the environment variables, starting from
 -- default.html, to blog-post.html, and the markdown file's variables. Combine
@@ -401,9 +414,9 @@ groupByElements var pages =
            _ -> acc
     )
     H.empty
-    (reverse pages)
-    -- ^ Reverse to keep ordering consistent inside hash map, since the fold
+    -- Reverse to keep ordering consistent inside hash map, since the fold
     -- prepends into accumulated list.
+    (reverse pages)
 
 loadDirId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
 loadDirId recursive strict = loadDir recursive strict id
@@ -530,6 +543,8 @@ renderPage (Page nodes _ fpOut) = do
   liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
 
 -- | Apply and render the structure.
+-- TODO instead of passing in Env, get from PencilApp? Then if ppl need to pass
+-- in a modified env, use 'local'
 render :: Env -> NonEmpty Page -> PencilApp ()
 render env structure = apply env structure >>= renderPage
 

@@ -30,6 +30,12 @@ stack install hasktags
 hasktags --ignore-close-implementation --ctags .
 ```
 
+Documentation:
+
+```
+stack haddock
+```
+
 # Notes
 
 To find differences, use:
