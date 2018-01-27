@@ -149,43 +149,46 @@ data FileType = Markdown
               | Html
               | Other
 
+-- | A 'H.HashMap' of file extensions (e.g. @markdown@) to 'FileType'.
 extensionMap :: H.HashMap String FileType
 extensionMap = H.fromList
   [ ("markdown", Markdown)
   , ("md", Markdown)
   , ("html", Html)
+  , ("htm", Html)
   , ("sass", Sass)
   , ("scss", Sass)]
 
+-- | Takes a file path and returns the 'FileType', defaulting to 'Other' if it's
+-- not a supported extension.
 toExtension :: FilePath -> FileType
 toExtension fp =
   -- takeExtension returns ".markdown", so drop the "."
   M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) extensionMap)
 
--- | A Page is a text file (e.g. Markdown or HTML files) that may have template
--- directives, and an environment loaded from the preamble.
+-- | The Page is a fundamental data structure in Pencil. It contains the parsed
+-- template of a file (e.g. of Markdown or HTML files). It may have template
+-- directives (e.g. @${body}@) that has not yet been rendered, and an
+-- environment loaded from the preamble section of the file. A Page also
+-- contains 'pageFilePath', which is the output file path.
 data Page = Page
   { pageNodes     :: [PNode]
   , pageEnv       :: Env
-  , pageFilePath  :: String
+  , pageFilePath  :: FilePath
   -- ^ The rendered output path of this page. Defaults to the input file path.
   -- This file path is used to generate the self URL that is injected into the
   -- environment.
   } deriving (Eq, Show)
 
+-- | Returns the 'Env' from a 'Page'.
 getPageEnv :: Page -> Env
 getPageEnv = pageEnv
 
-getPageFilePath :: Page -> String
-getPageFilePath = pageFilePath
-
+-- | Sets the 'Env' in a 'Page'.
 setPageEnv :: Env -> Page -> Page
 setPageEnv env p = p { pageEnv = env }
 
-setPageFilePath :: String -> Page -> Page
-setPageFilePath fp p = p { pageFilePath = fp }
-
--- | Apply the environment variables on the given pages.
+-- | Applies the environment variables on the given pages.
 --
 -- The NonEmpty is expected to be ordered by inner-most content first (such that
 -- the final, HTML structure layout is last in the list).
@@ -249,50 +252,57 @@ apply_ (Page nodes penv _ :| (headp : rest)) = do
   -- Page.
   return $ Page nodes'' env'' fpInner
 
+-- | Loads the given file as a text file. Throws an exception into the ExceptT
+-- monad transformer if the file is not a text file.
 loadTextFile :: FilePath -> PencilApp T.Text
 loadTextFile fp = do
   sitePrefix <- asks getSourceDir
   -- Try to read the file. If it fails because it's not a text file, capture the
   -- exception and convert it to a "checked" exception in the ExceptT stack via
   -- 'throwError'.
-  eitherContent <- liftIO $ tryJust toNotTextFileException (TIO.readFile (sitePrefix ++ fp))
+  eitherContent <- liftIO $ tryJust toPencilException (TIO.readFile (sitePrefix ++ fp))
   case eitherContent of
     Left e -> throwError e
     Right a -> return a
 
+-- | Converts the IOError to a known 'PencilException'.
+--
 -- How to test errors:
 --
+-- @
 -- import Control.Exception
 -- import qualified Data.Text.IO as TIO
 --
 -- (\e -> print (ioe_description (e :: IOError)) >> return "") `handle` (TIO.readFile "foo")
-toNotTextFileException :: IOError -> Maybe PencilException
-toNotTextFileException e
+-- @
+--
+toPencilException :: IOError -> Maybe PencilException
+toPencilException e
   | isInvalidByteSequence e = Just (NotTextFile e)
   | isNoSuchFile e = Just (FileNotFound (ioe_filename e))
   | otherwise = Nothing
 
+-- | Returns true if the IOError is an invalid byte sequence error. This
+-- suggests that the file is a binary file.
 isInvalidByteSequence :: IOError -> Bool
 isInvalidByteSequence e = ioe_description e == "invalid byte sequence"
 
+-- | Returns true if the IOError is due to missing file.
 isNoSuchFile :: IOError -> Bool
 isNoSuchFile e = ioe_type e == NoSuchThing
 
-markdownWriterOptions :: P.WriterOptions
-markdownWriterOptions =
-  P.def {
-    P.writerHighlight = True
-  }
-
-parseTextFile :: FilePath -> PencilApp (T.Text, [PNode])
-parseTextFile fp = do
+-- | Loads and parses the given file path. Converts 'Markdown' files to HTML,
+-- compiles 'Sass' files into CSS, and leaves everything else alone.
+parseAndConvertTextFiles :: FilePath -> PencilApp (T.Text, [PNode])
+parseAndConvertTextFiles fp = do
   content <- loadTextFile fp
   content' <-
     case toExtension fp of
-      Markdown ->
+      Markdown -> do
+        markdownOptions <- asks getMarkdownOptions
         case P.readMarkdown P.def (T.unpack content) of
           Left _ -> return content
-          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownWriterOptions pandoc
+          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownOptions pandoc
       Sass -> do
         sassOptions <- asks getSassOptions
         sitePrefix <- asks getSourceDir
@@ -308,7 +318,7 @@ parseTextFile fp = do
   return (content', nodes)
 
 -- | Evaluate the nodes in the given environment. Note that it returns an IO
--- because of ${partial(..)} calls that requires us to load a file.
+-- because of @${partial(..)}@ calls that requires us to load a file.
 evalNodes :: Env -> [PNode] -> PencilApp [PNode]
 evalNodes _ [] = return []
 evalNodes env (PVar var : rest) = do
@@ -346,7 +356,7 @@ evalNodes env (PFor var nodes : rest) = do
     -- Var is not an EEnvList; everything inside the for-statement is thrown away
     Just _ -> return rest'
 evalNodes env (PPartial fp : rest) = do
-  (_, nodes) <- parseTextFile (T.unpack fp)
+  (_, nodes) <- parseAndConvertTextFiles (T.unpack fp)
   nodes' <- evalNodes env nodes
   rest' <- evalNodes env rest
   return $ nodes' ++ rest'
@@ -421,12 +431,12 @@ groupByElements var pages =
     -- prepends into accumulated list.
     (reverse pages)
 
-loadDirId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
-loadDirId recursive strict = loadDir recursive strict id
+loadResourcesId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
+loadResourcesId recursive strict = loadResources recursive strict id
 
 -- | Load directory as Resources.
-loadDir :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
-loadDir recursive strict fpf dir = do
+loadResources :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
+loadResources recursive strict fpf dir = do
   fps <- listDir recursive dir
   if strict
     then return $ map (\fp -> Passthrough fp fp) fps
@@ -504,8 +514,17 @@ copyFile fpIn fpOut = do
 asHtml :: FilePath -> FilePath
 asHtml fp = FP.dropExtension fp ++ ".html"
 
+-- | Convert a file path into a directory name, dropping the extension.
+-- Pages with a directory as its FilePath is rendered as an index file in that
+-- directory. For example, the @pages/about.html@ is transformed into
+-- @pages/about/@, which 'render' would turn the 'Page' into
+-- @pages/about/index.html'.
+--
 asDir :: FilePath -> FilePath
-asDir fp = FP.dropExtension fp ++ ".html"
+asDir fp = FP.replaceFileName fp (FP.takeBaseName fp) ++ "/"
+
+asCss :: FilePath -> FilePath
+asCss fp = FP.dropExtension fp ++ ".css"
 
 -- | A file modifier that renames to HTML files that will be rendered to HTML.
 markdownAsHtml :: FilePath -> FilePath
@@ -533,11 +552,27 @@ loadResource fpf fp =
 loadId :: FilePath -> PencilApp Page
 loadId = load id
 
--- | Load page, extracting the tags and preamble variables. Renders Markdown
--- files into HTML
+-- | Loads a file into a Page, rendering the file (as determined by the file
+-- extension) into the proper output format (e.g. Markdown rendered to
+-- HTML, SCSS to CSS). Parses the template directives and preamble variables
+-- into its environment. The 'Page''s 'pageFilePath' is determined by the given
+-- function, which expects the original file path, and returns the designated file
+-- path.
+--
+-- The Page's designated file path is calculated and stored in the Page's
+-- environment in the variable @this.url@. This allows the template to use
+-- @${this.url}@ to refer to the designated file path.
+--
+-- Example:
+--
+-- @
+-- -- Loads index.markdown with the designated file path of index.html.
+-- load 'asHtml' "index.markdown"
+-- @
+--
 load :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
 load fpf fp = do
-  (_, nodes) <- parseTextFile fp
+  (_, nodes) <- parseAndConvertTextFiles fp
   let env = findEnv nodes
   let fp' = "/" ++ fpf fp
   let env' = H.insert "this.url" (EText (T.pack fp')) env
@@ -564,7 +599,7 @@ preambleText _ = Nothing
 renderCss :: FilePath -> PencilApp ()
 renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
-  load (\f -> FP.dropExtension f ++ ".css") fp >>= render
+  load asCss fp >>= render
 
 type Structure = NonEmpty Page
 
@@ -572,13 +607,13 @@ type Structure = NonEmpty Page
 (<||) :: Page -> Page -> Structure
 (<||) x y = y :| [x]
 
--- | Stack Page into existing Structure.
+-- | Push Page into Structure.
 (<|) :: Structure -> Page -> Structure
 (<|) ne x = NE.cons x ne
 
--- | Converts a Page into a Structure.
-toStructure :: Page -> Structure
-toStructure p = p :| []
+-- | Convert a Page into a Structure.
+structure :: Page -> Structure
+structure p = p :| []
 
 withEnv :: Env -> PencilApp a -> PencilApp a
 withEnv env = local (setEnv env)
@@ -596,7 +631,7 @@ instance Render [Resource] where
 
 -- This requires FlexibleInstances.
 instance Render Structure where
-  render structure = apply structure >>= render
+  render s = apply s >>= render
 
 instance Render Page where
   render (Page nodes _ fpOut) = do

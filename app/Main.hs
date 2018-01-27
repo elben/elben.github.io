@@ -67,9 +67,9 @@ app = do
   renderCss "stylesheets/default.scss"
 
   -- Render static directories
-  loadDir True False markdownAsHtml "p/" >>= render
-  loadDirId True True "stylesheets/fonts/" >>= render
-  loadDirId True True "images/" >>= render
+  loadResources True False markdownAsHtml "p/" >>= render
+  loadResourcesId True True "stylesheets/fonts/" >>= render
+  loadResourcesId True True "images/" >>= render
 
   loadResource id "CNAME" >>= render
 

@@ -7,6 +7,31 @@ module Pencil
     PencilApp
   , run
 
+  , Page
+  , getPageEnv, setPageEnv
+  , load
+  , loadId
+  , withEnv
+  , apply
+  , Render(..)
+  , renderCss
+  , listDir
+  , asHtml
+  , asDir
+  , asCss
+  , markdownAsHtml
+
+  , Resource
+  , loadResource
+  , loadResourceId
+  , loadResources
+  , loadResourcesId
+
+  , Structure
+  , structure
+  , (<||)
+  , (<|)
+
   , Config
   , defaultConfig
   , getSourceDir, setSourceDir
@@ -15,54 +40,10 @@ module Pencil
   , getSassOptions, setSassOptions
   , getMarkdownOptions, setMarkdownOptions
 
-  , Page
-  , getPageEnv, setPageEnv
-  , getPageFilePath, setPageFilePath
-  , apply
-  -- apply_
-  -- , loadTextFile
-  , Resource
-  -- , copyFile
-  , asHtml
-  , asDir
-  , markdownAsHtml
-  , loadResource
-  , loadResourceId
-  , render
-  , load
-  , loadId
-  , loadDirId
-  , loadDir
-  , listDir
-  -- , listDir_
-  , renderCss
-
-  -- , findEnv
-  -- , maybeInsertIntoEnv
-  -- , aesonToEnv
-  -- , findPreambleText
-  -- , isPreamble
-  -- , preambleText
-
-  , Structure
-  , (<||)
-  , (<|)
-  , toStructure
-
-  -- , mostSimilarFile
-
   , PencilException
-  -- , toNotTextFileException
-  -- , isInvalidByteSequence
-  -- , isNoSuchFile
 
   , FileType
-  -- , extensionMap
   , toExtension
-  -- , markdownWriterOptions
-
-  -- , parseTextFile
-  -- , evalNodes
 
   , modifyEnvVar
   , sortByVar
@@ -72,8 +53,6 @@ module Pencil
   , insertEnvData
   , insertEnvText
   , insertEnvListPage
-
-  , withEnv
 
   ) where
 

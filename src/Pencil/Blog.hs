@@ -2,6 +2,10 @@
 
 module Pencil.Blog
   (
+  -- This module provides a standard way of building and generating blog posts.
+  --
+  -- Also allows pages to be tagged with tags, using the "tags" variable name in the
+  -- environment, which is expected to be an array of strings.
     loadBlogPosts
   , blogPostUrl
   , injectTitle
@@ -17,20 +21,6 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.Text as T
 import qualified System.FilePath as FP
-
-{-|
-Copyright   : (c) Elben Shira, 2018
-License     : TODO
-Maintainer  : Elben Shira <elbenshira@gmail.com>
-Stability   : experimental
-
-This module provides a standard way of building and generating blog posts.
-
-Also allows pages to be tagged with tags, using the "tags" variable name in the
-environment, which is expected to be an array of strings.
-
--}
-
 
 loadBlogPosts :: FilePath -> PencilApp [Page]
 loadBlogPosts fp = do
