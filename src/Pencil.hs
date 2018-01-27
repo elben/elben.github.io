@@ -22,6 +22,7 @@ module Pencil
   , Resource
   , loadResource
   , loadResources
+  , passthrough
   , listDir
 
   , Structure
@@ -61,8 +62,7 @@ import Pencil.Internal
 -- $gettingstarted
 --
 -- We'll start by building a very simple website, with only a couple of pages,
--- to give you a feel for using Pencil. Go to <http://elbenshira.com/pencil
--- elbenshira.com/pencil> for
+-- to give you a feel for using Pencil. Go to http://elbenshira.com/pencil for
 -- in-depth tutorials, including how you can set up a blog.
 --
 -- To build our simple website, we'll first create some folders and files:

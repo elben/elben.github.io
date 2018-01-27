@@ -71,5 +71,5 @@ app = do
   loadResources id True True "stylesheets/fonts/" >>= render
   loadResources id True True "images/" >>= render
 
-  loadResource id "CNAME" >>= render
+  passthrough "CNAME" >>= render
 

@@ -156,6 +156,12 @@ data FileType = Html
 instance Hashable FileType
 
 -- | A 'H.HashMap' of file extensions (e.g. @markdown@) to 'FileType'.
+--
+-- * 'Html': @html, htm@
+-- * 'Markdown': @markdown, md@
+-- * 'Css': @css@
+-- * 'Sass': @sass, scss@
+--
 fileTypeMap :: H.HashMap String FileType
 fileTypeMap = H.fromList
   [ ("html", Html)
@@ -168,15 +174,20 @@ fileTypeMap = H.fromList
 
 -- | Mapping of 'FileType' to the final converted format. Only contains
 -- 'FileType's that Pencil will convert.
+--
+-- * 'Markdown': @html@
+-- * 'Sass': @css@
+--
 extensionMap :: H.HashMap FileType String
 extensionMap = H.fromList
   [ (Markdown, "html")
-  , (Sass, "sass")]
+  , (Sass, "css")]
 
--- | Converts a 'FileType' into the extension.
+-- | Converts a 'FileType' into its converted webpage extension, if Pencil would
+-- convert it (e.g. Markdown to HTML).
 --
--- >>> toExtension Html
--- "html"
+-- >>> toExtension Markdown
+-- Just "html"
 --
 toExtension :: FileType -> Maybe String
 toExtension ft = H.lookup ft extensionMap
@@ -454,10 +465,16 @@ groupByElements var pages =
     (reverse pages)
 
 -- | Load directory as Resources.
-loadResources :: (FilePath -> FilePath) -> Bool -> Bool -> FilePath -> PencilApp [Resource]
-loadResources fpf recursive strict dir = do
+loadResources :: (FilePath -> FilePath)
+              -> Bool
+              -- ^ Recursive if @True@.
+              -> Bool
+              -- ^ Handle as pass-throughs (file copy) if @True@.
+              -> FilePath
+              -> PencilApp [Resource]
+loadResources fpf recursive pass dir = do
   fps <- listDir recursive dir
-  if strict
+  if pass
     then return $ map (\fp -> Passthrough fp fp) fps
     else mapM (loadResource fpf) fps
 
@@ -581,7 +598,7 @@ asIntended fp = maybe fp ((FP.dropExtension fp ++ ".") ++) (toExtension (fileTyp
 -- -- this is just a file copy.
 -- loadResource id "images/profile.jpg" >> render
 --
--- -- Loads and renders @about.markdown@ as HTML.
+-- -- Loads and renders to about.index
 -- loadResource asHtml "about.markdown" >> render
 -- @
 loadResource :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
@@ -596,6 +613,17 @@ loadResource fpf fp =
   where handle e = case e of
                      NotTextFile _ -> return (Passthrough fp (fpf fp))
                      _ -> throwError e
+
+-- | Loads file as a pass-through. There is no content conversion, and template
+-- directives are ignored. In essence this is a file copy.
+--
+-- @
+-- -- Do not convert Markdown into HTML, and render as example.markdown.
+-- passthrough "example.markdown" >> render
+-- @
+--
+passthrough :: FilePath -> PencilApp Resource
+passthrough fp = return $ Passthrough fp fp
 
 -- | Loads a file into a Page, rendering the file (as determined by the file
 -- extension) into the proper output format (e.g. Markdown rendered to
