@@ -17,7 +17,7 @@ module Pencil
   , asHtml
   , asDir
   , asCss
-  , markdownAsHtml
+  , asIntended
 
   , Resource
   , loadResource
@@ -40,7 +40,7 @@ module Pencil
   , PencilException
 
   , FileType
-  , toExtension
+  , fileType
 
   , modifyEnvVar
   , sortByVar

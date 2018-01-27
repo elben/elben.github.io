@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, FlexibleContexts, FlexibleInstances #-}
 
 module Pencil.Internal where
 
@@ -13,9 +13,11 @@ import Data.Char (toLower)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 import GHC.IO.Exception (IOException(ioe_description, ioe_filename, ioe_type), IOErrorType(NoSuchThing))
 import Text.EditDistance (levenshteinDistance, defaultEditCosts)
 import Text.Sass.Options (defaultSassOptions)
+import Data.Hashable (Hashable)
 import qualified Data.HashMap.Strict as H
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
@@ -144,27 +146,47 @@ data PencilException
   -- ^ File not found. We may or may not know the file we were looking for.
   deriving (Typeable, Show)
 
-data FileType = Markdown
+data FileType = Html
+              | Markdown
+              | Css
               | Sass
-              | Html
               | Other
+  deriving (Eq, Generic)
+
+instance Hashable FileType
 
 -- | A 'H.HashMap' of file extensions (e.g. @markdown@) to 'FileType'.
-extensionMap :: H.HashMap String FileType
-extensionMap = H.fromList
-  [ ("markdown", Markdown)
-  , ("md", Markdown)
-  , ("html", Html)
+fileTypeMap :: H.HashMap String FileType
+fileTypeMap = H.fromList
+  [ ("html", Html)
   , ("htm", Html)
+  , ("markdown", Markdown)
+  , ("md", Markdown)
+  , ("css", Css)
   , ("sass", Sass)
   , ("scss", Sass)]
 
+-- | Mapping of 'FileType' to the final converted format. Only contains
+-- 'FileType's that Pencil will convert.
+extensionMap :: H.HashMap FileType String
+extensionMap = H.fromList
+  [ (Markdown, "html")
+  , (Sass, "sass")]
+
+-- | Converts a 'FileType' into the extension.
+--
+-- >>> toExtension Html
+-- "html"
+--
+toExtension :: FileType -> Maybe String
+toExtension ft = H.lookup ft extensionMap
+
 -- | Takes a file path and returns the 'FileType', defaulting to 'Other' if it's
 -- not a supported extension.
-toExtension :: FilePath -> FileType
-toExtension fp =
+fileType :: FilePath -> FileType
+fileType fp =
   -- takeExtension returns ".markdown", so drop the "."
-  M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) extensionMap)
+  M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) fileTypeMap)
 
 -- | The Page is a fundamental data structure in Pencil. It contains the parsed
 -- template of a file (e.g. of Markdown or HTML files). It may have template
@@ -297,7 +319,7 @@ parseAndConvertTextFiles :: FilePath -> PencilApp (T.Text, [PNode])
 parseAndConvertTextFiles fp = do
   content <- loadTextFile fp
   content' <-
-    case toExtension fp of
+    case fileType fp of
       Markdown -> do
         markdownOptions <- asks getMarkdownOptions
         case P.readMarkdown P.def (T.unpack content) of
@@ -538,18 +560,17 @@ asDir fp = FP.replaceFileName fp (FP.takeBaseName fp) ++ "/"
 asCss :: FilePath -> FilePath
 asCss fp = FP.dropExtension fp ++ ".css"
 
--- | Converts Markdown extensions into @.html@, but leaves other file extensions as-is.
+-- | Converts file path into the intended converted formats. This means
+-- @.markdown@ become @.html@, @.sass@ becomes @.css@, and so forth. See
+-- 'extensionMap' for conversion table.
 --
 -- @
--- -- Load everything inside the "assets/" folder, converting files with
--- -- Markdown extensions to HTML, while leaving other files alone.
--- 'loadResources' markdownAsHtml True True "assets/"
+-- -- Load everything inside the "assets/" folder, renaming converted files as
+-- -- intended, and leaving everything else alone.
+-- 'loadResources' asIntended True True "assets/"
 -- @
-markdownAsHtml :: FilePath -> FilePath
-markdownAsHtml fp =
-  case toExtension fp of
-    Markdown -> FP.dropExtension fp ++ ".html"
-    _ -> fp
+asIntended :: FilePath -> FilePath
+asIntended fp = maybe fp ((FP.dropExtension fp ++ ".") ++) (toExtension (fileType fp))
 
 -- | Loads a file as a 'Resource'. Use this for binary files (e.g. images) and
 -- for files without template directives. Regural files are still converted to
@@ -622,10 +643,10 @@ preambleText :: PNode -> Maybe T.Text
 preambleText (PPreamble t) = Just t
 preambleText _ = Nothing
 
--- | Load and render file as CSS.
+-- | Loads and renders file as CSS.
 --
 -- @
--- -- Load, convert and render into style.css.
+-- -- Load, convert and render as style.css.
 -- renderCss "style.sass"
 -- @
 renderCss :: FilePath -> PencilApp ()

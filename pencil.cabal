@@ -30,15 +30,16 @@ library
                      , directory
                      , edit-distance
                      , filepath
+                     , hashable
                      , hsass
                      , mtl
                      , pandoc
                      , parsec
                      , text
                      , time
+                     , unordered-containers
                      , vector
                      , yaml
-                     , unordered-containers
   default-language:    Haskell2010
 
 executable pencil-exe
