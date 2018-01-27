@@ -22,15 +22,12 @@ module Pencil
   -- apply_
   -- , loadTextFile
   , Resource
-  , renderResource
-  , renderResources
   -- , copyFile
   , asHtml
   , asDir
   , markdownAsHtml
   , loadResource
   , loadResourceId
-  -- , renderPage
   , render
   , load
   , loadId

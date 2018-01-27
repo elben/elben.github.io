@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, FlexibleInstances #-}
 
 module Pencil.Internal where
 
@@ -228,12 +228,12 @@ setPageFilePath fp p = p { pageFilePath = fp }
 -- Now *that* content is injected into the parent environment's $body variable,
 -- which is then used to render the full-blown HTML page.
 --
-apply :: NonEmpty Page -> PencilApp Page
+apply :: Structure -> PencilApp Page
 apply pages = apply_ (NE.reverse pages)
 
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
-apply_ :: NonEmpty Page -> PencilApp Page
+apply_ :: Structure -> PencilApp Page
 apply_ (Page nodes penv fp :| []) = do
   env <- asks getEnv
   let env' = H.union penv env -- LHS overrides RHS
@@ -494,13 +494,6 @@ data Resource
   | Passthrough FilePath FilePath
   -- ^ in and out file paths
 
-renderResource :: Resource -> PencilApp ()
-renderResource (Single page) = renderPage page
-renderResource (Passthrough fpIn fpOut) = copyFile fpIn fpOut
-
-renderResources :: [Resource] -> PencilApp ()
-renderResources resources = forM_ resources renderResource
-
 copyFile :: FilePath -> FilePath -> PencilApp ()
 copyFile fpIn fpOut = do
   sitePrefix <- asks getSourceDir
@@ -537,20 +530,6 @@ loadResource fpf fp =
                      NotTextFile _ -> return (Passthrough fp (fpf fp))
                      _ -> throwError e
 
-renderPage :: Page -> PencilApp ()
-renderPage (Page nodes _ fpOut) = do
-  outPrefix <- asks getOutputDir
-  let noFileName = FP.takeBaseName fpOut == ""
-  let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
-  liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
-  liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
-
--- | Apply and render the structure.
--- TODO instead of passing in Env, get from PencilApp? Then if ppl need to pass
--- in a modified env, use 'local'
-render :: NonEmpty Page -> PencilApp ()
-render structure = apply structure >>= renderPage
-
 loadId :: FilePath -> PencilApp Page
 loadId = load id
 
@@ -585,7 +564,7 @@ preambleText _ = Nothing
 renderCss :: FilePath -> PencilApp ()
 renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
-  load (\f -> FP.dropExtension f ++ ".css") fp >>= renderPage
+  load (\f -> FP.dropExtension f ++ ".css") fp >>= render
 
 type Structure = NonEmpty Page
 
@@ -603,3 +582,27 @@ toStructure p = p :| []
 
 withEnv :: Env -> PencilApp a -> PencilApp a
 withEnv env = local (setEnv env)
+
+class Render a where
+  render :: a -> PencilApp ()
+
+instance Render Resource where
+  render (Single page) = render page
+  render (Passthrough fpIn fpOut) = copyFile fpIn fpOut
+
+-- This requires FlexibleInstances.
+instance Render [Resource] where
+  render resources = forM_ resources render
+
+-- This requires FlexibleInstances.
+instance Render Structure where
+  render structure = apply structure >>= render
+
+instance Render Page where
+  render (Page nodes _ fpOut) = do
+    outPrefix <- asks getOutputDir
+    let noFileName = FP.takeBaseName fpOut == ""
+    let fpOut' = outPrefix ++ if noFileName then fpOut ++ "index.html" else fpOut
+    liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory fpOut')
+    liftIO $ TIO.writeFile fpOut' (renderNodes nodes)
+
