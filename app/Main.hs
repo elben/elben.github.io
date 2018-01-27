@@ -47,17 +47,17 @@ app = do
 
   -- Index
   -- Function composition
-  let postsEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
+  let indexEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
   indexPage <- load asHtml "index.html"
-  withEnv postsEnv (render (layoutPage <|| indexPage))
+  withEnv indexEnv (render (layoutPage <|| indexPage))
 
   -- Render tag list pages
   forM_ (H.elems tagPages) (\page -> render (layoutPage <|| page))
 
   -- Render blog post archive
   archivePage <- load (const "blog/") "partials/post-archive.html"
-  let postsArchiveEnv = insertEnvListPage "posts" posts env
-  withEnv postsArchiveEnv (render (layoutPage <|| archivePage))
+  let archiveEnv = insertEnvListPage "posts" posts env
+  withEnv archiveEnv (render (layoutPage <|| archivePage))
 
   -- /projects/
   projectsPage <- load (const "projects/") "projects.html"
@@ -67,9 +67,9 @@ app = do
   renderCss "stylesheets/default.scss"
 
   -- Render static directories
-  loadResources True False markdownAsHtml "p/" >>= render
-  loadResourcesId True True "stylesheets/fonts/" >>= render
-  loadResourcesId True True "images/" >>= render
+  loadResources markdownAsHtml True False "p/" >>= render
+  loadResources id True True "stylesheets/fonts/" >>= render
+  loadResources id True True "images/" >>= render
 
   loadResource id "CNAME" >>= render
 

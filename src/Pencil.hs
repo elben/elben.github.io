@@ -10,12 +10,10 @@ module Pencil
   , Page
   , getPageEnv, setPageEnv
   , load
-  , loadId
   , withEnv
   , apply
   , Render(..)
   , renderCss
-  , listDir
   , asHtml
   , asDir
   , asCss
@@ -23,9 +21,8 @@ module Pencil
 
   , Resource
   , loadResource
-  , loadResourceId
   , loadResources
-  , loadResourcesId
+  , listDir
 
   , Structure
   , structure
@@ -63,15 +60,23 @@ import Pencil.Internal
 
 -- $gettingstarted
 --
--- We'll start by building a very simple website, with only a couple of pages, to
--- give you a feel for using Pencil. Go to http://elbenshira.com/pencil for more
--- in-depth tutorials like how to set up a blog.
+-- We'll start by building a very simple website, with only a couple of pages,
+-- to give you a feel for using Pencil. Go to <http://elbenshira.com/pencil
+-- elbenshira.com/pencil> for
+-- in-depth tutorials, including how you can set up a blog.
 --
 -- To build our simple website, we'll first create some folders and files:
 --
 -- > cd ~/code/mywebsite
 -- > mkdir site/
--- > echo '<html><head><title>${title}</title><link rel='stylesheet" href="style.css" /></head></html><body>${body}</body>" > site/layout.html
+-- > echo '
+-- > <html>
+-- >   <head>
+-- >     <title>${title}</title>
+-- >     <link rel="stylesheet" href="style.css"/>
+-- >   </head>
+-- > <body>${body}</body>
+-- > </html>' > site/layout.html
 -- > echo 'Welcome to my *awesome* [website](http://example.com)!' > site/index.markdown
 -- > echo '$mycolor: #ff0000; body { color: $mycolor; }' > site/style.scss
 --

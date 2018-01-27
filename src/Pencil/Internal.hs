@@ -190,20 +190,20 @@ setPageEnv env p = p { pageEnv = env }
 
 -- | Applies the environment variables on the given pages.
 --
--- The NonEmpty is expected to be ordered by inner-most content first (such that
--- the final, HTML structure layout is last in the list).
+-- The 'Structure' is expected to be ordered by inner-most content first (such
+-- that the final, HTML structure layout is last in the list).
 --
 -- The returned Page contains the Nodes of the fully rendered page, the
 -- fully-applied environment, and the URL of the last (inner-most) Page.
 --
 -- The variable application works by applying the outer environments down into
 -- the inner environments, until it hits the lowest environment, in which the
--- page is rendered. Once done, this rendered content is saved as the ${body}
+-- page is rendered. Once done, this rendered content is saved as the @${body}@
 -- variable for the parent structure, which is then applied, and so on.
 --
 -- As an example, there is the common scenario where we have a default layout
--- (e.g. "default.html"), with the full HTML structure, but no body. It has only
--- a "${body}" template variable inside. This is the parent layout. There is a
+-- (e.g. @default.html@), with the full HTML structure, but no body. It has only
+-- a @${body}@ template variable inside. This is the parent layout. There is a
 -- child layout, the partial called "blog-post.html", which has HTML for
 -- rendering a blog post, like usage of ${postTitle} and ${postDate}. Inside
 -- this, there is another child layout, the blog post content itself, which
@@ -227,8 +227,8 @@ setPageEnv env p = p { pageEnv = env }
 -- In this case, we want to accumulate the environment variables, starting from
 -- default.html, to blog-post.html, and the markdown file's variables. Combine
 -- all of that, then render the blog post content. This content is then injected
--- into the parent's environment as a $body variable, for use in blog-post.html.
--- Now *that* content is injected into the parent environment's $body variable,
+-- into the parent's environment as a @${body}@ variable, for use in blog-post.html.
+-- Now *that* content is injected into the parent environment's @${body}@ variable,
 -- which is then used to render the full-blown HTML page.
 --
 apply :: Structure -> PencilApp Page
@@ -431,20 +431,20 @@ groupByElements var pages =
     -- prepends into accumulated list.
     (reverse pages)
 
-loadResourcesId :: Bool -> Bool -> FilePath -> PencilApp [Resource]
-loadResourcesId recursive strict = loadResources recursive strict id
-
 -- | Load directory as Resources.
-loadResources :: Bool -> Bool -> (FilePath -> FilePath) -> FilePath -> PencilApp [Resource]
-loadResources recursive strict fpf dir = do
+loadResources :: (FilePath -> FilePath) -> Bool -> Bool -> FilePath -> PencilApp [Resource]
+loadResources fpf recursive strict dir = do
   fps <- listDir recursive dir
   if strict
     then return $ map (\fp -> Passthrough fp fp) fps
     else mapM (loadResource fpf) fps
 
--- List files in directory, optionally recursively. Returns paths that include
--- the given dir.
-listDir :: Bool -> FilePath -> PencilApp [FilePath]
+-- | List files in given directory. The file paths returned is prefixed with the
+-- given directory.
+listDir :: Bool
+        -- ^ Recursive if @True@.
+        -> FilePath
+        -> PencilApp [FilePath]
 listDir recursive dir = do
   let dir' = FP.addTrailingPathSeparator dir
   fps <- listDir_ recursive dir'
@@ -511,31 +511,58 @@ copyFile fpIn fpOut = do
   liftIO $ D.createDirectoryIfMissing True (FP.takeDirectory (outPrefix ++ fpOut))
   liftIO $ D.copyFile (sitePrefix ++ fpIn) (outPrefix ++ fpOut)
 
+-- | Replaces the file path's extension with @.html@.
+--
+-- @
+-- 'load' asHtml "about.markdown"
+-- @
+--
 asHtml :: FilePath -> FilePath
 asHtml fp = FP.dropExtension fp ++ ".html"
 
--- | Convert a file path into a directory name, dropping the extension.
+-- | Converts a file path into a directory name, dropping the extension.
 -- Pages with a directory as its FilePath is rendered as an index file in that
 -- directory. For example, the @pages/about.html@ is transformed into
--- @pages/about/@, which 'render' would turn the 'Page' into
--- @pages/about/index.html'.
+-- @pages/about/@, which 'render' would render the 'Page' to the file path
+-- @pages/about/index.html@.
 --
 asDir :: FilePath -> FilePath
 asDir fp = FP.replaceFileName fp (FP.takeBaseName fp) ++ "/"
 
+-- | Replaces the file path's extension with @.css@.
+--
+-- @
+-- 'load' asCss "style.sass"
+-- @
+--
 asCss :: FilePath -> FilePath
 asCss fp = FP.dropExtension fp ++ ".css"
 
--- | A file modifier that renames to HTML files that will be rendered to HTML.
+-- | Converts Markdown extensions into @.html@, but leaves other file extensions as-is.
+--
+-- @
+-- -- Load everything inside the "assets/" folder, converting files with
+-- -- Markdown extensions to HTML, while leaving other files alone.
+-- 'loadResources' markdownAsHtml True True "assets/"
+-- @
 markdownAsHtml :: FilePath -> FilePath
 markdownAsHtml fp =
   case toExtension fp of
     Markdown -> FP.dropExtension fp ++ ".html"
     _ -> fp
 
-loadResourceId :: FilePath -> PencilApp Resource
-loadResourceId = loadResource id
-
+-- | Loads a file as a 'Resource'. Use this for binary files (e.g. images) and
+-- for files without template directives. Regural files are still converted to
+-- their web page formats (e.g. Markdown to HTML, SASS to CSS).
+--
+-- @
+-- -- Loads and renders the image as-is. Underneath the hood
+-- -- this is just a file copy.
+-- loadResource id "images/profile.jpg" >> render
+--
+-- -- Loads and renders @about.markdown@ as HTML.
+-- loadResource asHtml "about.markdown" >> render
+-- @
 loadResource :: (FilePath -> FilePath) -> FilePath -> PencilApp Resource
 loadResource fpf fp =
   -- If we can load the Page as text file, convert to a Single. Otherwise if it
@@ -548,9 +575,6 @@ loadResource fpf fp =
   where handle e = case e of
                      NotTextFile _ -> return (Passthrough fp (fpf fp))
                      _ -> throwError e
-
-loadId :: FilePath -> PencilApp Page
-loadId = load id
 
 -- | Loads a file into a Page, rendering the file (as determined by the file
 -- extension) into the proper output format (e.g. Markdown rendered to
@@ -566,8 +590,11 @@ loadId = load id
 -- Example:
 --
 -- @
--- -- Loads index.markdown with the designated file path of index.html.
+-- -- Loads index.markdown with the designated file path of index.html
 -- load 'asHtml' "index.markdown"
+--
+-- -- Keep the file path as-is
+-- load id "about.html"
 -- @
 --
 load :: (FilePath -> FilePath) -> FilePath -> PencilApp Page
@@ -595,7 +622,12 @@ preambleText :: PNode -> Maybe T.Text
 preambleText (PPreamble t) = Just t
 preambleText _ = Nothing
 
--- | Copy specified file from site to out.
+-- | Load and render file as CSS.
+--
+-- @
+-- -- Load, convert and render into style.css.
+-- renderCss "style.sass"
+-- @
 renderCss :: FilePath -> PencilApp ()
 renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
@@ -615,10 +647,20 @@ type Structure = NonEmpty Page
 structure :: Page -> Structure
 structure p = p :| []
 
+-- | Runs the computation with the given environment. This is useful when you
+-- want to render a 'Page' or 'Structure' with a modified environment.
+--
+-- @
+-- withEnv ('insertEnvText' "newvar" "newval" env) ('render' page)
+-- @
+--
 withEnv :: Env -> PencilApp a -> PencilApp a
 withEnv env = local (setEnv env)
 
+-- | To render something is to create the output web pages, rendering template
+-- directives into their final form using the current environment.
 class Render a where
+  -- | Renders the given 'a' as web pages.
   render :: a -> PencilApp ()
 
 instance Render Resource where
