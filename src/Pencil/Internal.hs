@@ -10,6 +10,7 @@ import Control.Monad (forM_, foldM, filterM, liftM)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Char (toLower)
+import Data.Default (Default)
 import Data.List.NonEmpty (NonEmpty(..)) -- Import the NonEmpty data constructor, (:|)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Typeable (Typeable)
@@ -38,9 +39,11 @@ import qualified Text.Sass as Sass
 -- Unknown "unchecked" exceptions can still go through IO.
 type PencilApp = ReaderT Config (ExceptT PencilException IO)
 
--- | The main Config needed to build your website. See Pencil.Internal
--- for the full version. Use 'defaultConfig' as a starting point, along with the
--- config-modification helpers such as 'setSourceDir'.
+-- | The main @Config@ needed to build your website. Your app's @Config@ is
+-- passed into the 'PencilApp' monad transformer.
+--
+-- Use 'defaultConfig' as a starting point, along with the config-modification
+-- helpers such as 'setSourceDir'.
 data Config = Config
   { configSourceDir :: FilePath
   , configOutputDir :: FilePath
@@ -49,7 +52,10 @@ data Config = Config
   , configMarkdownOptions :: P.WriterOptions
   }
 
--- | This default Config gives you everything you need to start.
+instance Default Config where
+  def = defaultConfig
+
+-- | This default @Config@ gives you everything you need to start.
 --
 -- Default values:
 --
@@ -72,35 +78,46 @@ defaultConfig = Config
   , configMarkdownOptions = P.def { P.writerHighlight = True }
   }
 
+-- | The directory path of your web page source files.
 getSourceDir :: Config -> FilePath
 getSourceDir = configSourceDir
 
--- | Sets the source directory (where all your source files live).
+-- | Sets the source directory of your web page soruce files.
 setSourceDir :: FilePath -> Config -> Config
 setSourceDir fp c = c { configSourceDir = fp }
 
+-- | The directory path of your rendered web pages.
 getOutputDir :: Config -> FilePath
 getOutputDir = configOutputDir
 
--- | Sets the output directory (where all your rendered files go).
+-- | Sets the output directory of your rendered web pages.
 setOutputDir :: FilePath -> Config -> Config
 setOutputDir fp c = c { configOutputDir = fp }
 
+-- | The environment of the @Config@, which is what the @PencilApp@ monad
+-- transformer uses. This is where variables are set for rendering template
+-- directives.
 getEnv :: Config -> Env
 getEnv = configEnv
 
+-- | Sets the current environment. You may also want to look at 'withEnv' if you
+-- want to 'render' things in a modified environment.
 setEnv :: Env -> Config -> Config
 setEnv env c = c { configEnv = env }
 
+-- | The 'Sass.SassOptions' for rendering Sass/Scss files.
 getSassOptions :: Config -> Sass.SassOptions
 getSassOptions = configSassOptions
 
+-- | Sets the 'Sass.SassOptions'.
 setSassOptions :: Sass.SassOptions -> Config -> Config
 setSassOptions env c = c { configSassOptions = env }
 
+-- | The 'Text.Pandoc.WriterOptions' for rendering Markdown files.
 getMarkdownOptions :: Config -> P.WriterOptions
 getMarkdownOptions = configMarkdownOptions
 
+-- | Sets the 'Text.Pandoc.WriterOptions'.
 setMarkdownOptions :: P.WriterOptions -> Config -> Config
 setMarkdownOptions wo c = c { configMarkdownOptions = wo }
 
@@ -478,7 +495,7 @@ loadResources fpf recursive pass dir = do
     then return $ map (\fp -> Passthrough fp fp) fps
     else mapM (loadResource fpf) fps
 
--- | List files in given directory. The file paths returned is prefixed with the
+-- | Lists files in given directory. The file paths returned is prefixed with the
 -- given directory.
 listDir :: Bool
         -- ^ Recursive if @True@.
@@ -510,6 +527,14 @@ listDir_ recursive dir = do
 
   return $ files ++ concat innerFiles
 
+----------------------------------------------------------------------
+-- Environment modifications
+----------------------------------------------------------------------
+
+-- | Merges two @Env@s together, biased towards the left-hand @Env@ on duplicates.
+merge :: Env -> Env -> Env
+merge = H.union
+
 insertEnvData :: T.Text -> EnvData -> Env -> Env
 insertEnvData = H.insert
 
@@ -522,10 +547,6 @@ insertEnvListPage var posts = H.insert var (EEnvList (map getPageEnv posts))
 -- insertEnvList :: T.Text -> [Resource] -> Env -> Env
 -- insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
 
--- | Merge two envs together, biased towards the left-hand env on duplicates.
-insertEnv :: Env -> Env -> Env
-insertEnv = H.union
-
 -- | Convert known Aeson types into known Env types.
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
 maybeInsertIntoEnv env k v =
@@ -533,7 +554,7 @@ maybeInsertIntoEnv env k v =
     Nothing -> env
     Just d -> H.insert k d env
 
--- | Convert an Aeson Object to an Env.
+-- | Converts an Aeson Object to an Env.
 aesonToEnv :: A.Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
@@ -684,15 +705,15 @@ renderCss fp =
 
 type Structure = NonEmpty Page
 
--- | Create a new structure from two Pages.
+-- | Creates a new structure from two Pages.
 (<||) :: Page -> Page -> Structure
 (<||) x y = y :| [x]
 
--- | Push Page into Structure.
+-- | Pushes Page into Structure.
 (<|) :: Structure -> Page -> Structure
 (<|) ne x = NE.cons x ne
 
--- | Convert a Page into a Structure.
+-- | Converts a Page into a Structure.
 structure :: Page -> Structure
 structure p = p :| []
 

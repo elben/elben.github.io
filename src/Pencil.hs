@@ -4,6 +4,10 @@ module Pencil
     --
     -- $gettingstarted
 
+    -- * Templates
+    --
+    -- $templates
+
     PencilApp
   , run
 
@@ -30,6 +34,21 @@ module Pencil
   , (<||)
   , (<|)
 
+  , FileType
+  , fileType
+  , toExtension
+
+  , modifyEnvVar
+  , sortByVar
+  , filterByVar
+  , groupByElements
+  , merge
+  , insertEnvData
+  , insertEnvText
+  , insertEnvListPage
+
+  -- * Configuration
+
   , Config
   , defaultConfig
   , getSourceDir, setSourceDir
@@ -38,19 +57,9 @@ module Pencil
   , getSassOptions, setSassOptions
   , getMarkdownOptions, setMarkdownOptions
 
+  -- * Error handling
+
   , PencilException
-
-  , FileType
-  , fileType
-
-  , modifyEnvVar
-  , sortByVar
-  , filterByVar
-  , groupByElements
-  , insertEnv
-  , insertEnvData
-  , insertEnvText
-  , insertEnvListPage
 
   ) where
 
@@ -94,12 +103,10 @@ import Pencil.Internal
 --
 -- website :: PencilApp ()
 -- website = do
---   env <- asks getEnv
---
 --   layout <- load asHtml "layout.html"
 --   index <- load asHtml "index.markdown"
 --
---   render env (layout <|| index)
+--   render (layout <|| index)
 --   renderCss "style.scss"
 --
 -- main = run website config
@@ -107,3 +114,68 @@ import Pencil.Internal
 
 ----------------------------------------------------------------------
 
+-- $templates
+--
+-- Pencil comes with a simple templating engine. Templates allow us to build web
+-- pages dynamically using Haskell code. This allows us to build modular
+-- components. Templates can be used for things like shared page layouts,
+-- navigation and blog post templates.
+--
+-- Pencil templates are regular text files that can contain a /preamble/ and
+-- /directives/.
+--
+-- == Preamble
+--
+-- == Directives
+--
+-- Directives are rendering /commands/. They are surrounded by @${...}@.
+--
+-- === Variables
+--
+-- The simplest directive is the variable directive.
+--
+-- @
+-- Hello ${name}!
+-- @
+--
+-- The above template will render the value of the variable @name@, which is
+-- expected to be in the environment at 'render'. If the variable is not found,
+-- the final web page will show @${name}@ as-is, to help you in debugging
+-- missing variables.
+--
+-- === If block
+--
+-- The @if@ directive allows us to render content based off the existence of a
+-- variable in the current environment.
+--
+-- > ${if(name)}
+-- >   Hello ${name}!
+-- > ${end}
+--
+-- In this case, we now make sure that @name@ is available before rendering.
+--
+-- === For loop
+--
+-- The @for@ directive allows us to loop over array type variable. This is
+-- useful for things like rendering a list of blog post titles, and URLs to the
+-- individual blog posts.
+--
+-- > <ul>
+-- > ${for(posts)}
+-- >   <li><a href="${this.url}">${postTitle}</a> - ${date}</li>
+-- > ${end}
+-- > </ul>
+--
+-- Assuming that @posts@ exists in our environment as an array of @EnvData@,
+-- this will render each post's title, publish date, and will link it to
+-- @this.url@. Note that inside the @for@ block, you have access to the current
+-- environment's variables. This is why we're able to simply request
+-- @${postTitle}@—it is the current post's @postTitle@ that will be rendered.
+--
+-- @this.url@ is a special variable that is automatically inserted for you
+-- inside a loaded @Page@. It points to the final file path destination of that
+-- current @Page@.
+--
+-- === Partials
+
+----------------------------------------------------------------------

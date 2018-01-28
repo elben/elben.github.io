@@ -67,7 +67,7 @@ buildTagPages tagPageFp pagesVar fpf pages = do
   foldM
     (\acc (tag, taggedPosts) -> do
       tagPage <- load (fpf tag) tagPageFp
-      let tagEnv = (insertEnvListPage pagesVar taggedPosts . insertEnvText "tag" tag . insertEnv (getPageEnv tagPage)) env
+      let tagEnv = (insertEnvListPage pagesVar taggedPosts . insertEnvText "tag" tag . merge (getPageEnv tagPage)) env
       return $ H.insert tag (setPageEnv tagEnv tagPage) acc
     )
     H.empty
