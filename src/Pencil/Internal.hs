@@ -54,7 +54,7 @@ data Config = Config
   , configEnv :: Env
   , configSassOptions :: Sass.SassOptions
   , configMarkdownOptions :: P.WriterOptions
-  , configValueText :: Value -> T.Text
+  , configDisplayValue :: Value -> T.Text
   }
 
 -- 'Data.Default.Default' instance for 'Config'.
@@ -72,7 +72,7 @@ instance Default Config where
 --  , 'configEnv' = HashMap.empty
 --  , 'configSassOptions' = Text.Sass.Options.defaultSassOptions
 --  , 'configMarkdownOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
---  , 'configValueText' = 'Pencil.Internal.Env.configValueText'
+--  , 'configDisplayValue = 'toText'
 --  }
 -- @
 --
@@ -83,7 +83,7 @@ defaultConfig = Config
   , configEnv = H.empty
   , configSassOptions = Text.Sass.Options.defaultSassOptions
   , configMarkdownOptions = P.def { P.writerHighlight = True }
-  , configValueText = toText
+  , configDisplayValue = toText
   }
 
 -- | The directory path of your web page source files.
@@ -128,6 +128,30 @@ getMarkdownOptions = configMarkdownOptions
 -- | Sets the 'Text.Pandoc.WriterOptions'.
 setMarkdownOptions :: P.WriterOptions -> Config -> Config
 setMarkdownOptions wo c = c { configMarkdownOptions = wo }
+
+-- | The function that renders 'Value' to text.
+getDisplayValue :: Config -> Value -> T.Text
+getDisplayValue = configDisplayValue
+
+-- | Sets the function that renders 'Value' to text. Overwrite this with your
+-- own function if you would like to change how certain 'Value's are rendered
+-- (e.g. 'VDateTime').
+--
+-- @
+-- myRender :: Value -> T.Text
+-- myRender ('VDateTime' dt) = 'T.pack' $ 'TF.formatTime' 'TF.defaultTimeLocale' "%e %B %Y" dt
+-- myRender t = 'toText' t
+--
+-- ...
+--
+-- setDisplayValue myRender config
+-- @
+--
+-- In the above example, we change the @VDateTime@ rendering to show @25
+-- December 2017@. Leave everything else unchanged.
+--
+setDisplayValue :: (Value -> T.Text) -> Config -> Config
+setDisplayValue f c = c { configDisplayValue = f }
 
 -- | Run the Pencil app.
 --
@@ -409,7 +433,9 @@ evalNodes env (PVar var : rest) = do
     Nothing ->
       -- Can't find var in env; throw exception.
       throwError (VarNotInEnv var "")
-    Just envData -> return $ PText (toText envData) : nodes
+    Just envData -> do
+      displayValue <- asks getDisplayValue
+      return $ PText (displayValue envData) : nodes
 evalNodes env (PIf var nodes : rest) = do
   rest' <- evalNodes env rest
   case H.lookup var env of

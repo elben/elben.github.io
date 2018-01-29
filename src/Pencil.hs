@@ -58,6 +58,7 @@ module Pencil
   , getEnv, setEnv
   , getSassOptions, setSassOptions
   , getMarkdownOptions, setMarkdownOptions
+  , getDisplayValue, setDisplayValue
 
   -- * Utils
 
