@@ -148,8 +148,7 @@ import Pencil.Internal
 --
 -- The above template will render the value of the variable @name@, which is
 -- expected to be in the environment at 'render'. If the variable is not found,
--- the final web page will show @${name}@ as-is, to help you in debugging
--- missing variables.
+-- Pencil will throw an exception with some debugging information.
 --
 -- === If block
 --

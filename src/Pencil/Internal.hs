@@ -136,8 +136,7 @@ run :: PencilApp a -> Config -> IO ()
 run app config = do
   e <- runExceptT $ runReaderT app config
   case e of
-    Left err -> do
-      putStrLn $ "Pencil got exception: " ++ show err
+    Left err ->
       case err of
         FileNotFound mfp ->
           case mfp of
@@ -150,6 +149,8 @@ run app config = do
                     Just best -> putStrLn ("Maybe you mean this: " ++ best)
                     Nothing -> return ()
             Nothing -> return ()
+        VarNotInEnv var fp ->
+          putStrLn ("Variable ${" ++ T.unpack var ++ "}" ++ " not found in the environment when rendering file " ++ fp ++ ".")
         _ -> return ()
     Right _ -> return ()
 
@@ -171,6 +172,9 @@ data PencilException
   -- ^ Failed to read a file as a text file.
   | FileNotFound (Maybe FilePath)
   -- ^ File not found. We may or may not know the file we were looking for.
+  | VarNotInEnv T.Text FilePath
+  -- ^ Variable is not in the environment. Variable name, and file where the
+  -- variable was reference.
   deriving (Typeable, Show)
 
 -- | Enum for file types that can be parsed and converted by Pencil.
@@ -303,18 +307,32 @@ apply pages = apply_ (NE.reverse pages)
 apply_ :: Structure -> PencilApp Page
 apply_ (Page nodes penv fp :| []) = do
   env <- asks getEnv
-  let env' = H.union penv env -- LHS overrides RHS
-  nodes' <- evalNodes env' nodes
+  let env' = merge penv env
+  nodes' <- evalNodes env' nodes `catchError` setVarNotInEnv fp
   return $ Page nodes' env' fp
 apply_ (Page nodes penv _ :| (headp : rest)) = do
   -- Modify the current env (in the ReaderT) with the one in the page (penv)
-  Page nodes' env' fpInner <- local (\c -> setEnv (H.union penv (getEnv c)) c)
+  -- Then call apply_ on the inner Pages to accumulate the inner Page
+  -- environments.
+  Page nodesInner envInner fpInner <- local (\c -> setEnv (merge penv (getEnv c)) c)
                                     (apply_ (headp :| rest))
-  let env'' = H.insert "body" (VText (renderNodes nodes')) env'
-  nodes'' <- evalNodes env'' nodes
-  -- Get the inner-most Page's file path, and pass that upwards to the returned
-  -- Page.
-  return $ Page nodes'' env'' fpInner
+
+  -- Render the inner nodes, and inject into this environment's "body" var.
+  let env' = insertEnv "body" (VText (renderNodes nodesInner)) envInner
+
+  -- Evaluate this current Page's nodes with the accumualted environemnt of all
+  -- the inner Pages.
+  nodes' <- evalNodes env' nodes `catchError` setVarNotInEnv fpInner
+
+  -- Use inner-most Page's file path, as this will be the destination of the
+  -- accumluated, final, rendered page.
+  return $ Page nodes' env' fpInner
+
+-- | Helper to inject a file path into a VarNotInEnv exception. Rethrow the
+-- exception afterwards.
+setVarNotInEnv :: FilePath -> PencilException -> PencilApp a
+setVarNotInEnv fp (VarNotInEnv var _) = throwError $ VarNotInEnv var fp
+setVarNotInEnv _ e = throwError e
 
 -- | Loads the given file as a text file. Throws an exception into the ExceptT
 -- monad transformer if the file is not a text file.
@@ -388,26 +406,26 @@ evalNodes _ [] = return []
 evalNodes env (PVar var : rest) = do
   nodes <- evalNodes env rest
   case H.lookup var env of
-    Nothing -> return $ PVar var : nodes
-    -- TODO for date rendering, we want to choose here HOW we want to render,
-    -- given what? a type? Or a var name + type? Or should be have injected it
-    -- into the env beforehand?
+    Nothing ->
+      -- Can't find var in env; throw exception.
+      throwError (VarNotInEnv var "")
     Just envData -> return $ PText (toText envData) : nodes
 evalNodes env (PIf var nodes : rest) = do
   rest' <- evalNodes env rest
   case H.lookup var env of
-    -- Can't find var in env; Everything inside the if-statement is thrown away
-    Nothing -> return rest'
-    -- Render nodes inside the if-statement
+    Nothing ->
+      -- Can't find var in env; everything inside the if-statement is thrown away
+      return rest'
     Just _ -> do
+      -- Render nodes inside the if-statement
       nodes' <- evalNodes env nodes
       return $ nodes' ++ rest'
 evalNodes env (PFor var nodes : rest) = do
   rest' <- evalNodes env rest
   case H.lookup var env of
-    -- Can't find var in env; everything inside the for-statement is thrown away
-    Nothing -> return rest'
-    -- Render nodes inside the for-statement
+    Nothing ->
+      -- Can't find var in env; throw exception.
+      throwError (VarNotInEnv var "")
     Just (VEnvList envs) -> do
       -- Render the for nodes once for each given env, and append them together
       forNodes <-
