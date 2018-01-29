@@ -125,13 +125,19 @@ getSassOptions = configSassOptions
 setSassOptions :: Sass.SassOptions -> Config -> Config
 setSassOptions env c = c { configSassOptions = env }
 
--- | The 'Text.Pandoc.ReaderOptions for reading files that use Pandoc.
+-- | The 'Text.Pandoc.ReaderOptions' for reading files that use Pandoc.
 -- Supported formats by Pencil are: Markdown.
 getPandocReaderOptions :: Config -> P.ReaderOptions
 getPandocReaderOptions = configPandocReaderOptions
 
 -- | Sets the 'Text.Pandoc.ReaderOptions'. For example, you may want to enable
--- some Pandoc extensions like 'Text.Pandoc.Extensions.Ext_literate_haskell'.
+-- some Pandoc extensions like 'Text.Pandoc.Extensions.Ext_literate_haskell':
+--
+-- @
+-- setPandocReaderOptions
+--   (Text.Pandoc.def { 'Text.Pandoc.Options.readerExtensions' = extensionsFromList [Ext_literate_haskell] })
+--   config
+-- @
 setPandocReaderOptions :: P.ReaderOptions -> Config -> Config
 setPandocReaderOptions o c = c { configPandocReaderOptions = o }
 
