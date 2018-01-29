@@ -56,9 +56,10 @@ module Pencil
   , getSourceDir, setSourceDir
   , getOutputDir, setOutputDir
   , getEnv, setEnv
-  , getSassOptions, setSassOptions
-  , getMarkdownOptions, setMarkdownOptions
   , getDisplayValue, setDisplayValue
+  , getSassOptions, setSassOptions
+  , getPandocReaderOptions, setPandocReaderOptions
+  , getPandocWriterOptions, setPandocWriterOptions
 
   -- * Utils
 

@@ -52,9 +52,10 @@ data Config = Config
   { configSourceDir :: FilePath
   , configOutputDir :: FilePath
   , configEnv :: Env
-  , configSassOptions :: Sass.SassOptions
-  , configMarkdownOptions :: P.WriterOptions
   , configDisplayValue :: Value -> T.Text
+  , configSassOptions :: Sass.SassOptions
+  , configPandocReaderOptions :: P.ReaderOptions
+  , configPandocWriterOptions :: P.WriterOptions
   }
 
 -- 'Data.Default.Default' instance for 'Config'.
@@ -70,8 +71,10 @@ instance Default Config where
 --  { 'configSourceDir' = "site/"
 --  , 'configOutputDir' = "out/"
 --  , 'configEnv' = HashMap.empty
+--  , 'configDisplayValue' = 'toText'
 --  , 'configSassOptions' = Text.Sass.Options.defaultSassOptions
---  , 'configMarkdownOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
+--  , 'configPandocReaderOptions' = Text.Pandoc.def
+--  , 'configPandocWriterOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
 --  , 'configDisplayValue = 'toText'
 --  }
 -- @
@@ -82,7 +85,8 @@ defaultConfig = Config
   , configOutputDir = "out/"
   , configEnv = H.empty
   , configSassOptions = Text.Sass.Options.defaultSassOptions
-  , configMarkdownOptions = P.def { P.writerHighlight = True }
+  , configPandocReaderOptions = P.def
+  , configPandocWriterOptions = P.def { P.writerHighlight = True }
   , configDisplayValue = toText
   }
 
@@ -121,13 +125,24 @@ getSassOptions = configSassOptions
 setSassOptions :: Sass.SassOptions -> Config -> Config
 setSassOptions env c = c { configSassOptions = env }
 
--- | The 'Text.Pandoc.WriterOptions' for rendering Markdown files.
-getMarkdownOptions :: Config -> P.WriterOptions
-getMarkdownOptions = configMarkdownOptions
+-- | The 'Text.Pandoc.ReaderOptions for reading files that use Pandoc.
+-- Supported formats by Pencil are: Markdown.
+getPandocReaderOptions :: Config -> P.ReaderOptions
+getPandocReaderOptions = configPandocReaderOptions
+
+-- | Sets the 'Text.Pandoc.ReaderOptions'. For example, you may want to enable
+-- some Pandoc extensions like 'Text.Pandoc.Extensions.Ext_literate_haskell'.
+setPandocReaderOptions :: P.ReaderOptions -> Config -> Config
+setPandocReaderOptions o c = c { configPandocReaderOptions = o }
+
+-- | The 'Text.Pandoc.WriterOptions' for rendering files that use Pandoc.
+-- Supported formats by Pencil are: Markdown.
+getPandocWriterOptions :: Config -> P.WriterOptions
+getPandocWriterOptions = configPandocWriterOptions
 
 -- | Sets the 'Text.Pandoc.WriterOptions'.
-setMarkdownOptions :: P.WriterOptions -> Config -> Config
-setMarkdownOptions wo c = c { configMarkdownOptions = wo }
+setPandocWriterOptions :: P.WriterOptions -> Config -> Config
+setPandocWriterOptions o c = c { configPandocWriterOptions = o }
 
 -- | The function that renders 'Value' to text.
 getDisplayValue :: Config -> Value -> T.Text
@@ -405,10 +420,11 @@ parseAndConvertTextFiles fp = do
   content' <-
     case fileType fp of
       Markdown -> do
-        markdownOptions <- asks getMarkdownOptions
-        case P.readMarkdown P.def (T.unpack content) of
+        pandocReaderOptions <- asks getPandocReaderOptions
+        pandocWriterOptions <- asks getPandocWriterOptions
+        case P.readMarkdown pandocReaderOptions (T.unpack content) of
           Left _ -> return content
-          Right pandoc -> return $ T.pack $ P.writeHtmlString markdownOptions pandoc
+          Right pandoc -> return $ T.pack $ P.writeHtmlString pandocWriterOptions pandoc
       Sass -> do
         sassOptions <- asks getSassOptions
         sitePrefix <- asks getSourceDir
