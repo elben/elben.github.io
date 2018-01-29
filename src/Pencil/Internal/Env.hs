@@ -17,38 +17,38 @@ import qualified Data.Yaml as A
 -- Data.Aeson Value type
 -- (https://hackage.haskell.org/package/aeson-1.2.3.0/docs/Data-Aeson.html#t:Value),
 -- plus other useful ones.
-data EnvData =
-    ENull -- JSON null
-  | EText T.Text
-  | EBool Bool
-  | EDateTime TC.UTCTime
-  | EArray [EnvData]
-  | EEnvList [Env]
+data Value =
+    VNull -- JSON null
+  | VText T.Text
+  | VBool Bool
+  | VDateTime TC.UTCTime
+  | VArray [Value]
+  | VEnvList [Env]
   deriving (Eq, Show)
 
-type Env = H.HashMap T.Text EnvData
+type Env = H.HashMap T.Text Value
 
-toEnvData :: A.Value -> Maybe EnvData
-toEnvData A.Null = Just ENull
-toEnvData (A.Bool b) = Just $ EBool b
-toEnvData (A.String s) =
+toValue :: A.Value -> Maybe Value
+toValue A.Null = Just VNull
+toValue (A.Bool b) = Just $ VBool b
+toValue (A.String s) =
   -- See if coercible to datetime
   case toDateTime (T.unpack s) of
-    Nothing -> Just $ EText s
-    Just dt -> Just $ EDateTime dt
-toEnvData (A.Array arr) =
-  Just $ EArray (V.toList (V.mapMaybe toEnvData arr))
-toEnvData _ = Nothing
+    Nothing -> Just $ VText s
+    Just dt -> Just $ VDateTime dt
+toValue (A.Array arr) =
+  Just $ VArray (V.toList (V.mapMaybe toValue arr))
+toValue _ = Nothing
 
 -- | Render for human consumption. This is the default one. Pass into Config as
 -- part of the Reader?
-toText :: EnvData -> T.Text
-toText ENull = "null"
-toText (EText t) = t
-toText (EArray arr) = T.unwords $ map toText arr
-toText (EBool b) = if b then "true" else "false"
-toText (EEnvList envs) = T.unwords $ map (T.unwords . map toText . H.elems) envs
-toText (EDateTime dt) =
+toText :: Value -> T.Text
+toText VNull = "null"
+toText (VText t) = t
+toText (VArray arr) = T.unwords $ map toText arr
+toText (VBool b) = if b then "true" else "false"
+toText (VEnvList envs) = T.unwords $ map (T.unwords . map toText . H.elems) envs
+toText (VDateTime dt) =
   -- December 30, 2017
   T.pack $ TF.formatTime TF.defaultTimeLocale "%B %e, %Y" dt
 
@@ -60,23 +60,23 @@ toDateTime s =
     Nothing -> TF.parseTimeM True TF.defaultTimeLocale (TF.iso8601DateFormat (Just "%H:%M:%S")) s
     Just dt -> Just dt
 
--- | Define an ordering for possibly-missing EnvData. Nothings are ordered last.
-maybeOrdering :: (EnvData -> EnvData -> Ordering)
-              -> Maybe EnvData -> Maybe EnvData -> Ordering
+-- | Define an ordering for possibly-missing Value. Nothings are ordered last.
+maybeOrdering :: (Value -> Value -> Ordering)
+              -> Maybe Value -> Maybe Value -> Ordering
 maybeOrdering _ Nothing Nothing = EQ
 maybeOrdering _ (Just _) Nothing = GT
 maybeOrdering _ Nothing (Just _) = LT
 maybeOrdering o (Just a) (Just b) = o a b
 
 -- | Sort by newest first.
-dateOrdering :: EnvData -> EnvData -> Ordering
-dateOrdering (EDateTime a) (EDateTime b) = compare b a
+dateOrdering :: Value -> Value -> Ordering
+dateOrdering (VDateTime a) (VDateTime b) = compare b a
 dateOrdering _ _ = EQ
 
-arrayContainsString :: T.Text -> EnvData -> Bool
-arrayContainsString t (EArray arr) =
+arrayContainsString :: T.Text -> Value -> Bool
+arrayContainsString t (VArray arr) =
   any (\d -> case d of
-               EText t' -> t == t'
+               VText t' -> t == t'
                _ -> False)
       arr
 arrayContainsString _ _ = False

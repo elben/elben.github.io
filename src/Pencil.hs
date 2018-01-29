@@ -174,7 +174,7 @@ import Pencil.Internal
 -- > ${end}
 -- > </ul>
 --
--- Assuming that @posts@ exists in our environment as an array of @EnvData@,
+-- Assuming that @posts@ exists in our environment as an array of @Value@,
 -- this will render each post's title, publish date, and will link it to
 -- @this.url@. Note that inside the @for@ block, you have access to the current
 -- environment's variables. This is why we're able to simply request

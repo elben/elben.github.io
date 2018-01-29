@@ -54,7 +54,7 @@ data Config = Config
   , configEnv :: Env
   , configSassOptions :: Sass.SassOptions
   , configMarkdownOptions :: P.WriterOptions
-  , configEnvDataText :: EnvData -> T.Text
+  , configValueText :: Value -> T.Text
   }
 
 -- 'Data.Default.Default' instance for 'Config'.
@@ -72,7 +72,7 @@ instance Default Config where
 --  , 'configEnv' = HashMap.empty
 --  , 'configSassOptions' = Text.Sass.Options.defaultSassOptions
 --  , 'configMarkdownOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
---  , 'configEnvDataText' = 'Pencil.Internal.Env.configEnvDataText'
+--  , 'configValueText' = 'Pencil.Internal.Env.configValueText'
 --  }
 -- @
 --
@@ -83,7 +83,7 @@ defaultConfig = Config
   , configEnv = H.empty
   , configSassOptions = Text.Sass.Options.defaultSassOptions
   , configMarkdownOptions = P.def { P.writerHighlight = True }
-  , configEnvDataText = toText
+  , configValueText = toText
   }
 
 -- | The directory path of your web page source files.
@@ -310,7 +310,7 @@ apply_ (Page nodes penv _ :| (headp : rest)) = do
   -- Modify the current env (in the ReaderT) with the one in the page (penv)
   Page nodes' env' fpInner <- local (\c -> setEnv (H.union penv (getEnv c)) c)
                                     (apply_ (headp :| rest))
-  let env'' = H.insert "body" (EText (renderNodes nodes')) env'
+  let env'' = H.insert "body" (VText (renderNodes nodes')) env'
   nodes'' <- evalNodes env'' nodes
   -- Get the inner-most Page's file path, and pass that upwards to the returned
   -- Page.
@@ -408,7 +408,7 @@ evalNodes env (PFor var nodes : rest) = do
     -- Can't find var in env; everything inside the for-statement is thrown away
     Nothing -> return rest'
     -- Render nodes inside the for-statement
-    Just (EEnvList envs) -> do
+    Just (VEnvList envs) -> do
       -- Render the for nodes once for each given env, and append them together
       forNodes <-
         foldM
@@ -417,7 +417,7 @@ evalNodes env (PFor var nodes : rest) = do
               return $ accNodes ++ nodes')
           [] envs
       return $ forNodes ++ rest'
-    -- Var is not an EEnvList; everything inside the for-statement is thrown away
+    -- Var is not an VEnvList; everything inside the for-statement is thrown away
     Just _ -> return rest'
 evalNodes env (PPartial fp : rest) = do
   (_, nodes) <- parseAndConvertTextFiles (T.unpack fp)
@@ -429,7 +429,7 @@ evalNodes env (n : rest) = do
   return $ n : rest'
 
 -- | Modify a variable in the given environment.
-modifyEnv :: (EnvData -> EnvData)
+modifyEnv :: (Value -> Value)
           -> T.Text
           -- ^ Environment variable name.
           -> Env
@@ -439,8 +439,8 @@ modifyEnv = H.adjust
 -- | Sort given @Page@s by the specifed ordering function.
 sortByVar :: T.Text
           -- ^ Environment variable name.
-          -> (EnvData -> EnvData -> Ordering)
-          -- ^ Ordering function to compare EnvData against. If the variable is
+          -> (Value -> Value -> Ordering)
+          -- ^ Ordering function to compare Value against. If the variable is
           -- not in the Env, the Page will be placed at the bottom of the order.
           -> [Page]
           -> [Page]
@@ -454,19 +454,19 @@ filterByVar :: Bool
             -- ^ If true, include pages without the specified variable.
             -> T.Text
             -- ^ Environment variable name.
-            -> (EnvData -> Bool)
+            -> (Value -> Bool)
             -> [Page]
             -> [Page]
 filterByVar includeMissing var f =
   L.filter
    (\(Page _ env _) -> M.fromMaybe includeMissing (H.lookup var env >>= (Just . f)))
 
--- | Given a variable (whose value is assumed to be an array of EText) and list
--- of pages, group the pages by the EText found in the variable.
+-- | Given a variable (whose value is assumed to be an array of VText) and list
+-- of pages, group the pages by the VText found in the variable.
 --
 -- For example, say each Page has a variable "tags" that is a list of tags. The
--- first Page has a "tags" variable that is an EArray [EText "a"], and the
--- second Page has a "tags" variable that is an EArray [EText "a", EText "b"].
+-- first Page has a "tags" variable that is an VArray [VText "a"], and the
+-- second Page has a "tags" variable that is an VArray [VText "a", VText "b"].
 -- The final output would be a map fromList [("a", [page1, page2]), ("b",
 -- [page2])].
 groupByElements :: T.Text
@@ -479,18 +479,18 @@ groupByElements var pages =
     (\acc page@(Page _ env _) ->
       let x = H.lookup var env
       in case x of
-           Just (EArray values) ->
+           Just (VArray values) ->
              -- This fold takes each of the found values (each is a key in the
              -- hash map), and adds the current page (from the outer fold) into
              -- each of the key.
              L.foldl'
                (\hashmap envData ->
                  case envData of
-                   -- Only insert Pages into the map if the variable is an EArray of
-                   -- EText. Alter the map to either (1) insert this current
+                   -- Only insert Pages into the map if the variable is an VArray of
+                   -- VText. Alter the map to either (1) insert this current
                    -- page into the existing list, or (2) create a new list (the
                    -- key has never been seen) with just this page.
-                   EText val -> H.alter (\mv -> Just (page : M.fromMaybe [] mv)) val hashmap
+                   VText val -> H.alter (\mv -> Just (page : M.fromMaybe [] mv)) val hashmap
                    _ -> hashmap)
                acc values
            _ -> acc
@@ -567,7 +567,7 @@ insertText :: T.Text
            -> Env
            -- ^ Environment to modify.
            -> Env
-insertText var val = H.insert var (EText val)
+insertText var val = H.insert var (VText val)
 
 -- | Insert @Page@s into the given @Env@.
 --
@@ -583,13 +583,13 @@ insertPages :: T.Text
             -> Env
             -- ^ Environment to modify.
             -> Env
-insertPages var posts = H.insert var (EEnvList (map getPageEnv posts))
+insertPages var posts = H.insert var (VEnvList (map getPageEnv posts))
 
--- | Insert @EnvData@ into the given @Env@.
+-- | Insert @Value@ into the given @Env@.
 insertEnv :: T.Text
           -- ^ Environment variable name.
-          -> EnvData
-          -- ^ @EnvData@ to insert.
+          -> Value
+          -- ^ @Value@ to insert.
           -> Env
           -- ^ Environment to modify.
           -> Env
@@ -598,7 +598,7 @@ insertEnv = H.insert
 -- | Convert known Aeson types into known Env types.
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
 maybeInsertIntoEnv env k v =
-  case toEnvData v of
+  case toValue v of
     Nothing -> env
     Just d -> H.insert k d env
 
@@ -736,7 +736,7 @@ load fpf fp = do
   (_, nodes) <- parseAndConvertTextFiles fp
   let env = findEnv nodes
   let fp' = "/" ++ fpf fp
-  let env' = H.insert "this.url" (EText (T.pack fp')) env
+  let env' = H.insert "this.url" (VText (T.pack fp')) env
   return $ Page nodes env' ("/" ++ fpf fp)
 
 -- | Find preamble node, and load as an Env. If no preamble is found, return a

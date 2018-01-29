@@ -28,7 +28,7 @@ loadBlogPosts fp = do
   postFps <- listDir False fp
 
   -- Sort by date (newest first) and filter out drafts
-  liftM (filterByVar True "draft" (EBool True /=) . sortByVar "date" dateOrdering)
+  liftM (filterByVar True "draft" (VBool True /=) . sortByVar "date" dateOrdering)
         (mapM (load blogPostUrl) postFps)
 
 -- | Rewrite file path for blog posts.
@@ -39,7 +39,7 @@ blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 injectTitle :: T.Text -> Page -> Page
 injectTitle titlePrefix page =
   let title = case H.lookup "postTitle" (getPageEnv page) of
-                       Just (EText t) -> T.append (T.append t " - ") titlePrefix
+                       Just (VText t) -> T.append (T.append t " - ") titlePrefix
                        _ -> titlePrefix
       env' = insertText "title" title (getPageEnv page)
   in setPageEnv env' page
@@ -79,20 +79,20 @@ injectTagsEnv tagMap page =
   -- have access to the URL of the tag index pages.
   let tagEnvList =
         case H.lookup "tags" (getPageEnv page) of
-          Just (EArray tags) ->
-            EEnvList $
+          Just (VArray tags) ->
+            VEnvList $
               L.foldl'
                 (\acc envData ->
                   case envData of
-                    EText tag ->
+                    VText tag ->
                       case H.lookup tag tagMap of
                         Just tagIndexPage -> getPageEnv tagIndexPage : acc
                         _ -> acc
                     _ -> acc)
                 [] tags
-          _ -> EEnvList []
+          _ -> VEnvList []
 
-      -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
+      -- Overwrite the VArray "tags" variable in the post Page with VEnvList of the
       -- loaded Tag index pages. This is so that when we render the blog posts, we
       -- have access to the URL of the Tag index.
       env' = insertEnv "tags" tagEnvList (getPageEnv page)

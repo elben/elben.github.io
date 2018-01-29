@@ -14,7 +14,7 @@ websiteTitle :: T.Text
 websiteTitle = "Elben Shira"
 
 config :: Config
-config = setEnv (H.fromList [("title", EText websiteTitle)]) defaultConfig
+config = setEnv (H.fromList [("title", VText websiteTitle)]) defaultConfig
 
 main :: IO ()
 main =
