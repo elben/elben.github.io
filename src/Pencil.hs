@@ -11,17 +11,20 @@ module Pencil
     PencilApp
   , run
 
+  -- * Pages, Structures and Resources
+  --
+  -- $pagesStructuresResources
+
   , Page
   , getPageEnv, setPageEnv
   , load
   , withEnv
-  , apply
-  , Render(..)
   , renderCss
-  , asHtml
-  , asDir
-  , asCss
-  , asIntended
+
+  , Structure
+  , (<||)
+  , (<|)
+  , structure
 
   , Resource
   , loadResource
@@ -29,23 +32,22 @@ module Pencil
   , passthrough
   , listDir
 
-  , Structure
-  , structure
-  , (<||)
-  , (<|)
+  , Render(..)
+  , asHtml
+  , asDir
+  , asCss
+  , asIntended
 
-  , FileType
-  , fileType
-  , toExtension
+  -- * Environment Manipulation
 
-  , modifyEnvVar
+  , merge
+  , modifyEnv
+  , insertEnv
+  , insertText
+  , insertPages
   , sortByVar
   , filterByVar
   , groupByElements
-  , merge
-  , insertEnvData
-  , insertEnvText
-  , insertEnvListPage
 
   -- * Configuration
 
@@ -56,6 +58,12 @@ module Pencil
   , getEnv, setEnv
   , getSassOptions, setSassOptions
   , getMarkdownOptions, setMarkdownOptions
+
+  -- * Utils
+
+  , FileType
+  , fileType
+  , toExtension
 
   -- * Error handling
 
@@ -177,5 +185,12 @@ import Pencil.Internal
 -- current @Page@.
 --
 -- === Partials
+
+----------------------------------------------------------------------
+
+-- $pagesStructuresResources
+--
+-- 'Page', 'Structure' and 'Resource' are the "big three" data types you need to
+-- know to effectively use Pencil.
 
 ----------------------------------------------------------------------

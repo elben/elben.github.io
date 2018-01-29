@@ -31,12 +31,16 @@ import qualified System.FilePath as FP
 import qualified Text.Pandoc as P
 import qualified Text.Sass as Sass
 
--- PencilApp a = Config -> IO (Except PencilException a)
+-- | The main monad transformer stack for a Pencil application.
 --
--- Allows us to catch "checked" exceptions; errors that we know how to handle,
--- in PencilException.
+-- This unrolls to:
 --
--- Unknown "unchecked" exceptions can still go through IO.
+-- > PencilApp a = Config -> IO (Except PencilException a)
+--
+-- The @ExceptT@ monad allows us to catch "checked" exceptions; errors that we
+-- know how to handle, in PencilException. Note that Unknown "unchecked"
+-- exceptions can still go through IO.
+--
 type PencilApp = ReaderT Config (ExceptT PencilException IO)
 
 -- | The main @Config@ needed to build your website. Your app's @Config@ is
@@ -50,8 +54,10 @@ data Config = Config
   , configEnv :: Env
   , configSassOptions :: Sass.SassOptions
   , configMarkdownOptions :: P.WriterOptions
+  , configEnvDataText :: EnvData -> T.Text
   }
 
+-- 'Data.Default.Default' instance for 'Config'.
 instance Default Config where
   def = defaultConfig
 
@@ -66,6 +72,7 @@ instance Default Config where
 --  , 'configEnv' = HashMap.empty
 --  , 'configSassOptions' = Text.Sass.Options.defaultSassOptions
 --  , 'configMarkdownOptions' = Text.Pandoc.def { Text.Pandoc.writerHighlight = True }
+--  , 'configEnvDataText' = 'Pencil.Internal.Env.configEnvDataText'
 --  }
 -- @
 --
@@ -76,6 +83,7 @@ defaultConfig = Config
   , configEnv = H.empty
   , configSassOptions = Text.Sass.Options.defaultSassOptions
   , configMarkdownOptions = P.def { P.writerHighlight = True }
+  , configEnvDataText = toText
   }
 
 -- | The directory path of your web page source files.
@@ -156,6 +164,8 @@ mostSimilarFile fp = do
   let sorted = L.sortBy (\(_, d1) (_, d2) -> compare d1 d2) costs
   return $ fst <$> M.listToMaybe sorted
 
+-- | Known Pencil errors that we know how to either recover from or quit
+-- gracefully.
 data PencilException
   = NotTextFile IOError
   -- ^ Failed to read a file as a text file.
@@ -163,6 +173,7 @@ data PencilException
   -- ^ File not found. We may or may not know the file we were looking for.
   deriving (Typeable, Show)
 
+-- | Enum for file types that can be parsed and converted by Pencil.
 data FileType = Html
               | Markdown
               | Css
@@ -170,6 +181,7 @@ data FileType = Html
               | Other
   deriving (Eq, Generic)
 
+-- | 'Hashable' instance of @FileType@.
 instance Hashable FileType
 
 -- | A 'H.HashMap' of file extensions (e.g. @markdown@) to 'FileType'.
@@ -216,7 +228,7 @@ fileType fp =
   -- takeExtension returns ".markdown", so drop the "."
   M.fromMaybe Other (H.lookup (map toLower (drop 1 (FP.takeExtension fp))) fileTypeMap)
 
--- | The Page is a fundamental data structure in Pencil. It contains the parsed
+-- | The Page is an important data type in Pencil. It contains the parsed
 -- template of a file (e.g. of Markdown or HTML files). It may have template
 -- directives (e.g. @${body}@) that has not yet been rendered, and an
 -- environment loaded from the preamble section of the file. A Page also
@@ -257,12 +269,12 @@ setPageEnv env p = p { pageEnv = env }
 -- child layout, the partial called "blog-post.html", which has HTML for
 -- rendering a blog post, like usage of ${postTitle} and ${postDate}. Inside
 -- this, there is another child layout, the blog post content itself, which
--- defines the variables $postTitle and $postDate, and may renderer parent
--- variables such as ${websiteTitle}.
+-- defines the variables @postTitle@ and @postDate@, and may renderer parent
+-- variables such as @websiteTitle@.
 --
 -- > +--------------+
 -- > |              | <--- default.html
--- > |              |      Defines ${websiteTitle}
+-- > |              |      Defines websiteTitle
 -- > |  +---------+ |
 -- > |  |         |<+----- blog-post.html
 -- > |  | +-----+ | |      Renders ${postTitle}, ${postDate}
@@ -270,7 +282,7 @@ setPageEnv env p = p { pageEnv = env }
 -- > |  | |     | | |
 -- > |  | |     |<+-+----- blog-article-content.markdown
 -- > |  | |     | | |      Renders ${websiteTitle}
--- > |  | +-----+ | |      Defines ${postTitle}, ${postDate}
+-- > |  | +-----+ | |      Defines postTitle, postDate
 -- > |  +---------+ |
 -- > +--------------+
 --
@@ -278,12 +290,14 @@ setPageEnv env p = p { pageEnv = env }
 -- default.html, to blog-post.html, and the markdown file's variables. Combine
 -- all of that, then render the blog post content. This content is then injected
 -- into the parent's environment as a @${body}@ variable, for use in blog-post.html.
--- Now *that* content is injected into the parent environment's @${body}@ variable,
+-- Now /that/ content is injected into the parent environment's @${body}@ variable,
 -- which is then used to render the full-blown HTML page.
 --
 apply :: Structure -> PencilApp Page
 apply pages = apply_ (NE.reverse pages)
 
+-- | Apply @Structure@ and convert to @Page@.
+--
 -- It's simpler to implement if NonEmpty is ordered outer-structure first (e.g.
 -- HTML layout).
 apply_ :: Structure -> PencilApp Page
@@ -414,14 +428,17 @@ evalNodes env (n : rest) = do
   rest' <- evalNodes env rest
   return $ n : rest'
 
--- | Modify a variable in the env.
-modifyEnvVar :: Page -> (EnvData -> EnvData) -> T.Text -> Page
-modifyEnvVar (Page nodes env fp) f k =
-  let env' = H.adjust f k env
-  in Page nodes env' fp
+-- | Modify a variable in the given environment.
+modifyEnv :: (EnvData -> EnvData)
+          -> T.Text
+          -- ^ Environment variable name.
+          -> Env
+          -> Env
+modifyEnv = H.adjust
 
+-- | Sort given @Page@s by the specifed ordering function.
 sortByVar :: T.Text
-          -- ^ Variable name to look up in Env.
+          -- ^ Environment variable name.
           -> (EnvData -> EnvData -> Ordering)
           -- ^ Ordering function to compare EnvData against. If the variable is
           -- not in the Env, the Page will be placed at the bottom of the order.
@@ -436,6 +453,7 @@ sortByVar var ordering =
 filterByVar :: Bool
             -- ^ If true, include pages without the specified variable.
             -> T.Text
+            -- ^ Environment variable name.
             -> (EnvData -> Bool)
             -> [Page]
             -> [Page]
@@ -452,6 +470,7 @@ filterByVar includeMissing var f =
 -- The final output would be a map fromList [("a", [page1, page2]), ("b",
 -- [page2])].
 groupByElements :: T.Text
+                -- ^ Environment variable name.
                 -> [Page]
                 -> H.HashMap T.Text [Page]
 groupByElements var pages =
@@ -481,7 +500,7 @@ groupByElements var pages =
     -- prepends into accumulated list.
     (reverse pages)
 
--- | Load directory as Resources.
+-- | Loads file in given directory as 'Resource's.
 loadResources :: (FilePath -> FilePath)
               -> Bool
               -- ^ Recursive if @True@.
@@ -535,17 +554,46 @@ listDir_ recursive dir = do
 merge :: Env -> Env -> Env
 merge = H.union
 
-insertEnvData :: T.Text -> EnvData -> Env -> Env
-insertEnvData = H.insert
+-- | Insert text into the given @Env@.
+--
+-- @
+-- env <- asks getEnv
+-- insertText "title" "My Awesome Website" env
+-- @
+insertText :: T.Text
+           -- ^ Environment variable name.
+           -> T.Text
+           -- ^ Text to insert.
+           -> Env
+           -- ^ Environment to modify.
+           -> Env
+insertText var val = H.insert var (EText val)
 
-insertEnvText :: T.Text -> T.Text -> Env -> Env
-insertEnvText var val = H.insert var (EText val)
+-- | Insert @Page@s into the given @Env@.
+--
+-- @
+-- posts <- 'Pencil.Blog.loadBlogPosts' "blog/"
+-- env <- asks 'getEnv'
+-- insertPages "posts" posts env
+-- @
+insertPages :: T.Text
+            -- ^ Environment variable name.
+            -> [Page]
+            -- ^ @Page@s to insert.
+            -> Env
+            -- ^ Environment to modify.
+            -> Env
+insertPages var posts = H.insert var (EEnvList (map getPageEnv posts))
 
-insertEnvListPage :: T.Text -> [Page] -> Env -> Env
-insertEnvListPage var posts = H.insert var (EEnvList (map getPageEnv posts))
-
--- insertEnvList :: T.Text -> [Resource] -> Env -> Env
--- insertEnvList var posts = H.insert var (EEnvList (map getPageEnv posts))
+-- | Insert @EnvData@ into the given @Env@.
+insertEnv :: T.Text
+          -- ^ Environment variable name.
+          -> EnvData
+          -- ^ @EnvData@ to insert.
+          -> Env
+          -- ^ Environment to modify.
+          -> Env
+insertEnv = H.insert
 
 -- | Convert known Aeson types into known Env types.
 maybeInsertIntoEnv :: Env -> T.Text -> A.Value -> Env
@@ -559,11 +607,28 @@ aesonToEnv :: A.Object -> Env
 aesonToEnv = H.foldlWithKey' maybeInsertIntoEnv H.empty
 
 
+-- | Use @Resource@ to load and render files that don't need any manipulation
+-- other than conversion (e.g. Sass to CSS), or for static files that you want
+-- to copy as-is (e.g. binary files like images, or text files that require no
+-- other processing).
+--
+-- Use 'passthrough', 'loadResource' and 'loadResources' to build a @Resource@
+-- from a file.
+--
+-- In the example below, @robots.txt@ and everything in the @images/@ directory
+-- will be rendered as-is.
+--
+-- @
+-- passthrough "robots.txt" >> render
+-- loadResources id True True "images/" >> render
+-- @
+--
 data Resource
   = Single Page
   | Passthrough FilePath FilePath
   -- ^ in and out file paths
 
+-- | Copy file from source to output dir.
 copyFile :: FilePath -> FilePath -> PencilApp ()
 copyFile fpIn fpOut = do
   sitePrefix <- asks getSourceDir
@@ -639,8 +704,7 @@ loadResource fpf fp =
 -- directives are ignored. In essence this is a file copy.
 --
 -- @
--- -- Do not convert Markdown into HTML, and render as example.markdown.
--- passthrough "example.markdown" >> render
+-- passthrough "robots.txt" >> render
 -- @
 --
 passthrough :: FilePath -> PencilApp Resource
@@ -681,17 +745,6 @@ findEnv :: [PNode] -> Env
 findEnv nodes =
   aesonToEnv $ M.fromMaybe H.empty (findPreambleText nodes >>= (A.decode . encodeUtf8 . T.strip))
 
-findPreambleText :: [PNode] -> Maybe T.Text
-findPreambleText nodes = L.find isPreamble nodes >>= preambleText
-
-isPreamble :: PNode -> Bool
-isPreamble (PPreamble _) = True
-isPreamble _ = False
-
-preambleText :: PNode -> Maybe T.Text
-preambleText (PPreamble t) = Just t
-preambleText _ = Nothing
-
 -- | Loads and renders file as CSS.
 --
 -- @
@@ -703,17 +756,68 @@ renderCss fp =
   -- Drop .scss/sass extension and replace with .css.
   load asCss fp >>= render
 
+-- | A @Structure@ is a list of 'Page's, defining a nesting order. Think of them
+-- like <https://en.wikipedia.org/wiki/Matryoshka_doll Russian nesting dolls>.
+-- The first element defines the outer-most container, and subsequent elements
+-- are /inside/ the previous element.
+--
+-- You commonly @Structure@s to insert a @Page@ containing content (e.g. a blog
+-- post) into a container (e.g. a layout shared across all your web pages).
+--
+-- Build structures using 'structure', '<||' and '<|'.
+--
+-- @
+-- layout <- load asHtml "layout.html"
+-- index <- load asHtml "index.markdown"
+-- about <- load asHtml "about.markdown"
+-- render (layout <|| index)
+-- render (layout <|| about)
+-- @
+--
+-- In the example above we load a layout @Page@, which can be an HTML page
+-- defining the outer structures like @\<html\>\<\/html\>@. Assuming @layout.html@
+-- has the template directive @${body}@ (note that @body@ is a special variable
+-- generated during structure-building), @layout <|| index@
+-- tells 'render' that you want the rendered body of @index@ to be injected into
+-- the @${body}@ directive inside of @layout@.
+--
+-- @Structure@s also control the closure of variables. Variables defined in a
+-- @Page@s are accessible both by @Page@s above and below. This allows inner
+-- @Page@s to define variables like the blog post title, which may be used in
+-- the outer @Page@ to set the @\<title\>@ tag.
+--
+-- In this way, @Structure@ allows efficient @Page@ reuse. See the private
+-- function 'Pencil.Internal.apply' to learn more about how @Structure@s are
+-- evaluated.
+--
+-- Note that this differs than the @${partial(...)}@ directive, which has no
+-- such variable closures. The partial directive is much simpler—think of them
+-- as copy-and-pasting snippets from one file to another. The partial has has
+-- the same environment as the parent context.
 type Structure = NonEmpty Page
 
--- | Creates a new structure from two Pages.
+-- | Creates a new @Structure@ from two @Page@s.
+--
+-- @
+-- layout <- load asHtml "layout.html"
+-- index <- load asHtml "index.markdown"
+-- render (layout <|| index)
+-- @
 (<||) :: Page -> Page -> Structure
 (<||) x y = y :| [x]
 
--- | Pushes Page into Structure.
+-- | Pushes @Page@ into @Structure@.
+--
+-- @
+-- layout <- load asHtml "layout.html"
+-- blogLayout <- load asHtml "blog-layout.html"
+-- blogPost <- load asHtml "myblogpost.markdown"
+-- render (layout <|| blogLayout <| blogPost)
+-- @
 (<|) :: Structure -> Page -> Structure
 (<|) ne x = NE.cons x ne
 
--- | Converts a Page into a Structure.
+-- | Converts a @Page@ into a @Structure@.
 structure :: Page -> Structure
 structure p = p :| []
 
@@ -730,7 +834,7 @@ withEnv env = local (setEnv env)
 -- | To render something is to create the output web pages, rendering template
 -- directives into their final form using the current environment.
 class Render a where
-  -- | Renders the given 'a' as web pages.
+  -- | Renders 'a' as web page(s).
   render :: a -> PencilApp ()
 
 instance Render Resource where

@@ -47,7 +47,7 @@ app = do
 
   -- Index
   -- Function composition
-  let indexEnv = (insertEnvListPage "posts" posts . insertEnvListPage "recommendedPosts" recommendedPosts) env
+  let indexEnv = (insertPages "posts" posts . insertPages "recommendedPosts" recommendedPosts) env
   indexPage <- load asHtml "index.html"
   withEnv indexEnv (render (layoutPage <|| indexPage))
 
@@ -56,7 +56,7 @@ app = do
 
   -- Render blog post archive
   archivePage <- load (const "blog/") "partials/post-archive.html"
-  let archiveEnv = insertEnvListPage "posts" posts env
+  let archiveEnv = insertPages "posts" posts env
   withEnv archiveEnv (render (layoutPage <|| archivePage))
 
   -- /projects/

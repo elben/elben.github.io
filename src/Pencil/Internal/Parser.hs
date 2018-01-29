@@ -132,17 +132,20 @@ ast stack (TokEnd : toks) =
 -- | Pop nodes until we hit a If/For statement.
 -- Return pair (constructor found, nodes popped, remaining stack)
 popNodes :: [PNode] -> (PNode, [PNode], [PNode])
-popNodes = popNodes' []
+popNodes = popNodes_ []
 
-popNodes' :: [PNode] -> [PNode] -> (PNode, [PNode], [PNode])
-popNodes' popped [] = (PMetaEnd, popped, [])
-popNodes' popped (PMetaIf t : rest) = (PMetaIf t, popped, rest)
-popNodes' popped (PMetaFor t : rest) = (PMetaFor t, popped, rest)
-popNodes' popped (t : rest) = popNodes' (t : popped) rest
+-- | Helper for 'popNodes'.
+popNodes_ :: [PNode] -> [PNode] -> (PNode, [PNode], [PNode])
+popNodes_ popped [] = (PMetaEnd, popped, [])
+popNodes_ popped (PMetaIf t : rest) = (PMetaIf t, popped, rest)
+popNodes_ popped (PMetaFor t : rest) = (PMetaFor t, popped, rest)
+popNodes_ popped (t : rest) = popNodes_ (t : popped) rest
 
+-- | Render nodes as string.
 renderNodes :: [PNode] -> T.Text
 renderNodes = DL.foldl' (\str n -> (T.append str (renderNode n))) ""
 
+-- | Render node as string.
 renderNode :: PNode -> T.Text
 renderNode (PText t) = t
 renderNode (PVar t) = T.append (T.append "${" t) "}"
@@ -162,9 +165,11 @@ renderNode (PMetaFor v) = renderNode (PFor v [])
 renderNode PMetaEnd = ""
 renderNode (PPreamble _) = "" -- Don't render the PREAMBLE
 
+-- | Render tokens.
 renderTokens :: [Token] -> T.Text
 renderTokens = DL.foldl' (\str n -> (T.append str (renderToken n))) ""
 
+-- | Render token.
 renderToken :: Token -> T.Text
 renderToken (TokText t) = t
 renderToken (TokVar t) = T.append (T.append "${" t) "}"
@@ -174,6 +179,7 @@ renderToken (TokEnd) = "${end}"
 renderToken (TokIf t) = T.append (T.append "${if(" t) ")}"
 renderToken (TokPreamble _) = "" -- Hide preamble content
 
+-- | Parse text.
 parseText :: T.Text -> Either ParseError [PNode]
 parseText text = do
   toks <- parse parseEverything (T.unpack "") (T.unpack text)
@@ -238,6 +244,7 @@ parseVar = try $ do
   _ <- char '}'
   return $ TokVar (T.pack varName)
 
+-- | Parse preamble.
 parsePreamble :: Parser Token
 parsePreamble = do
   _ <- parsePreambleStart
@@ -248,6 +255,7 @@ parsePreamble = do
   content <- manyTill anyChar (try (string "-->"))
   return $ TokPreamble (T.pack content)
 
+-- | Parse the start of a PREAMBLE.
 parsePreambleStart :: Parser String
 parsePreambleStart = string "<!--PREAMBLE"
 
@@ -312,9 +320,11 @@ parseContent = do
 parseFor :: Parser Token
 parseFor = parseFunction "for" TokFor
 
+-- | Parse if directive.
 parseIf :: Parser Token
 parseIf = parseFunction "if" TokIf
 
+-- | General parse template functions.
 parseFunction :: String -> (T.Text -> Token) -> Parser Token
 parseFunction keyword ctor = do
   _ <- char '$'
@@ -347,10 +357,26 @@ parseFakeVar = do
   rest <- many1 (noneOf "$")
   return $ TokText (T.pack ("$" ++ [n] ++ rest))
 
+-- | @many1Till p end@ will parse one or more @p@ until @end.
+--
 -- From https://hackage.haskell.org/package/pandoc-1.10.0.4/docs/Text-Pandoc-Parsing.html
 many1Till :: P.Stream s m t => P.ParsecT s u m a -> P.ParsecT s u m end -> P.ParsecT s u m [a]
 many1Till p end = do
   first <- p
   rest <- manyTill p end
   return (first : rest)
+
+-- | Find the preamble content from the given @PNode@s.
+findPreambleText :: [PNode] -> Maybe T.Text
+findPreambleText nodes = DL.find isPreamble nodes >>= preambleText
+
+-- | Returns @True@ if the @PNode@ is a @PPreamble@.
+isPreamble :: PNode -> Bool
+isPreamble (PPreamble _) = True
+isPreamble _ = False
+
+-- | Gets the content of the @PPreamble@
+preambleText :: PNode -> Maybe T.Text
+preambleText (PPreamble t) = Just t
+preambleText _ = Nothing
 

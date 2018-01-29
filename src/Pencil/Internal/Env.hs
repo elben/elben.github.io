@@ -40,7 +40,8 @@ toEnvData (A.Array arr) =
   Just $ EArray (V.toList (V.mapMaybe toEnvData arr))
 toEnvData _ = Nothing
 
--- | Render for human consumption.
+-- | Render for human consumption. This is the default one. Pass into Config as
+-- part of the Reader?
 toText :: EnvData -> T.Text
 toText ENull = "null"
 toText (EText t) = t

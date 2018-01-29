@@ -41,7 +41,7 @@ injectTitle titlePrefix page =
   let title = case H.lookup "postTitle" (getPageEnv page) of
                        Just (EText t) -> T.append (T.append t " - ") titlePrefix
                        _ -> titlePrefix
-      env' = insertEnvText "title" title (getPageEnv page)
+      env' = insertText "title" title (getPageEnv page)
   in setPageEnv env' page
 
 type Tag = T.Text
@@ -67,7 +67,7 @@ buildTagPages tagPageFp pagesVar fpf pages = do
   foldM
     (\acc (tag, taggedPosts) -> do
       tagPage <- load (fpf tag) tagPageFp
-      let tagEnv = (insertEnvListPage pagesVar taggedPosts . insertEnvText "tag" tag . merge (getPageEnv tagPage)) env
+      let tagEnv = (insertPages pagesVar taggedPosts . insertText "tag" tag . merge (getPageEnv tagPage)) env
       return $ H.insert tag (setPageEnv tagEnv tagPage) acc
     )
     H.empty
@@ -95,6 +95,6 @@ injectTagsEnv tagMap page =
       -- Overwrite the EArray "tags" variable in the post Page with EEnvList of the
       -- loaded Tag index pages. This is so that when we render the blog posts, we
       -- have access to the URL of the Tag index.
-      env' = insertEnvData "tags" tagEnvList (getPageEnv page)
+      env' = insertEnv "tags" tagEnvList (getPageEnv page)
   in setPageEnv env' page
 
