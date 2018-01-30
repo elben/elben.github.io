@@ -56,9 +56,18 @@ toText (VDateTime dt) =
 -- Example: 2010-01-30, 2010-01-30T09:08:00
 toDateTime :: String -> Maybe TC.UTCTime
 toDateTime s =
-  case TF.parseTimeM True TF.defaultTimeLocale (TF.iso8601DateFormat Nothing) s of
-    Nothing -> TF.parseTimeM True TF.defaultTimeLocale (TF.iso8601DateFormat (Just "%H:%M:%S")) s
+  -- Try to parse "YYYY-MM-DD"
+  case maybeParseIso8601 Nothing s of
+    -- Try to parse "YYYY-MM-DDTHH:MM:SS"
+    Nothing -> maybeParseIso8601 (Just "%H:%M:%S") s
     Just dt -> Just dt
+
+-- | Helper for 'TF.parseTimeM' using ISO 8601. YYYY-MM-DDTHH:MM:SS and
+-- YYYY-MM-DD formats.
+--
+-- https://hackage.haskell.org/package/time-1.9/docs/Data-Time-Format.html#v:iso8601DateFormat
+maybeParseIso8601 :: Maybe String -> String -> Maybe TC.UTCTime
+maybeParseIso8601 f = TF.parseTimeM True TF.defaultTimeLocale (TF.iso8601DateFormat f)
 
 -- | Define an ordering for possibly-missing Value. Nothings are ordered last.
 maybeOrdering :: (Value -> Value -> Ordering)
