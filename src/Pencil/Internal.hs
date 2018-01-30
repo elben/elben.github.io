@@ -1,4 +1,7 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Pencil.Internal where
 
