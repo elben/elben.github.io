@@ -2,10 +2,55 @@
 
 module Pencil.Blog
   (
-  -- This module provides a standard way of building and generating blog posts.
+  -- * Getting started
   --
-  -- Also allows pages to be tagged with tags, using the "tags" variable name in the
-  -- environment, which is expected to be an array of strings.
+  -- This module provides a standard way of building and generating blog posts.
+  -- To generate a blog for your website, first create a @blog/@ directory in
+  -- your web page source directory.
+  --
+  -- Then, name your blog posts in this format:
+  --
+  -- > yyyy-mm-dd-title-of-blog-post.markdown
+  --
+  -- The files in that directory are expected to have preambles that have at
+  -- least the following variables:
+  --
+  -- > <!--PREAMBLE
+  -- > postTitle: "Behind Python's unittest.main()"
+  -- > date: 2010-01-30
+  -- > -->
+  --
+  -- You can also mark a post as a draft via the @draft@ variable (it won't be
+  -- loaded when you call 'loadBlogPosts'), and add tagging (see below) via
+  -- @tags@:
+  --
+  -- > <!--PREAMBLE
+  -- > ...
+  -- > draft: true
+  -- > tags:
+  -- >   - python
+  -- > -->
+  --
+  -- Then, use 'loadBlogPosts' to load the entire `blog/` directory.
+  --
+  -- @
+  -- posts <- 'loadBlogPosts' "blog/"
+  -- forM_ posts render
+  -- @
+  --
+  -- You probably will want to enclose your blog posts in your web site's
+  -- layout, however. In the example below, @layout.html@ defines the outer HTML
+  -- structure (with global components like navigation), and @blog-post.html@ is
+  -- a generic blog post container that renders @${postTitle}@ as a header,
+  -- @${date}@, and @${body}@ for the post body.
+  --
+  -- @
+  -- layout <- 'load' asHtml "layout.html"
+  -- postLayout <- 'load' asHtml "blog-post.html"
+  -- posts <- 'loadBlogPosts' "blog/"
+  -- forM_ posts (\post -> render (layout <|| postLayout <| post))
+  -- @
+  --
     loadBlogPosts
   , blogPostUrl
   , injectTitle
@@ -22,6 +67,12 @@ import qualified Data.List as L
 import qualified Data.Text as T
 import qualified System.FilePath as FP
 
+-- | Loads the given direcotry as a series of blog post.
+--
+-- @
+-- posts <- loadBlogPosts "blog/"
+-- forM_ posts render
+-- @
 loadBlogPosts :: FilePath -> PencilApp [Page]
 loadBlogPosts fp = do
   -- Load posts
