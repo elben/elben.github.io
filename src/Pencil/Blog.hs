@@ -2,55 +2,10 @@
 
 module Pencil.Blog
   (
-  -- * Getting started
-  --
-  -- This module provides a standard way of building and generating blog posts.
-  -- To generate a blog for your website, first create a @blog/@ directory in
-  -- your web page source directory.
-  --
-  -- Then, name your blog posts in this format:
-  --
-  -- > yyyy-mm-dd-title-of-blog-post.markdown
-  --
-  -- The files in that directory are expected to have preambles that have at
-  -- least the following variables:
-  --
-  -- > <!--PREAMBLE
-  -- > postTitle: "Behind Python's unittest.main()"
-  -- > date: 2010-01-30
-  -- > -->
-  --
-  -- You can also mark a post as a draft via the @draft@ variable (it won't be
-  -- loaded when you call 'loadBlogPosts'), and add tagging (see below) via
-  -- @tags@:
-  --
-  -- > <!--PREAMBLE
-  -- > ...
-  -- > draft: true
-  -- > tags:
-  -- >   - python
-  -- > -->
-  --
-  -- Then, use 'loadBlogPosts' to load the entire `blog/` directory.
-  --
-  -- @
-  -- posts <- 'loadBlogPosts' "blog/"
-  -- forM_ posts render
-  -- @
-  --
-  -- You probably will want to enclose your blog posts in your web site's
-  -- layout, however. In the example below, @layout.html@ defines the outer HTML
-  -- structure (with global components like navigation), and @blog-post.html@ is
-  -- a generic blog post container that renders @${postTitle}@ as a header,
-  -- @${date}@, and @${body}@ for the post body.
-  --
-  -- @
-  -- layout <- 'load' asHtml "layout.html"
-  -- postLayout <- 'load' asHtml "blog-post.html"
-  -- posts <- 'loadBlogPosts' "blog/"
-  -- forM_ posts (\post -> render (layout <|| postLayout <| post))
-  -- @
-  --
+    -- * Getting started
+    --
+    -- $gettingstarted
+    --
     loadBlogPosts
   , blogPostUrl
   , injectTitle
@@ -67,7 +22,57 @@ import qualified Data.List as L
 import qualified Data.Text as T
 import qualified System.FilePath as FP
 
--- | Loads the given direcotry as a series of blog post.
+-- $gettingstarted
+--
+-- This module provides a standard way of building and generating blog posts.
+-- To generate a blog for your website, first create a @blog/@ directory in
+-- your web page source directory.
+--
+-- Then, name your blog posts in this format:
+--
+-- > yyyy-mm-dd-title-of-blog-post.markdown
+--
+-- The files in that directory are expected to have preambles that have at
+-- least the following variables:
+--
+-- > <!--PREAMBLE
+-- > postTitle: "Behind Python's unittest.main()"
+-- > date: 2010-01-30
+-- > -->
+--
+-- You can also mark a post as a draft via the @draft@ variable (it won't be
+-- loaded when you call 'loadBlogPosts'), and add tagging (see below) via
+-- @tags@:
+--
+-- > <!--PREAMBLE
+-- > ...
+-- > draft: true
+-- > tags:
+-- >   - python
+-- > -->
+--
+-- Then, use 'loadBlogPosts' to load the entire @blog/@ directory.
+--
+-- @
+-- posts <- 'loadBlogPosts' "blog/"
+-- forM_ posts render
+-- @
+--
+-- You probably will want to enclose your blog posts in your web site's
+-- layout, however. In the example below, @layout.html@ defines the outer HTML
+-- structure (with global components like navigation), and @blog-post.html@ is
+-- a generic blog post container that renders @${postTitle}@ as a header,
+-- @${date}@, and @${body}@ for the post body.
+--
+-- @
+-- layout <- 'load' asHtml "layout.html"
+-- postLayout <- 'load' asHtml "blog-post.html"
+-- posts <- 'loadBlogPosts' "blog/"
+-- forM_ posts (\\post -> render (layout <|| postLayout <| post))
+-- @
+--
+
+-- | Loads the given directory as a series of blog posts.
 --
 -- @
 -- posts <- loadBlogPosts "blog/"
@@ -82,12 +87,29 @@ loadBlogPosts fp = do
   liftM (filterByVar True "draft" (VBool True /=) . sortByVar "date" dateOrdering)
         (mapM (load blogPostUrl) postFps)
 
--- | Rewrite file path for blog posts.
--- "/blog/2011-01-01-the-post-title.html" => "/blog/the-post-title/"
+-- | Rewrites file path for blog posts.
+-- @/blog/2011-01-01-the-post-title.html@ => @/blog/the-post-title/@
 blogPostUrl :: FilePath -> FilePath
 blogPostUrl fp = FP.replaceFileName fp (drop 11 (FP.takeBaseName fp)) ++ "/"
 
-injectTitle :: T.Text -> Page -> Page
+-- | Given that the current @Page@ has a @postTitle@ in the environment, inject
+-- the post title into the @title@ environment variable, prefixed with the given
+-- title prefix.
+--
+-- This is useful for generating the @\<title\>${title}\</title\>@ tags in your
+-- container layout.
+--
+-- @
+-- injectTitle "My Awesome Website" post
+-- @
+--
+-- The above example may insert a @title@ variable with the value @"How to do X
+-- - My Awesome Website"@.
+--
+injectTitle :: T.Text
+            -- ^ Title prefix.
+            -> Page
+            -> Page
 injectTitle titlePrefix page =
   let title = case H.lookup "postTitle" (getPageEnv page) of
                        Just (VText t) -> T.append (T.append t " - ") titlePrefix
@@ -97,7 +119,7 @@ injectTitle titlePrefix page =
 
 type Tag = T.Text
 
--- | Given Pages with "tags" variables in its environments, build Pages that
+-- | Given Pages with @tags@ variables in its environments, builds Pages that
 -- contain in its environment the list of Pages that were tagged with that
 -- particular tag.
 buildTagPages :: FilePath
