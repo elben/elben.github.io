@@ -136,6 +136,21 @@ import Pencil.Internal
 --
 -- == Preamble
 --
+-- Preambles are YAML-formatted environment variable declarations inside your
+-- source files. They should be declared at the top of the file, and you may
+-- only have one preamble per source file. Example preamble, in the first part
+-- of @my-blog-post.markdown@:
+--
+-- > <!--PREAMBLE
+-- > postTitle: "Behind Python's unittest.main()"
+-- > date: 2010-01-30
+-- > tags:
+-- >   - python
+-- > -->
+--
+-- In the above example, Pencil will intelligentally parse the @date@ value as a
+-- `VDateTime`.
+--
 -- == Directives
 --
 -- Directives are rendering /commands/. They are surrounded by @${...}@.
@@ -186,6 +201,24 @@ import Pencil.Internal
 -- current @Page@.
 --
 -- === Partials
+--
+-- The @partial@ directive injects another template file into the current file.
+-- The directives inside the partial are rendered in the same environmental
+-- context as the @partial@ directive.
+--
+-- Think of partials as just copy-and-pasting snippet from one file to another.
+-- Unlike 'Structure's, partials cannot define environment variables.
+--
+-- In the example below, the first @partial@ is rendered with the current
+-- environment. The @partial@ inside the @for@ loop receives the same
+-- environemnt as any other snippet inside the loop, and thus has access to
+-- the environment inside each post.
+--
+-- > ${partial("partials/nav-bar.html")}
+-- >
+-- > ${for(posts)}
+-- >   ${partial("partials/nav-bar.html")}
+-- > ${end}
 
 ----------------------------------------------------------------------
 
