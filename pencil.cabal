@@ -30,6 +30,7 @@ library
                      , data-default
                      , directory
                      , edit-distance
+                     , feed
                      , filepath
                      , hashable
                      , hsass
@@ -41,6 +42,7 @@ library
                      , unordered-containers
                      , vector
                      , yaml
+                     , xml
   default-language:    Haskell2010
 
 executable pencil-exe
