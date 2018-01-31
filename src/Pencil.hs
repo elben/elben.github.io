@@ -61,11 +61,14 @@ module Pencil
   , getPandocReaderOptions, setPandocReaderOptions
   , getPandocWriterOptions, setPandocWriterOptions
 
-  -- * Utils
+  -- * Utils and re-exports
 
   , FileType
   , fileType
   , toExtension
+
+  -- Re-exports
+  , Reader.asks
 
   -- * Error handling
 
@@ -75,6 +78,7 @@ module Pencil
 
 import Pencil.Internal
 
+import Control.Monad.Reader as Reader
 
 ----------------------------------------------------------------------
 

@@ -6,7 +6,6 @@ import Pencil
 import Pencil.Blog
 import Pencil.Internal.Env
 import Control.Monad (forM_)
-import Control.Monad.Reader (asks)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 
