@@ -7,11 +7,11 @@ all: generate
 	@true
 
 build: app/Main.hs
-	stack build
+	stack build --pedantic
 	@mkdir -p out
 
 generate: build clean
-	stack exec pencil-exe
+	stack exec elbenshiracom-exe
 
 clean:
 	rm -rf out/*

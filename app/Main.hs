@@ -21,8 +21,8 @@ main =
 
 app :: PencilApp ()
 app = do
-  layoutPage <- load asHtml "partials/default-layout.html"
-  postPage <- load asHtml "partials/post.html"
+  layoutPage <- load toHtml "partials/default-layout.html"
+  postPage <- load toHtml "partials/post.html"
 
   posts <- loadBlogPosts "blog/"
 
@@ -35,7 +35,7 @@ app = do
   -- Tags and tag list pages
 
   -- Build a mapping of tag to the tag list Page
-  tagPages <- buildTagPages "partials/post-list-for-tag.html" "posts" (\tag _ -> "blog/tags/" ++ T.unpack tag ++ "/") posts
+  tagPages <- buildTagPages "partials/post-list-for-tag.html" posts
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
@@ -47,7 +47,7 @@ app = do
   -- Index
   -- Function composition
   let indexEnv = (insertPages "posts" posts . insertPages "recommendedPosts" recommendedPosts) env
-  indexPage <- load asHtml "index.html"
+  indexPage <- load toHtml "index.html"
   withEnv indexEnv (render (layoutPage <|| indexPage))
 
   -- Render tag list pages
@@ -66,7 +66,7 @@ app = do
   renderCss "stylesheets/default.scss"
 
   -- Render static directories
-  loadResources asIntended True False "p/" >>= render
+  loadResources toExpected True False "p/" >>= render
   loadResources id True True "stylesheets/fonts/" >>= render
   loadResources id True True "images/" >>= render
 
