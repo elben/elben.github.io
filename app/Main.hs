@@ -42,7 +42,7 @@ app = do
   let posts' = map ((layoutPage <|| postPage <|) . injectTagsEnv tagPages . injectTitle websiteTitle) posts
 
   -- Render blog posts
-  forM_ posts' render
+  render posts'
 
   -- Index
   -- Function composition
