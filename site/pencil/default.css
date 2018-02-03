@@ -1,0 +1,68 @@
+html {
+  font-family: 'Fira Sans', sans-serif;
+}
+
+body {
+  color: #151311; /* Dark grey with a little of red saturation */
+  font-size: 18px;
+  line-height: 1.4em;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: #ff3366; /* red persimmon */
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+#structure {
+  position: relative;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 5em;
+  padding: 0 1em;
+  max-width: 720px;
+}
+
+#header {
+  float: left;
+  width: 7em;
+  text-align: right;
+  margin-top: -1em;
+  padding-right: 1em;
+  border-right: 4px solid #333;
+}
+
+#header h1 a {
+  color: #151311;
+  text-decoration: none;
+}
+
+#header h1 {
+  font-weight: 300;
+}
+
+#header hr {
+  border: 2px solid #222;
+  margin-top: 23px 0;
+}
+
+#content {
+  margin-left: 8em;
+  padding-left: 1.5em;
+}
+
+pre, code {
+  font-family: 'Fira Mono', monospace;
+}
+
+pre {
+  background-color: #eee;
+  padding: 1em;
+  overflow: scroll;
+}

@@ -72,3 +72,17 @@ app = do
 
   passthrough "CNAME" >>= render
 
+  pencilWebsite
+
+
+pencilWebsite :: PencilApp ()
+pencilWebsite = do
+  renderCss "pencil/default.css"
+  layout <- load toHtml "pencil/layout.html"
+
+  index <- load toHtml "pencil/index.markdown"
+  render (layout <|| index)
+
+  gettingStarted <- load toDir "pencil/tutorials/01-getting-started.markdown"
+  render (layout <|| gettingStarted)
+
