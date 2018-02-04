@@ -1,12 +1,8 @@
 # Tutorial 1: Getting Started
 
-This is $${title}
-
 This tutorial walks you through your first Pencil website. At the end of this
 tutorial, you'll have the beginnings of a website that you'll be able to use for
 your own.
-
-TODO DELETE THIS: Pencil version ${pencilVersion}
 
 You may find it useful to also have [Pencil's Haddock page](https://hackage.haskell.org/package/pencil-${pencilVersion}/docs/Pencil.html) open as a reference.
 
