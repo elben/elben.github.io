@@ -21,9 +21,9 @@ This website itself is generated via Pencil. You can view the source code
 ### Why use Pencil when there's already Hakyll?
 
 I used [Hakyll](https://jaspervdj.be/hakyll/) for a while but found it a bit too
-complicated for my needs. When I needed to extend it beyond what was provided,
-as a Haskell beginner I found it difficult to understand what was going on
+complicated for my needs. As a Haskell beginner I found it difficult extend
+beyond what was provided because I couldn't understand what was going on
 underneath the hood.
 
 Pencil is a simpler, beginner-friendly alternative to Hakyll. It's especially
-designed to be easier to understand and modfiy.
+designed to be easy to understand and modify.

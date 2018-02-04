@@ -30,12 +30,15 @@ a:hover {
 }
 
 #header {
+  font-weight: 300;
   float: left;
   width: 7em;
   text-align: right;
   margin-top: -1em;
   padding-right: 1em;
   border-right: 4px solid #333;
+
+  min-height: 400px;
 }
 
 #header h1 a {
@@ -65,4 +68,30 @@ pre {
   background-color: #eee;
   padding: 1em;
   overflow: scroll;
+}
+
+ul.nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 700px) {
+  #structure {
+    padding: 0 0.5em;
+    margin-top: 2em;
+  }
+
+  #header {
+    float: none;
+    min-height: 0;
+    border: none;
+    width: auto;
+    text-align: left;
+  }
+
+  #content {
+    margin-left: 0;
+    padding-left: 0;
+  }
 }

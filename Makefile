@@ -1,4 +1,3 @@
-CNAME := elbenshira.com
 REPO := git@github.com:elben/elben.github.io.git
 
 EXE := stack
@@ -6,7 +5,7 @@ EXE := stack
 all: generate
 	@true
 
-build: app/Main.hs
+build:
 	stack build --pedantic
 	@mkdir -p out
 
