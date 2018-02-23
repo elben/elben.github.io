@@ -28,6 +28,10 @@ jobs:
     docker:
       - image: fpco/stack-build
     steps:
+      - restore_cache:
+          keys:
+            - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
+            - v1-elben.github.io-
       - run:
           name: Generate the website files
           command: make deploy
@@ -45,6 +49,6 @@ workflows:
           requires:
             - build
           filters:
-            # Don't build master since that's for GitHub pages
+            # Only deploy if we're on master.
             branches:
-              ignore: master
+              only: master
