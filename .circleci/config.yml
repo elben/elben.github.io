@@ -2,10 +2,8 @@ version: 2
 
 jobs:
   build:
-    filters:
-      branches:
-        # Don't build master since that's for GitHub pages
-        ignore: master
+    docker:
+      image: fpco/stack-build
     steps:
       - checkout
       - restore_cache:
@@ -27,9 +25,8 @@ jobs:
             - ~/.stack
       - run: make all
   deploy:
-    filters:
-      branches:
-        only: master
+    docker:
+      image: fpco/stack-build
     steps:
       - run:
           name: Generate the website files
@@ -41,11 +38,13 @@ workflows:
     jobs:
       - build:
           filters:
+            # Don't build master since that's for GitHub pages
             branches:
               ignore: master
       - deploy:
           requires:
             - build
           filters:
+            # Don't build master since that's for GitHub pages
             branches:
               ignore: master
