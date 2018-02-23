@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      image: fpco/stack-build
+      - image: fpco/stack-build
     steps:
       - checkout
       - restore_cache:
@@ -26,7 +26,7 @@ jobs:
       - run: make all
   deploy:
     docker:
-      image: fpco/stack-build
+      - image: fpco/stack-build
     steps:
       - run:
           name: Generate the website files
