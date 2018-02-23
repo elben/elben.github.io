@@ -11,7 +11,7 @@ jobs:
             - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
             - v1-elben.github.io-
       - run:
-          name: Upgrade to the latest version of stack (Circle comes with stack pre-installed)
+          name: Upgrade stack
           command: stack upgrade
       - run:
           name: Setup GHC
@@ -24,32 +24,37 @@ jobs:
           paths:
             - ~/.stack
       - run: make all
-  generate:
+      - save_cache:
+          # Save the built files to be deployed later
+          key: v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - out
+  deploy:
     docker:
-      - image: fpco/stack-build
+      - image: ubuntu/xenial
     steps:
       - checkout
       - restore_cache:
           keys:
-            - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
-            - v1-elben.github.io-
+            - v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
+            - v1-elben.github.io-build
       - run:
-          name: Generate the website files and push to master branch
+          name: Deploy website
           command: make deploy
 
 workflows:
   version: 2
-  build-generate:
+  build-deploy:
     jobs:
       - build:
           filters:
             # Don't build master since that's for GitHub pages
             branches:
               ignore: master
-      - generate:
+      - deploy:
           requires:
             - build
           filters:
             branches:
-              # Only generate website files from the `source` branch
+              # Only deploy website files from the `source` branch
               only: source
