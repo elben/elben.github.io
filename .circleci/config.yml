@@ -23,7 +23,9 @@ jobs:
           key: v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
           paths:
             - ~/.stack
-      - run: make all
+      - run:
+          name: Generate website
+          command: make all
       - save_cache:
           # Save the built files to be deployed later
           key: v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
@@ -31,7 +33,7 @@ jobs:
             - out
   deploy:
     docker:
-      - image: ubuntu/xenial
+      - image: buildpack-deps:xenial
     steps:
       - checkout
       - restore_cache:
