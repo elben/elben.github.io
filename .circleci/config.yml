@@ -24,7 +24,7 @@ jobs:
           paths:
             - ~/.stack
       - run: make all
-  deploy:
+  generate:
     docker:
       - image: fpco/stack-build
     steps:
@@ -33,22 +33,21 @@ jobs:
             - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
             - v1-elben.github.io-
       - run:
-          name: Generate the website files
+          name: Generate the website files and push to master branch
           command: make deploy
 
 workflows:
   version: 2
-  build-deploy:
+  build-generate:
     jobs:
       - build:
           filters:
             # Don't build master since that's for GitHub pages
             branches:
               ignore: master
-      - deploy:
+      - generate:
           requires:
             - build
           filters:
-            # Only deploy if we're on master.
             branches:
-              only: master
+              ignore: master
