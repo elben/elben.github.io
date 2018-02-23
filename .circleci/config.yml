@@ -1,0 +1,51 @@
+version: 2
+
+jobs:
+  build:
+    filters:
+      branches:
+        # Don't build master since that's for GitHub pages
+        ignore: master
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
+            - v1-elben.github.io-
+      - run:
+          name: Upgrade to the latest version of stack (Circle comes with stack pre-installed)
+          command: stack upgrade
+      - run:
+          name: Setup GHC
+          command: stack setup
+      - run:
+          name: Build dependencies
+          command: stack build --pedantic
+      - save_cache:
+          key: v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
+          paths:
+            - ~/.stack
+      - run: make all
+  deploy:
+    filters:
+      branches:
+        only: master
+    steps:
+      - run:
+          name: Generate the website files
+          command: make deploy
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore: master
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: master
