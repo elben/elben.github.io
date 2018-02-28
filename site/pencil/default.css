@@ -41,6 +41,19 @@ a:hover {
   min-height: 400px;
 }
 
+h1 {
+  font-size: 2em;
+  line-height: 1em;
+}
+
+h2 {
+  font-size: 1.5em;
+}
+
+h3 {
+  font-size: 1.17em;
+}
+
 #header h1 a {
   color: #151311;
   text-decoration: none;
@@ -74,6 +87,10 @@ ul.nav {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+ul.nav li {
+  margin-bottom: 1em;
 }
 
 @media (max-width: 700px) {

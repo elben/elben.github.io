@@ -14,7 +14,7 @@ websiteTitle = "Elben Shira"
 
 config :: Config
 config = setEnv
-           (H.fromList [("title", VText websiteTitle), ("pencilVersion", VText "0.1.1")])
+           (H.fromList [("title", VText websiteTitle)])
            defaultConfig
 
 main :: IO ()
@@ -85,6 +85,9 @@ pencilWebsite = do
   index <- load toHtml "pencil/index.markdown"
   render (layout <|| index)
 
-  gettingStarted <- load toDir "pencil/tutorials/01-getting-started.markdown"
-  render (layout <|| gettingStarted)
+  t1 <- load toDir "pencil/tutorials/01-getting-started.markdown"
+  render (layout <|| t1)
+
+  t2 <- load toDir "pencil/tutorials/02-deploying-to-github-pages-using-circle.markdown"
+  render (layout <|| t2)
 
