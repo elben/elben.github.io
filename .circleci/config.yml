@@ -26,6 +26,7 @@ jobs:
       - run:
           name: Generate website
           command: make all
+          no_output_timeout: 20m
       - save_cache:
           # Save the built files to be deployed later
           key: v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
