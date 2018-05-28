@@ -63,7 +63,11 @@ template. Copy-and-paste this into `layout.html`:
     <title>$${title}</title>
     <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
   </head>
-<body>$${body}</body>
+<body>
+  <div class="structure">
+    $${body}
+  </div>
+</body>
 </html>
 ```
 
@@ -75,10 +79,18 @@ Let's also create a stylesheet. Create a new file in `site/` called
 `stylesheet.scss`, with this content:
 
 ```
-$bgColor: #999999;
+$bgColor: #ffffff;
 
 body {
   background-color: $bgColor;
+  font-family: sans-serif;
+  font-size: 18px;
+}
+
+.structure {
+  margin-left: auto;
+  margin-right: auto;
+  width: 600px;
 }
 ```
 
@@ -95,6 +107,8 @@ HTML, and inject it into our HTML-based layout.
 `index.markdown` contains:
 
 ```
+# My Awesome Website
+
 Welcome to my *awesome* [website](http://example.com)!
 ```
 
@@ -218,7 +232,7 @@ layout's `$${title}` is properly rendered. So let's create our own called
 ```haskell
 config :: Config
 config =
-  updateEnv (insertText "title" "My Simple Website")
+  updateEnv (insertText "title" "My Awesome Website")
             defaultConfig
 
 main :: IO ()
