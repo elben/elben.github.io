@@ -25,7 +25,9 @@ html.fonts-loaded {
 body {
   color: #151311; /* Dark grey with a little of red saturation */
 
-  font-size: 21px;
+  /* Our base font of 18px. Line-heights, margins, and paddings calculated to
+   * produce vertical rhyhtm. */
+  font-size: 18px;
   line-height: 1.5em;
   padding: 0;
   margin: 0;
