@@ -75,7 +75,7 @@ Let's also create a stylesheet. Create a new file in `site/` called
 `stylesheet.scss`, with this content:
 
 ```
-$bgColor: #ff0000;
+$bgColor: #999999;
 
 body {
   background-color: $bgColor;
@@ -103,6 +103,8 @@ Welcome to my *awesome* [website](http://example.com)!
 OK, let's write some Haskell! Fill `src/Main.hs` with this:
 
 ```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Pencil
@@ -165,6 +167,8 @@ defaultConfig`.
 Modify `Main.app` to look like this:
 
 ```haskell
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Pencil

@@ -1,5 +1,4 @@
 # Tutorial 2: Deploying to GitHub Pages using Circle
-# Tutorial 2: Deploying to GitHub Pages using Circle
 
 In this tutorial, we'll deploy our website that we started in Tutorial 1 to
 [GitHub Pages](https://pages.github.com) using [CircleCI](https://circleci.com).
