@@ -34,44 +34,14 @@ branch in the GitHub repository settings (Settings -> Branches -> Default branch
 
 ## Makefile
 
-Next, let's write a simple `Makefile` for our project. This is not necessary,
-but makes things a bit simpler. Start with this
-[tutorial](https://matthias-endler.de/2017/makefiles/) if `Makefiles` seem
-daunting.
+Let's generate a `Makefile` using the script provided by Pencil:
 
-In your project's directory, create a `Makefile` file with (make sure you
-replace `myusername` and `my-website` accordingly):
-
-```makefile
-REPO := git@github.com:myusername/myusername.github.io.git
-
-EXE := stack
-
-all: generate
-	@true
-
-build:
-	stack build --pedantic
-	@mkdir -p out
-
-generate: build clean
-	stack exec my-website
-
-clean:
-	rm -rf out/*
-
-# Deploy generated out/ folder to Github Pages
-deploy:
-	rm -rf out/.git
-	mkdir out/.circleci
-	cp .circleci/noop.yml out/.circleci/config.yml
-	cd out && git init && git add .
-	cd out && git config user.email "nobody@circleci.com"
-	cd out && git config user.name CircleCI
-	cd out && git commit -m "Generated on `date`"
-	cd out && git remote add origin ${REPO}
-	cd out && git push -f origin master:master
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/elben/pencil/master/bin/gen-stack-makefile)
 ```
+
+Check out the generated `Makefile` to make sure that your GitHub username, repo,
+and project name looks correct.
 
 With this `Makefile`, you can now just type `make` to build all your
 dependencies and generate your website. We'll also use this in the CircleCI
@@ -82,108 +52,27 @@ build.
 We'll also setup a [CircleCI](https://circleci.com) to automatically build and
 deploy our website whenever we push our source.
 
-In your project's directory:
+In your project's directory, generate the required CircleCI configuration files
+using this script:
 
-```bash
-mkdir .circleci
-touch .circleci/config.yml
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/elben/pencil/master/bin/gen-stack-circle-config)
 ```
 
-Then open `config.yml` and fill it with (replace `myusername` and `my-website.cabal` accordingly):
+The CircleCI build plan generated in `.circleci/config.yml` folder will:
 
-```yaml
-version: 2
+- Build the `source` branch and other branches that is _not_ `master`. This
+  generates your website's static content.
+- Deploy the `master` branch. It "deploys" your website by taking the
+  static content generated and commiting those files as a git commit in the
+  `master` branch. So your `source` branch contains Haskell code, and your
+  `master` branch contains the generated static content.
+- Once a commit is generated in `master`, this triggers GitHub Pages to deploy
+  the static content on their webservers.
+- There is also a `.circleci/noop.yml` config that we inject into the `master`
+  branch so that CircleCI ignores that branch.
 
-jobs:
-  build:
-    docker:
-      - image: fpco/stack-build
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-myusername.github.io-{{ checksum "my-website.cabal" }}-{{ checksum "stack.yaml" }}
-            - v1-myusername.github.io-
-      - run:
-          name: Upgrade stack
-          command: stack upgrade
-      - run:
-          name: Setup GHC
-          command: stack setup
-      - run:
-          name: Build dependencies
-          command: stack build --pedantic
-      - save_cache:
-          key: v1-myusername.github.io-{{ checksum "my-website.cabal" }}-{{ checksum "stack.yaml" }}
-          paths:
-            - ~/.stack
-      - run:
-          name: Generate website
-          command: make all
-      - save_cache:
-          # Save the built files to be deployed later
-          key: v1-myusername.github.io-build-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - out
-  deploy:
-    docker:
-      - image: buildpack-deps:xenial
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-myusername.github.io-build-{{ .Branch }}-{{ .Revision }}
-            - v1-myusername.github.io-build
-      - run:
-          name: Deploy website
-          command: make deploy
-
-workflows:
-  version: 2
-  build-deploy:
-    jobs:
-      - build:
-          filters:
-            # Don't build master since that's for GitHub pages
-            branches:
-              ignore: master
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              # Only deploy website files from the `source` branch
-              only: source
-```
-
-This CircleCI build plan will build all branches (except `master`, which is
-reserved for the actual generated files). It will, however, only "deploy" the
-`source` branch. A "deploy" in this case means generate a git commit in the
-`master` branch of your static files.
-
-You can read more about the CircleCi configuration [here](https://circleci.com/docs/2.0/configuration-reference/).
-
-We also will need one more YAML file:
-
-```bash
-touch .circleci/noop.yml
-```
-
-Edit that file and fill it with:
-
-```yaml
-version: 2
-
-jobs:
-  build:
-    branches:
-      ignore:
-        - master
-```
-
-The `Makefile`'s `deploy` command makes `noop.yml` be the `config.yml` when it
-"deploys" to the `master` branch. This is because we don't need CircleCI to do
-anything with the files in `master`; GitHub Pages will deploy it for us.
+You can read more about the CircleCI configuration [here](https://circleci.com/docs/2.0/configuration-reference/).
 
 ## Putting it all together
 

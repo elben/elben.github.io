@@ -2,7 +2,7 @@ name:                elbenshiracom
 version:             0.1.0.0
 synopsis: Personal website: elbenshira.com
 description:
-homepage:            https://github.com/elben/elben.github.com
+homepage:            https://github.com/elben/elben.github.io
 license:             BSD3
 license-file:        LICENSE
 author:              Elben Shira

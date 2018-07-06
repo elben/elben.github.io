@@ -26,4 +26,3 @@ deploy:
 	cd out && git commit -m "Generated on `date`"
 	cd out && git remote add origin ${REPO}
 	cd out && git push -f origin master:master
-
