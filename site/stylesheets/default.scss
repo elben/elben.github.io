@@ -292,6 +292,14 @@ div.chapter-num {
  float: left;
 }
 
+.hide {
+  display: none;
+}
+
+.view-comments {
+  cursor: pointer;
+}
+
 @media (max-width: $site-width) {
   #header h1 {
     padding-top: 0.5em;

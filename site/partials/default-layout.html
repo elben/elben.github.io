@@ -24,6 +24,20 @@
           if(getCookie("code-fonts-loaded") == "true") {
               document.documentElement.className += " code-fonts-loaded";
           }
+
+          window.addEventListener("load", function() {
+            var elems = document.getElementsByClassName("view-comments");
+            for (var i = 0; i < elems.length; ++i) {
+              elems[i].onclick =
+                function () {
+                  var disqus = document.getElementById("disqus-comments");
+                  if (disqus) {
+                    disqus.classList.remove("hide");
+                    this.classList.add("hide");
+                  }
+                }
+            }
+          });
         </script>
 
         <link rel="stylesheet" type="text/css" href="/stylesheets/default.css" />
