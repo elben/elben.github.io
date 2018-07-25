@@ -52,7 +52,7 @@ src/
 site/
 ```
 
-Create a new file, `site/layout.html`. This will eb our website's structural
+Create a new file, `site/layout.html`. This will be our website's structural
 template. Copy-and-paste this into `layout.html`:
 
 ```html

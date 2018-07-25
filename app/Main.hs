@@ -91,5 +91,8 @@ pencilWebsite = do
   t2 <- load toDir "pencil/tutorials/02-deploying-to-github-pages-using-circle.markdown"
   render (layout <|| t2)
 
+  t3 <- load toDir "pencil/tutorials/03-blogging.markdown"
+  render (layout <|| t3)
+
   loadResources id True True "pencil/tutorials/images/" >>= render
 

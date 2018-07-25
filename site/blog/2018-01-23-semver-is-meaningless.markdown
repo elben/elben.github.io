@@ -1,5 +1,5 @@
 <!--PREAMBLE
-postTitle: SemVer is Meaningless
+postTitle: "SemVer is Meaningless"
 date: 2018-01-23
 -->
 
