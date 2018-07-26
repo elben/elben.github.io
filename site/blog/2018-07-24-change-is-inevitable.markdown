@@ -1,5 +1,5 @@
 <!--PREAMBLE
-postTitle: "Change is Inevitable: Designing Software"
+postTitle: "Change is Inevitable: Designing Software in a Chaotic World"
 date: 2018-07-24
 tags:
   - software-design
@@ -20,7 +20,7 @@ One reason is that we choose bad patterns. How can you tell if a pattern is good
 
 This is because the patterns you think of is often too specific. It may serve you well today, but who knows about tomorrow. You may come back to it months from now and realize that you overthought half of it and was too careless in the other half. But an abstraction or generalization that spans libraries, languages and communities is an indicator of its value and reliability.
 
-The monad pattern, for example, is a pattern of computation found everywhere. Languages like Haskell, Scala and Rust all share the same monadic pattern. Heck even Java 8’s `Optional` is monadic-y. The monad is a beautiful shield of safety that coos your data type into a lavender-scented blanket of comfort. And by giving that pattern a name we are empowered to write code that works. It is *because* of its limitations that we are able to write something good.
+The monad pattern, for example, is a pattern of computation found everywhere. It is a beautiful shield of safety that coos your data type into a lavender-scented blanket of comfort. And by giving that pattern a name we are empowered to write code that works. It is *because* of its limitations that we are able to write something good. You’ll find this pattern in languages like Scala, Rust, and Haskell. Heck even Java 8’s `Optional` is monadic-y, and so are most futures libraries because of the inherit need of callback function composition.
 
 Now let’s compare the monad with, say, all those interfaces and abstract classes you created for your first big-boy Java project. You know what kind of mess you made for yourself. This is because they were careless abstractions made without much thought. They didn’t empower you in any way, didn’t simplify anything, didn’t prevent bugs. You thought you were doing something useful, something productive. But the end result, judged by the harsh realities of time, proved otherwise.
 
@@ -34,7 +34,7 @@ This doesn’t mean that we abandon thinking about the future. Instead, **we nee
 
 This was a breakthrough in my thinking. Don’t abstract the class. Don’t pull out the pattern. Don’t code for the worst-case scenario, or for some potential feature a product manager may want six months from now. At least not yet. Think: what do I gain from doing it, and what do I lose? Maybe you’re sacrificing directness, simplicity, debuggability. Maybe you’re sacrificing ease of change. Those are precious things. Is it worth sacrificing for your clever pattern?
 
-The best thing you can do is to do nothing. Wait until you find yourself doing the same thing three times, then take out the scalpel. The end result will be simpler and more powerful at the same time.
+**The best thing you can do is to do nothing.** Wait until you actually need to implement that feature, until you find yourself doing the same thing three times. Then take out the scalpel. The end result will be simpler and more powerful at the same time.
 
 > “Two children make a happy home. But three make good abstractions.” — Ancient Lithuanians proverb
 
