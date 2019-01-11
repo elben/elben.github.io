@@ -52,7 +52,7 @@ But note `map-inc-reducer`’s explicit use of `inc` as its transformer. What if
 ; ⇒ [1 2 3 4 5 6 7 8 9 10]
 ```
 
-Functions like `map-reducer` are called a higher-order functions because they accept functions and return functions. Let’s play around:
+Functions like `map-reducer` are called higher-order functions because they accept functions and return functions. Let’s play around:
 
 ```clojure
 (reduce (map-reducer dec) [] (range 10))
@@ -285,7 +285,7 @@ Say we invoke this composed function by passing in some reducing function, perha
 
 This means that when we give a reducing function to `xform`, like `(xform conj)`, we get back a function that will apply the left-most reducing function first, then down the stack until the last reducing function, `conj`, is applied to the current result and input.
 
-Imagine this transducer is being used in some reduce function, and we have so far collected in our results the vector `[1 5 17]`. Say the current input in question is `12`. Since `12` is even, it will pass the first filter. This first filter will then call its reducing function, passing in `[1 5 17]` and `12`. In this case, the reducing function is the “rest” of the transformation, which is the second filter `#(< % 10)`. Since `12` fails the second filter, the third reducing function is *not* called, and the result-so-far `[1 5 17]` is returned.
+Imagine this transducer is being used in some reduce function, and we have so far collected in our results the vector `[1 5 17]`. Say the current input in question is `12`. Since `12` is even, it will pass the first filter. Instead of terminating early and returning the current `result`, the first filter will call its reducing function, passing in `[1 5 17]` and `12`. In this case, the reducing function is the “rest” of the transformation, which is the second filter `#(< % 10)`. Since `12` fails the second filter, the third reducing function is *not* called, and the result-so-far `[1 5 17]` is returned.
 
 But if the input in question is `6`, it would pass both filters and arrive at the mapping transforms, which will transform `6` to `37`. We then pass this input to the final reducing function, `conj`, which will join `[1 5 17]` with the new value `37`.
 
