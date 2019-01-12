@@ -11,6 +11,9 @@ jobs:
             - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
             - v1-elben.github.io-
       - run:
+          name: Install build essentials
+          command: sudo apt-get install build-essential g++
+      - run:
           name: Upgrade stack
           command: stack upgrade
       - run:
