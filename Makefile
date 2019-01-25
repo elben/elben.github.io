@@ -8,7 +8,7 @@ all: generate
 #
 # "@" means don't echo this command
 build:
-	nix-shell -p zlib libiconv --run "cabal new-update && cabal install JuicyPixels-3.2.9.5 && cabal install pencil-0.1.3 && cabal new-build"
+	nix-shell -p zlib libiconv --run "cabal new-update && cabal install pencil-0.1.3 && cabal new-build"
 	@mkdir -p out
 
 generate: build clean

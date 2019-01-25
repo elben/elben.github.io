@@ -6,7 +6,7 @@ mkDerivation {
   isLibrary = false;
   isExecutable = true;
   executableHaskellDepends = [
-    base text unordered-containers
+    base text unordered-containers JuicyPixels
   ];
   homepage = "https://github.com/elben/elben.github.io";
   description = "Personal website: elbenshira.com";
