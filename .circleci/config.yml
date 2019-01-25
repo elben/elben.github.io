@@ -24,13 +24,6 @@ jobs:
             - v2-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "default.nix" }}
             - v2-elben.github.io-
       - run:
-          name: Build using nix-build
-          command: nix-build default.nix
-      - save_cache:
-          key: v2-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "default.nix" }}
-          paths:
-            - /nix/
-      - run:
           name: Generate website
           command: make all
           no_output_timeout: 45m
