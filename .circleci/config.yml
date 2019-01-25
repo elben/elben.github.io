@@ -10,6 +10,7 @@ references:
         https://nixos.org/channels/nixpkgs-unstable nixpkgs && \
         nix-channel --update
         nix-env -iA nixpkgs.haskellPackages.cabal-install
+        nix-env -i ghc
         nix-env -i gnumake
 
 jobs:
