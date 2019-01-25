@@ -24,9 +24,6 @@ jobs:
             - v2-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "default.nix" }}
             - v2-elben.github.io-
       - run:
-          name: Install nix
-          command: curl https://nixos.org/nix/install | sh
-      - run:
           name: Build using nix-build
           command: nix-build default.nix
       - save_cache:
