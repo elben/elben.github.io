@@ -1,4 +1,4 @@
-{ mkDerivation, base, stdenv, text, unordered-containers }:
+{ mkDerivation, base, stdenv, text, unordered-containers, JuicyPixels }:
 mkDerivation {
   pname = "elbenshiracom";
   version = "0.1.0.0";
