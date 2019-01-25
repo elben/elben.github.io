@@ -1,16 +1,18 @@
 REPO := git@github.com:elben/elben.github.io.git
 
-EXE := stack
-
 all: generate
 	@true
 
+# We need zlib and libiconv because some of the cabal-compiled packages depend
+# on them.
+#
+# "@" means don't echo this command
 build:
-	stack build --pedantic
+	nix-shell -p zlib libiconv --run "cabal new-build"
 	@mkdir -p out
 
 generate: build clean
-	stack exec elbenshiracom-exe
+	nix-shell --run "cabal new-run elbenshiracom-exe"
 
 clean:
 	rm -rf out/*

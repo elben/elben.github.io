@@ -19,6 +19,10 @@ a:hover {
   text-decoration: underline;
 }
 
+a.sourceLine {
+  text-decoration: none;
+}
+
 img {
   max-width: 100%;
 }

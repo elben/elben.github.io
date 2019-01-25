@@ -32,7 +32,7 @@ We'll also need to add `pencil` as as an `extra-deps` in `stack.yml`, since
 
 ```yaml
 extra-deps:
-  - pencil-0.1.2
+  - pencil-0.1.3
 ```
 
 Now we're going to add some source files. First, let's make a new directory called

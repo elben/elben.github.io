@@ -1,49 +1,57 @@
 version: 2
 
+# Based off: https://github.com/johnae/circleci-nix
+references:
+  prepare_ci: &prepare_container
+    run:
+      name: Prepare Container
+      command: |
+        nix-channel --add \
+        https://nixos.org/channels/nixpkgs-unstable nixpkgs && \
+        nix-channel --update
+        nix-env -iA nixpkgs.haskellPackages.cabal-install
+
 jobs:
   build:
     docker:
-      - image: fpco/stack-build
+      # https://github.com/NixOS/docker
+      - image: nixorg/nix:circleci
     steps:
       - checkout
+      - *prepare_container
       - restore_cache:
           keys:
-            - v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
-            - v1-elben.github.io-
+            - v2-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "default.nix" }}
+            - v2-elben.github.io-
       - run:
-          name: Install build essentials
-          command: sudo apt-get install build-essential g++
+          name: Install nix
+          command: curl https://nixos.org/nix/install | sh
       - run:
-          name: Upgrade stack
-          command: stack upgrade
-      - run:
-          name: Setup GHC
-          command: stack setup
-      - run:
-          name: Build dependencies
-          command: stack build --pedantic
+          name: Build using nix-build
+          command: nix-build default.nix
       - save_cache:
-          key: v1-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "stack.yaml" }}
+          key: v2-elben.github.io-{{ checksum "elbenshiracom.cabal" }}-{{ checksum "default.nix" }}
           paths:
-            - ~/.stack
+            - /nix/
       - run:
           name: Generate website
           command: make all
-          no_output_timeout: 30m
+          no_output_timeout: 45m
       - save_cache:
           # Save the built files to be deployed later
-          key: v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
+          key: v2-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
           paths:
             - out
   deploy:
     docker:
-      - image: buildpack-deps:xenial
+      # https://github.com/NixOS/docker
+      - image: nixorg/nix:circleci
     steps:
       - checkout
       - restore_cache:
           keys:
-            - v1-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
-            - v1-elben.github.io-build
+            - v2-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
+            - v2-elben.github.io-build
       - run:
           name: Deploy website
           command: make deploy
