@@ -7,7 +7,7 @@ references:
       name: Prepare Container
       command: |
         nix-channel --add \
-        https://nixos.org/channels/nixpkgs-18.09 nixpkgs && \
+        https://nixos.org/channels/nixos-18.09 nixpkgs && \
         nix-channel --update
         nix-env -iA nixpkgs.haskellPackages.cabal-install
         nix-env -i ghc
