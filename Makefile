@@ -8,11 +8,11 @@ all: generate
 #
 # "@" means don't echo this command
 build:
-	nix-shell -p zlib libiconv --run "cabal new-update && cabal install pencil-0.1.3 && cabal new-build"
+	nix-shell --attr elbenshiracom --run "cabal new-update && cabal new-build"
 	@mkdir -p out
 
 generate: build clean
-	nix-shell --run "cabal new-run elbenshiracom-exe"
+	nix-shell --attr elbenshiracom --run "cabal new-run elbenshiracom-exe"
 
 clean:
 	rm -rf out/*
