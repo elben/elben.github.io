@@ -9,10 +9,10 @@ all: generate
 # "@" means don't echo this command
 build:
 	nix-build --attr elbenshiracom
-	@mkdir -p out
 
 generate: build clean
-	./result
+	@mkdir -p out
+	nix-shell --attr elbenshiracom --run "./result/bin/elbenshiracom-exe"
 
 clean:
 	rm -rf out/*
