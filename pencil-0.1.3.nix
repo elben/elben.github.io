@@ -13,6 +13,7 @@ mkDerivation {
     xml yaml
   ];
   testHaskellDepends = [ base doctest text unordered-containers ];
+  doCheck = false;
   homepage = "https://github.com/elben/pencil";
   description = "Static site generator";
   license = stdenv.lib.licenses.bsd3;
