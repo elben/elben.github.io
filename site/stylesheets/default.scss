@@ -52,6 +52,11 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Code syntax highlighting uses <a> tags. Don't underline code. */
+a.sourceLine {
+  text-decoration: none;
+}
+
 hr {
   /* The HR is 4px tall (1px top and 3px bottom border). We have a 27px
    * baseline, so this means we have 23px left. Hence 23px margin. */
