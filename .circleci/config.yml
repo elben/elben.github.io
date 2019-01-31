@@ -39,6 +39,7 @@ jobs:
       - image: nixorg/nix:circleci
     steps:
       - checkout
+      - *prepare_container
       - restore_cache:
           keys:
             - v2-elben.github.io-build-{{ .Branch }}-{{ .Revision }}
