@@ -187,6 +187,12 @@ ul.simple {
   line-height: 1.5em;
 }
 
+sup {
+  // Prevents superscripts from pushing the line height of the pargraph higher,
+  // causing inconsistent line heights in paragraph.
+  line-height: 0;
+}
+
 #structure {
   position: relative;
   height: auto;
