@@ -26,14 +26,14 @@ rm -f elbenshiracom.nix && cabal2nix . > elbenshiracom.nix
 Build using Nix:
 
 ```bash
-nix-build --attr env
+nix-build
 ```
 
 Calling `nix-build` everytime can be slow, however. When developing, it'll be
 faster to get into a nix shell and use cabal to build incrementally:
 
 ```bash
-nix-shell --attr env
+nix-shell
 
 cabal new-build
 ```

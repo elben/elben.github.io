@@ -11,6 +11,12 @@ let
           # cabal2nix cabal://pencil-0.1.3 > pencil-0.1.3.nix
           pencil =
             haskellPackagesNew.callPackage ./pencil-0.1.3.nix { };
+
+          # Since pencil 0.1.3 specifies hsass >= 0.8, and the
+          # 18.09 nix channel only has hsass 0.7.
+          # cabal2nix cabal://hsass-0.8.0 > hsass-0.8.0.nix
+          hsass =
+            haskellPackagesNew.callPackage ./hsass-0.8.0.nix { };
         };
       };
     };
