@@ -1,9 +1,14 @@
+$bodyColor: #151311; /* Dark grey with a little of red saturation */
+$anchorColor: #ff3366; /* red persimmon */
+$darkGray: #333;
+
+
 html {
   font-family: 'Fira Sans', sans-serif;
 }
 
 body {
-  color: #151311; /* Dark grey with a little of red saturation */
+  color: $bodyColor;
   font-size: 18px;
   line-height: 1.4em;
   padding: 0;
@@ -11,7 +16,7 @@ body {
 }
 
 a {
-  color: #ff3366; /* red persimmon */
+  color: $anchorColor;
   text-decoration: underline;
 }
 
@@ -20,6 +25,7 @@ a:hover {
 }
 
 a.sourceLine {
+  color: $bodyColor;
   text-decoration: none;
 }
 
@@ -44,7 +50,7 @@ img {
   text-align: right;
   margin-top: -1em;
   padding-right: 1em;
-  border-right: 4px solid #333;
+  border-right: 4px solid $darkGray;
 
   min-height: 400px;
 }
@@ -72,7 +78,7 @@ h3 {
 }
 
 #header hr {
-  border: 2px solid #222;
+  border: 2px solid $darkGray;
   margin-top: 23px 0;
 }
 
@@ -109,6 +115,12 @@ ul.nav li {
 .figure .caption {
   font-size: 14px;
   color: #666;
+}
+
+.note {
+  border: 1px solid $darkGray;
+  padding: 2em;
+  background: #aaa;
 }
 
 @media (max-width: 700px) {
