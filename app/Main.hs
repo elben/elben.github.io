@@ -79,7 +79,7 @@ app = do
 
 pencilWebsite :: PencilApp ()
 pencilWebsite = do
-  renderCss "pencil/default.css"
+  renderCss "pencil/default.scss"
   layout <- load toHtml "pencil/layout.html"
 
   index <- load toHtml "pencil/index.markdown"
