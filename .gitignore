@@ -6,5 +6,4 @@ dist-newstyle/
 dist/
 cabal.project.local*
 cabal.sandbox.config
-.ghc.environment.*
 result
