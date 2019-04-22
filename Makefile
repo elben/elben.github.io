@@ -1,12 +1,9 @@
 REPO := git@github.com:elben/elben.github.io.git
 
+# "@" means don't echo this command
 all: generate
 	@true
 
-# We need zlib and libiconv because some of the cabal-compiled packages depend
-# on them.
-#
-# "@" means don't echo this command
 build:
 	nix-build --attr elbenshiracom
 
