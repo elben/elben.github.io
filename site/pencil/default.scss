@@ -1,7 +1,7 @@
 $bodyColor: #151311; /* Dark grey with a little of red saturation */
 $anchorColor: #ff3366; /* red persimmon */
 $darkGray: #333;
-
+$lightGray: #eee;
 
 html {
   font-family: 'Fira Sans', sans-serif;
@@ -97,7 +97,7 @@ pre {
 }
 
 pre {
-  background-color: #eee;
+  background-color: $lightGray;
   padding: 1em;
   overflow: scroll;
 }
@@ -118,9 +118,10 @@ ul.nav li {
 }
 
 .note {
-  border: 1px solid $darkGray;
-  padding: 2em;
-  background: #aaa;
+  border: 3px solid #ccc;
+  padding: 0 1em;
+  background: $lightGray;
+  font-size: 0.8em;
 }
 
 @media (max-width: 700px) {
