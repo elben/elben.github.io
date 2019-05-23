@@ -73,26 +73,3 @@ app = do
   loadResources id True True "images/" >>= render
 
   passthrough "CNAME" >>= render
-
-  pencilWebsite
-
-
-pencilWebsite :: PencilApp ()
-pencilWebsite = do
-  renderCss "pencil/default.css"
-  layout <- load toHtml "pencil/layout.html"
-
-  index <- load toHtml "pencil/index.markdown"
-  render (layout <|| index)
-
-  t1 <- load toDir "pencil/tutorials/01-getting-started.markdown"
-  render (layout <|| t1)
-
-  t2 <- load toDir "pencil/tutorials/02-deploying-to-github-pages-using-circle.markdown"
-  render (layout <|| t2)
-
-  t3 <- load toDir "pencil/tutorials/03-blogging.markdown"
-  render (layout <|| t3)
-
-  loadResources id True True "pencil/tutorials/images/" >>= render
-
