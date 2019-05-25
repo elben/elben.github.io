@@ -35,7 +35,8 @@ faster to get into a nix shell and use cabal to build incrementally:
 ```bash
 nix-shell
 
-cabal new-build
+cabal build
+cabal run elbenshiracom-exe
 ```
 
 

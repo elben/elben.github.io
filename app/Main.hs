@@ -3,8 +3,6 @@
 module Main where
 
 import Pencil
-import Pencil.Blog
-import Pencil.Internal.Env
 import Control.Monad (forM_)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
@@ -13,9 +11,7 @@ websiteTitle :: T.Text
 websiteTitle = "Elben Shira"
 
 config :: Config
-config = setEnv
-           (H.fromList [("title", VText websiteTitle)])
-           defaultConfig
+config = updateEnv (insertText "title" websiteTitle) defaultConfig
 
 main :: IO ()
 main =
@@ -23,13 +19,13 @@ main =
 
 app :: PencilApp ()
 app = do
-  layoutPage <- load toHtml "partials/default-layout.html"
-  postPage <- load toHtml "partials/post.html"
+  layoutPage <- load "partials/default-layout.html"
+  postPage <- load "partials/post.html"
 
-  posts <- loadBlogPosts "blog/"
+  posts <- loadPosts "blog/"
 
   let recommendedPosts = filterByVar False "tags"
-                           (arrayContainsString "recommended")
+                           (arrayContainsText "recommended")
                            posts
 
   env <- asks getEnv
@@ -41,35 +37,46 @@ app = do
 
   -- Prepare blog posts. Add tag info into each blog post page, and then inject
   -- into the correct structure.
-  let posts' = map ((layoutPage <|| postPage <|) . injectTagsEnv tagPages . injectTitle websiteTitle) posts
+  let posts' = map ((layoutPage <|| postPage <|) . injectTags tagPages . injectTitle websiteTitle) posts
 
   -- Render blog posts
   render posts'
 
   -- Index
   -- Function composition
-  let indexEnv = (insertPages "posts" posts . insertPages "recommendedPosts" recommendedPosts) env
-  indexPage <- load toHtml "index.html"
+  indexPage <- load "index.html"
+  indexEnv <- (insertPages "posts" posts env >>= insertPages "recommendedPosts" recommendedPosts)
   withEnv indexEnv (render (layoutPage <|| indexPage))
 
   -- Render tag list pages
   forM_ (H.elems tagPages) (\page -> render (layoutPage <|| page))
 
   -- Render blog post archive
-  archivePage <- load (const "blog/") "partials/post-archive.html"
-  let archiveEnv = insertPages "posts" posts env
-  withEnv archiveEnv (render (layoutPage <|| archivePage))
+  archivePage <- load "partials/post-archive.html"
+  render (layoutPage <|| to "blog/" archivePage <<| coll "posts" posts)
+
+  -- RSS feed for blog posts
+  rssLayout <- move "blog/" <$> load "rss.xml"
+
+  -- Build RSS feed of the last 5 posts.
+  let rssFeedStruct = struct rssLayout <<| coll "posts" (fmap escapeXml (take 5 posts))
+
+  -- Render the RSS feed. We need to render inside a modified environment, where
+  -- @toTextRss@ is used as the render function, so that dates are rendered in
+  -- the RFC 822 format, per the RSS specification.
+  local (setDisplayValue toTextRss)
+        (render rssFeedStruct)
 
   -- /projects/
-  projectsPage <- load (const "projects/") "projects.html"
-  render (layoutPage <|| projectsPage)
+  projectsPage <- load "projects.html"
+  render (layoutPage <|| to "projects/" projectsPage)
 
   -- Render CSS file
-  renderCss "stylesheets/default.scss"
+  loadAndRender "stylesheets/default.scss"
 
   -- Render static directories
-  loadResources toExpected True False "p/" >>= render
-  loadResources id True True "stylesheets/fonts/" >>= render
-  loadResources id True True "images/" >>= render
+  loadAndRender "p/"
+  loadAndRender "stylesheets/fonts/"
+  loadAndRender "images/"
 
   passthrough "CNAME" >>= render
