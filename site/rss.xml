@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Elben Shira's RSS Feed</title>
+  <link>https://elbenshira.com/blog/rss.xml</link>
+  <description>RSS feed for elbenshira.com/blog</description>
+
+  ${for(posts)}
+  <item>
+  <link>https://elbenshira.com/blog${this.url}</link>
+  <guid>https://elbenshira.com/blog${this.url}</guid>
+  <pubDate>${date}</pubDate>
+  <title>${postTitle}</title>
+  <description>${this.content}</description>
+  </item>
+  ${end}
+</channel>
+</rss>

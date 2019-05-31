@@ -39,7 +39,7 @@ nix-shell -p zlib libiconv
 
 cabal install pencil
 cabal build
-cabal run
+cabal run elbenshiracom-exe
 ```
 
 ```bash
