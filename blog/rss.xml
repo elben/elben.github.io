@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Elben Shira's RSS Feed</title>
+  <link>https://elbenshira.com/blog/rss.xml</link>
+  <description>RSS feed for elbenshira.com/blog</description>
+
+  
+  <item>
+  <link>https://elbenshira.com/blog/blog/a-programming-language-for-the-laboratory/</link>
+  <guid>https://elbenshira.com/blog/blog/a-programming-language-for-the-laboratory/</guid>
+  <pubDate>Sat, 30 Mar 2019 00:00:00 +0000</pubDate>
+  <title>A Programming Language for the Laboratory</title>
+  <description>
+&lt;p&gt;In the perhaps arduous debate of static versus dynamic typing, I fall quite easily in the &lt;a href=&quot;http://elbenshira.com/blog/the-end-of-dynamic-languages/&quot;&gt;camp of static typing&lt;/a&gt;. For what it’s worth, there is &lt;a href=&quot;http://danluu.com/empirical-pl/&quot;&gt;some clinical evidence&lt;/a&gt; of its benefits. A &lt;a href=&quot;https://pleiad.cl/papers/2012/kleinschmagerAl-icpc2012.pdf&quot;&gt;recent study&lt;/a&gt; showed that types help developers learn new classes and fix type errors, but showed no benefit against semantic errors. In &lt;a href=&quot;https://ieeexplore.ieee.org/document/7503719/&quot;&gt;another experiment&lt;/a&gt;, the authors played Devil’s advocate and polled for scenarios in which they thought dynamic languages would be superior to typed languages in terms of development time. They found that a typed language helped two of the four tasks that were supposedly better in a dynamic context, suggesting that types do help.&lt;/p&gt;
+&lt;p&gt;But I had several hesitations with these experiments. The number of subjects were usually low, and the researchers used the same subject to accomplish both the typed and untyped tasks, potentially injecting bias. And the tasks assigned were often trivial and not indicative of the complexity found in real software.&lt;/p&gt;
+&lt;p&gt;When I brought these objections up to Stefan Hanenberg, a co-author on both papers, he pointed out that many CS departments (and thus their students) are not well-versed in research methods. What we may perceive as a low sample size or a naive experiment (i.e. not realistic enough) may be either unnecessary or even harmful to the experiment.&lt;/p&gt;
+&lt;p&gt;I admit that I don’t have the background to judge these things soundly. But one thing I do wish for is more control of the programming language used in the experiment. The two papers I referenced, for example, pit Java against a subset of Groovy (a dynamic language) to make it as close to Java as possible. Other papers try to compare wildly different languages against each other.&lt;/p&gt;
+&lt;p&gt;But we know that type systems vary greatly across languages. Haskell programmers use algebraic data types and type classes, but Java programmers use interfaces and inheritance. And other factors influence productivity and maintainability of software outside of the type system. Clojure programmers write immutable functions because immutable collections are the default, but Ruby programmers don’t have the same encouragement. Java programmers have access to advanced IDEs, and JavaScript programmers can easily open a REPL and debugger in production. How do we even begin to compare, in a controlled setting, the benefits of one feature over another? Or figure out &lt;em&gt;why&lt;/em&gt; certain features help, while others hurt?&lt;/p&gt;
+&lt;h2 id=&quot;a-controlled-environment&quot;&gt;A controlled environment&lt;/h2&gt;
+&lt;p&gt;I’m not a researcher or scientist, but I would like to see a programming language designed for the laboratory. Such a language should support multiple paradigms, but with the ability to toggle features on-and-off. We should be able to turn off the static type checker, or toggle between mutable and immutable data structures, or enable object-oriented features or algebraic data types.&lt;/p&gt;
+&lt;p&gt;The development environment should also be controlled. Imagine an editor and REPL environment that can track the subject’s actions. We can record their code over time, run automated tests in the background. Heck, we could even measure blood pressure over time and see that thing spike when we force them to hunt down a null pointer exception in production.&lt;/p&gt;
+&lt;p&gt;Such an environment would allow us to control one variable at a time, and may help us see precisely how certain language features help programmers write less bugs, or ease refactoring. It could help see what features actually hurt programmers. Maybe we could even begin to understand &lt;em&gt;why&lt;/em&gt; certain features affect us a certain way. Imagine if we had this kind of clinical attitude in 1965, when Tony Hoare’s itchy fingers implemented the null reference. What if null was tested and &lt;em&gt;rejected&lt;/em&gt; in the laboratory? How many programmers would we have saved from existential dread? How many angry &lt;code&gt;git-blame&lt;/code&gt;s would we have prevented?&lt;/p&gt;
+&lt;p&gt;Granted, this would be a huge undertaking. Isn’t exactly the most-exciting or praise-generating kind of research, and it probably wouldn’t have prevented the release of the &lt;code&gt;null&lt;/code&gt; virus. But we are in a programming language renaissance, and I think research like this is something our community longs for, whether we know it or not. Sure, debate around programming languages will continue until the end of time. But it sure would be more interesting if we had studies like this. And definitely more fun.&lt;/p&gt;</description>
+  </item>
+  
+  <item>
+  <link>https://elbenshira.com/blog/blog/the-simplicity-of-haskell/</link>
+  <guid>https://elbenshira.com/blog/blog/the-simplicity-of-haskell/</guid>
+  <pubDate>Fri, 11 Jan 2019 00:00:00 +0000</pubDate>
+  <title>The Simplicity of Haskell</title>
+  <description>
+&lt;p&gt;What makes Haskell difficult to learn? The building blocks of Haskell are the same as any other language: primitive values, containers, and functions. When we list them out like that, it’s quite simple. But Haskell combines these elements—specifically, functions—in unfamiliar ways.&lt;/p&gt;
+&lt;p&gt;Many of us are now unfazed when we see functions passed around like values:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;function f(g, n) {
+  return g(n) + g(n+1)
+}
+
+function triple(x) {
+  return x * 3
+}
+
+f(triple, 5)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;But when we first saw something like this, we probably traced these “complicated” functions into their fundamental values. “So &lt;code&gt;f&lt;/code&gt; is a function that takes &lt;code&gt;g&lt;/code&gt;, which is any function that the user has chosen. We call that user-given function twice, passing in the user-given &lt;code&gt;n&lt;/code&gt; and then &lt;code&gt;n+1&lt;/code&gt;. So when we call &lt;code&gt;f(triple, 5)&lt;/code&gt;, what’s happening is that we call &lt;code&gt;triple&lt;/code&gt; twice. We first feed &lt;code&gt;5&lt;/code&gt; to &lt;code&gt;triple&lt;/code&gt;, and then &lt;code&gt;6&lt;/code&gt;.” We were playing interpreter.&lt;/p&gt;
+&lt;p&gt;After a while, we got comfortable with treating functions as values and we didn’t have to play out the interpreter as often.&lt;/p&gt;
+&lt;p&gt;Likewise, Haskell composes functions in ways we’re not familiar with. Things can feel foreign and confusing, and we may wonder why things have to be so complicated. The truth is that we are &lt;em&gt;forced&lt;/em&gt; to do things this way because of the restrictions Haskell has placed on itself—it is the byproduct of its purity. Whereas other languages “cheat” and use mutable variables or impure functions when things get complicated, Haskell does not.&lt;/p&gt;
+&lt;p&gt;So if Haskell is just function composition, what we need to do is decompose them, over and over. Manually break out dense code into its “raw” form. Figure out how your values are manipulated. It’s a slow process, and you’ll get mixed up and frustrated many times. It’s OK—that’s normal. But the better we are at translating between the different layers of abstraction, the better our understanding. The practice of going up-and-down between these different layers is what produces deep, intuitive knowledge.&lt;/p&gt;
+&lt;p&gt;This is why I don’t really buy into the idea that “Haskell programmers think in terms of types.” Types describe the underlying values or behavior. But when you don’t understand what the values are doing to begin with, the focus on types is misplaced. So when the types confuse you, ignore the types and start looking at the values instead.&lt;/p&gt;
+&lt;h2 id=&quot;example-dependency-injection&quot;&gt;Example: Dependency Injection&lt;/h2&gt;
+&lt;p&gt;Let’s practice this together by looking at common problem: dependency injection.&lt;/p&gt;
+&lt;p&gt;Let’s say we have these two functions:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb2&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb2-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;ot&quot;&gt;foo ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb2-2&quot; title=&quot;2&quot;&gt;foo n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dv&quot;&gt;10&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb2-3&quot; title=&quot;3&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb2-4&quot; title=&quot;4&quot;&gt;&lt;span class=&quot;ot&quot;&gt;bar ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb2-5&quot; title=&quot;5&quot;&gt;bar n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; n &lt;span class=&quot;op&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt;&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That we combine and use like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; bar (foo 2)
+24&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;But what if we want to make the hard-coded values &lt;code&gt;10&lt;/code&gt; and &lt;code&gt;2&lt;/code&gt; configurable? Say we have a &lt;code&gt;Config&lt;/code&gt; data structure that contains configuration loaded from a YAML file.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;data Config = Config {
+    getIncr :: Int
+  , getMult :: Int
+}
+
+config :: Config
+config = Config { getIncr = 10, getMult = 2 }&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We could re-write &lt;code&gt;foo&lt;/code&gt; and &lt;code&gt;bar&lt;/code&gt; to accept a &lt;code&gt;Config&lt;/code&gt;.&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb5&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb5-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;ot&quot;&gt;foo ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb5-2&quot; title=&quot;2&quot;&gt;foo n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; \c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr c&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb5-3&quot; title=&quot;3&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb5-4&quot; title=&quot;4&quot;&gt;&lt;span class=&quot;ot&quot;&gt;bar ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb5-5&quot; title=&quot;5&quot;&gt;bar n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; \c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; n &lt;span class=&quot;op&quot;&gt;*&lt;/span&gt; getMult c&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; (bar (foo 2 config) config)
+24&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note that we could have placed the &lt;code&gt;Config&lt;/code&gt; argument either first or second in the argument list, but I’ve chosen to place it in the second position (the last argument). Placing &lt;code&gt;Config&lt;/code&gt; as the last argument will allow us to compose these functions in a better way, which we will see below.&lt;/p&gt;
+&lt;p&gt;We can write a function &lt;code&gt;(&amp;gt;&amp;gt;==)&lt;/code&gt; (let’s pronounce it “pipe”) that combines two &lt;code&gt;Config&lt;/code&gt;-awaiting functions together.&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb7&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb7-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;ot&quot;&gt;(&amp;gt;&amp;gt;==) ::&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; a)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb7-2&quot; title=&quot;2&quot;&gt;       &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (a &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; b))&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb7-3&quot; title=&quot;3&quot;&gt;       &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; b)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb7-4&quot; title=&quot;4&quot;&gt;(&lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt;) g f &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; \c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; f (g c) c&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;And now we can combine the functions like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; (foo 2 &amp;gt;&amp;gt;== bar) config
+24&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Compare the above to what we had previously, &lt;code&gt;(bar (foo 2 config) config)&lt;/code&gt;. With the &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; version, we only had to pass in &lt;code&gt;config&lt;/code&gt; once, at the end. Check out its type:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb9&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb9-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kw&quot;&gt;type&lt;/span&gt; (foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb9-2&quot; title=&quot;2&quot;&gt;(foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar)&lt;span class=&quot;ot&quot;&gt; ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A longer pipeline also works:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb10&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb10-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kw&quot;&gt;type&lt;/span&gt; (foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; foo &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb10-2&quot; title=&quot;2&quot;&gt;(foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; foo &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar)&lt;span class=&quot;ot&quot;&gt; ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Config&lt;/span&gt; &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Int&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb10-3&quot; title=&quot;3&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb10-4&quot; title=&quot;4&quot;&gt;&lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; (foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; foo &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar) config&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb10-5&quot; title=&quot;5&quot;&gt;&lt;span class=&quot;dv&quot;&gt;68&lt;/span&gt;&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Using &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; makes sense visually, but how does it work exactly? How was &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; able to combine different functions that all expected a &lt;code&gt;Config&lt;/code&gt; in such a way that we only needed to pass &lt;code&gt;Config&lt;/code&gt; once, at the end?&lt;/p&gt;
+&lt;p&gt;Let’s play interpreter and break &lt;code&gt;foo 2 &amp;gt;&amp;gt;== bar&lt;/code&gt; down. First, let’s substitute &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; with its definition:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb11&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;co&quot;&gt;-- Starting with&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-2&quot; title=&quot;2&quot;&gt;foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; bar&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-3&quot; title=&quot;3&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-4&quot; title=&quot;4&quot;&gt;&lt;span class=&quot;co&quot;&gt;-- Where&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-5&quot; title=&quot;5&quot;&gt;g &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;==&lt;/span&gt; f &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; \c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; f (g c) c&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-6&quot; title=&quot;6&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-7&quot; title=&quot;7&quot;&gt;&lt;span class=&quot;co&quot;&gt;-- Becomes&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb11-8&quot; title=&quot;8&quot;&gt;\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; bar ((foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt;) c) c&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;You can see already that &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; sets up the left and right functions to accept the passed-in &lt;code&gt;Config&lt;/code&gt;, and that the left side gets evaluated before the right.&lt;/p&gt;
+&lt;p&gt;What about &lt;code&gt;foo 2 &amp;gt;&amp;gt;== bar &amp;gt;&amp;gt;== foo &amp;gt;&amp;gt;== bar&lt;/code&gt;?&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;-- Starting with
+foo 2 &amp;gt;&amp;gt;== bar &amp;gt;&amp;gt;== foo &amp;gt;&amp;gt;== bar
+
+-- Where
+g &amp;gt;&amp;gt;== f = \c -&amp;gt; f (g c) c
+
+-- Replacing the first &amp;gt;&amp;gt;== with its definition.
+(\c -&amp;gt; bar ((foo 2) c) c) &amp;gt;&amp;gt;== foo &amp;gt;&amp;gt;== bar&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;That looks a bit confusing, but let’s continue and replace the other two &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt;. Note that we call the &lt;em&gt;new&lt;/em&gt; &lt;code&gt;Config&lt;/code&gt; argument &lt;code&gt;c2&lt;/code&gt; because it’s a different variable than the original &lt;code&gt;c&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;-- Starting with
+(\c -&amp;gt; bar ((foo 2) c) c) &amp;gt;&amp;gt;== foo &amp;gt;&amp;gt;== bar
+
+-- Replacing the next &amp;gt;&amp;gt;== with its definition.
+(\c2 -&amp;gt; foo ((\c -&amp;gt; bar ((foo 2) c) c&amp;#39;) c2) c2) &amp;gt;&amp;gt;= bar&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And the last &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;-- Starting with
+(\c2 -&amp;gt; foo ((\c -&amp;gt; bar ((foo 2) c) c&amp;#39;) c2) c2) &amp;gt;&amp;gt;= bar
+
+-- Replacing &amp;gt;&amp;gt;== with its definition.
+(\c3 -&amp;gt; bar ((\c2 -&amp;gt; foo ((\c -&amp;gt; bar ((foo 2) c) c) c2) c2) c3) c3)&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;We can clean this up a bit by doing some function application:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb15&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb15-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;co&quot;&gt;-- Starting with&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb15-2&quot; title=&quot;2&quot;&gt;(\c3 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; bar ((\c2 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; foo ((\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; bar ((foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt;) c) c) c2) c2) c3) c3)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb15-3&quot; title=&quot;3&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb15-4&quot; title=&quot;4&quot;&gt;&lt;span class=&quot;co&quot;&gt;-- Substituting c, c2 and c3.&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb15-5&quot; title=&quot;5&quot;&gt;(\c3 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; bar (foo (bar ((foo &lt;span class=&quot;dv&quot;&gt;2&lt;/span&gt;) c3) c3) c3) c3)&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Piping a bunch of &lt;code&gt;Config&lt;/code&gt;-awaiting functions together with &lt;code&gt;&amp;gt;&amp;gt;==&lt;/code&gt; resulted in a giant, nested function that is &lt;em&gt;also&lt;/em&gt; waiting for a &lt;code&gt;Config&lt;/code&gt;. Once you give it a &lt;code&gt;Config&lt;/code&gt;, this mess will “unwind” and run inside-out, starting with &lt;code&gt;(foo 2) c3&lt;/code&gt; (the inner-most expression). So once &lt;code&gt;(foo 2) c3&lt;/code&gt; is evaluated to a value, that value &lt;strong&gt;and the same &lt;code&gt;Config&lt;/code&gt;&lt;/strong&gt; will be passed into the next method in line, &lt;code&gt;bar&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;foo 2 &amp;gt;&amp;gt;== bar &amp;gt;&amp;gt;== foo &amp;gt;&amp;gt;== bar&lt;/code&gt; may look like there’s magic happening, but it’s quite simple when you discover what’s underneath.&lt;/p&gt;
+&lt;p&gt;So when things get confusing, remember that it’s just primitive values, boxes of stuff, and functions at the end of the day. Start digging, and perhaps you’ll find that things aren’t as complicated as they first seem.&lt;/p&gt;
+&lt;h2 id=&quot;appendix-1-the-reader-monad&quot;&gt;Appendix 1: The Reader Monad&lt;/h2&gt;
+&lt;p&gt;What we did above is a well-known pattern, known as &lt;code&gt;Reader&lt;/code&gt;. The &lt;code&gt;Reader&lt;/code&gt; data type is just a box with a function inside, which is exactly what we were doing.&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb16&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb16-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;kw&quot;&gt;newtype&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; r a &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; (r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; a)&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In our example, the type variable &lt;code&gt;r&lt;/code&gt; was our &lt;code&gt;Config&lt;/code&gt;, and the type variable &lt;code&gt;a&lt;/code&gt; was an &lt;code&gt;Int&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;Reader&lt;/code&gt; comes with a helper method to unbox the function:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb17&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb17-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;ot&quot;&gt;runReader ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; r a &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; a)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb17-2&quot; title=&quot;2&quot;&gt;runReader (&lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; f) &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; f&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;code&gt;Reader&lt;/code&gt; also defines an instance of &lt;code&gt;Monad&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb18&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;kw&quot;&gt;instance&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Monad&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; r) &lt;span class=&quot;kw&quot;&gt;where&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-2&quot; title=&quot;2&quot;&gt;  &lt;span class=&quot;co&quot;&gt;-- return a :: a -&amp;gt; Reader r a&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-3&quot; title=&quot;3&quot;&gt;  &lt;span class=&quot;fu&quot;&gt;return&lt;/span&gt; a &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; (\r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; a)&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-4&quot; title=&quot;4&quot;&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-5&quot; title=&quot;5&quot;&gt;  &lt;span class=&quot;co&quot;&gt;-- (&amp;gt;&amp;gt;=) :: Reader r a -&amp;gt; (a -&amp;gt; Reader r b) -&amp;gt; Reader r b&lt;/span&gt;&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb18-6&quot; title=&quot;6&quot;&gt;  m &lt;span class=&quot;op&quot;&gt;&amp;gt;&amp;gt;=&lt;/span&gt; f &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; (\r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader (f ((runReader m) r)) r)&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;And a helper method &lt;code&gt;ask&lt;/code&gt; to get the dependency-injected value (&lt;code&gt;r&lt;/code&gt;):&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb19&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb19-1&quot; title=&quot;1&quot;&gt;&lt;span class=&quot;ot&quot;&gt;ask ::&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; r r&lt;/a&gt;
+&lt;a class=&quot;sourceLine&quot; id=&quot;cb19-2&quot; title=&quot;2&quot;&gt;ask &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;Reader&lt;/code&gt; version of &lt;code&gt;foo&lt;/code&gt; and &lt;code&gt;bar&lt;/code&gt; looks like:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;fooR :: Int -&amp;gt; Reader Config Int
+fooR n = ask &amp;gt;&amp;gt;= (\c -&amp;gt; n + return (getIncr c))
+
+barR :: Int -&amp;gt; Reader Config Int
+barR n = ask &amp;gt;&amp;gt;= (\c -&amp;gt; n * return (getMult c))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Using them:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; runReader (fooR 2 &amp;gt;&amp;gt;= barR) config
+24&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&quot;appendix-2-unboxing-foor&quot;&gt;Appendix 2: Unboxing &lt;code&gt;fooR&lt;/code&gt;&lt;/h2&gt;
+&lt;p&gt;Let’s try to unbox &lt;code&gt;fooR&lt;/code&gt; to its primitive values. Taking &lt;code&gt;fooR&lt;/code&gt;, let’s put &lt;code&gt;(&amp;gt;&amp;gt;=)&lt;/code&gt; in front:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;fooRa n = (&amp;gt;&amp;gt;=) ask (\c -&amp;gt; return (n + getIncr c))&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Substituting &lt;code&gt;(&amp;gt;&amp;gt;=) m f&lt;/code&gt; with its definition &lt;code&gt;Reader $ \r -&amp;gt; runReader (f ((runReader m) r)) r&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb23&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb23-1&quot; title=&quot;1&quot;&gt;fooRb n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader ((\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;fu&quot;&gt;return&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr c)) ((runReader ask) r)) r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Substituting &lt;code&gt;ask&lt;/code&gt; with &lt;code&gt;(Reader $ \r2 -&amp;gt; r2)&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb24&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb24-1&quot; title=&quot;1&quot;&gt;fooRc n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader ((\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;fu&quot;&gt;return&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr c)) ((runReader (&lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r2 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; r2)) r)) r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;All of &lt;code&gt;((runReader (Reader $ \r2 -&amp;gt; r2)) r)&lt;/code&gt; can be simplified to just &lt;code&gt;r&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb25&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb25-1&quot; title=&quot;1&quot;&gt;fooRd n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader ((\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;fu&quot;&gt;return&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr c)) r) r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Now let’s substitute &lt;code&gt;return (n + getIncr c)&lt;/code&gt; with &lt;code&gt;(Reader (\r3 -&amp;gt; (n + getIncr c)))&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb26&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb26-1&quot; title=&quot;1&quot;&gt;fooRe n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader ((\c &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (&lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; (\r3 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr c)))) r) r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Simplifying &lt;code&gt;((\c -&amp;gt; (Reader (\r3 -&amp;gt; (n + getIncr c)))) r)&lt;/code&gt; to &lt;code&gt;(Reader (\r3 -&amp;gt; (n + getIncr r)))&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb27&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb27-1&quot; title=&quot;1&quot;&gt;fooRf n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; runReader (&lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; (\r3 &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr r))) r&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Simplifying &lt;code&gt;runReader (Reader (\r3 -&amp;gt; (n + getIncr r))) r&lt;/code&gt; to &lt;code&gt;(n + getIncr r)&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;sourceCode&quot; id=&quot;cb28&quot;&gt;&lt;pre class=&quot;sourceCode haskell&quot;&gt;&lt;code class=&quot;sourceCode haskell&quot;&gt;&lt;a class=&quot;sourceLine&quot; id=&quot;cb28-1&quot; title=&quot;1&quot;&gt;fooRg n &lt;span class=&quot;ot&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dt&quot;&gt;Reader&lt;/span&gt; &lt;span class=&quot;op&quot;&gt;$&lt;/span&gt; \r &lt;span class=&quot;ot&quot;&gt;-&amp;gt;&lt;/span&gt; (n &lt;span class=&quot;op&quot;&gt;+&lt;/span&gt; getIncr r)&lt;/a&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;So at the end of the day, when we defined &lt;code&gt;fooR&lt;/code&gt;, we got a bunch of functions that can be reduced down to the above, in &lt;code&gt;fooRg&lt;/code&gt;.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; runReader (fooRg 2) config
+12&lt;/code&gt;&lt;/pre&gt;</description>
+  </item>
+  
+  <item>
+  <link>https://elbenshira.com/blog/blog/change-is-inevitable/</link>
+  <guid>https://elbenshira.com/blog/blog/change-is-inevitable/</guid>
+  <pubDate>Tue, 24 Jul 2018 00:00:00 +0000</pubDate>
+  <title>Change is Inevitable: Designing Software in a Chaotic World</title>
+  <description>
+&lt;p&gt;When I was a young programmer, I believed that good code required a well-thought-out architectural construct. Measure twice, cut once—or something like that—was the mantra. But during my internship at Big Java Shop I witnessed a codebase burn to the ground from an architectural mad man. If only they had thought &lt;em&gt;correctly&lt;/em&gt; about their architecture, I thought, things would have gone fine.&lt;/p&gt;
+&lt;p&gt;But we know how that goes.&lt;/p&gt;
+&lt;p&gt;To pick up our tools of abstraction and find patterns is an impulse rooted in our psyche. It is our need for order, our desire for control. Extracting commonalities to abstract classes and interfaces feels good. We want to grab chaos and wrangle it into submission. But why do the results often fail us?&lt;/p&gt;
+&lt;h2 id=&quot;bad-patterns&quot;&gt;Bad patterns&lt;/h2&gt;
+&lt;p&gt;One reason is that we choose bad patterns. How can you tell if a pattern is good or bad? There’s a lot to be said about experience, but here’s a couple of good heuristics:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;The ones you made up yourself are generally bad.&lt;/li&gt;
+&lt;li&gt;The ones found across languages and libraries are generally good.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This is because the patterns you think of is often too specific. It may serve you well today, but who knows about tomorrow. You may come back to it months from now and realize that you overthought half of it and was too careless in the other half. But an abstraction or generalization that spans libraries, languages and communities is an indicator of its value and reliability.&lt;/p&gt;
+&lt;p&gt;The monad pattern, for example, is a pattern of computation found everywhere. It is a beautiful shield of safety that coos your data type into a lavender-scented blanket of comfort. And by giving that pattern a name we are empowered to write code that works. It is &lt;em&gt;because&lt;/em&gt; of its limitations that we are able to write something good. You’ll find this pattern in languages like Scala, Rust, and Haskell. Heck even Java 8’s &lt;code&gt;Optional&lt;/code&gt; is monadic-y, and so are most futures libraries because of the inherit need of callback function composition.&lt;/p&gt;
+&lt;p&gt;Now let’s compare the monad with, say, all those interfaces and abstract classes you created for your first big-boy Java project. You know what kind of mess you made for yourself. This is because they were careless abstractions made without much thought. They didn’t empower you in any way, didn’t simplify anything, didn’t prevent bugs. You thought you were doing something useful, something productive. But the end result, judged by the harsh realities of time, proved otherwise.&lt;/p&gt;
+&lt;p&gt;So be careful about what patterns you employ. Learn and adopt good patterns that span languages and libraries, not the ones you made up.&lt;/p&gt;
+&lt;h2 id=&quot;things-change&quot;&gt;Things change&lt;/h2&gt;
+&lt;p&gt;You can choose good abstractions, but the reality is that things change. What is suitable today won’t be suitable tomorrow. We’re all making predictions about the future.&lt;/p&gt;
+&lt;p&gt;This doesn’t mean that we abandon thinking about the future. Instead, &lt;strong&gt;we need to account for inevitable change. Choose the simplest thing that is easiest to change.&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;This was a breakthrough in my thinking. Don’t abstract the class. Don’t pull out the pattern. Don’t code for the worst-case scenario, or for some potential feature a product manager may want six months from now. At least not yet. Think: what do I gain from doing it, and what do I lose? Maybe you’re sacrificing directness, simplicity, debuggability. Maybe you’re sacrificing ease of change. Those are precious things. Is it worth sacrificing for your clever pattern?&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The best thing you can do is to do nothing.&lt;/strong&gt; Wait until you actually need to implement that feature, until you find yourself doing the same thing three times. Then take out the scalpel. The end result will be simpler and more powerful at the same time.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;“Two children make a happy home. But three make good abstractions.” — Ancient Lithuanians proverb&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;These are simple ideas, but I’ve seen cities burn down due to premature architecting, and I’ve seen projects reap the benefits of simplicity. Change is inevitable, but we can plan for the inevitable. We can design for chaos.&lt;/p&gt;</description>
+  </item>
+  
+  <item>
+  <link>https://elbenshira.com/blog/blog/semver-is-meaningless/</link>
+  <guid>https://elbenshira.com/blog/blog/semver-is-meaningless/</guid>
+  <pubDate>Tue, 23 Jan 2018 00:00:00 +0000</pubDate>
+  <title>SemVer is Meaningless</title>
+  <description>
+&lt;p&gt;Version numbers try to solve two problems, and thus solve neither very well.&lt;/p&gt;
+&lt;p&gt;Version numbers are suppose to aid computers in figuring out which packages are compatible with each other. This is why SemVer is strict. But this clashes directly with the other problem it’s trying to solve: for humans to gauge the amount of work required to upgrade to a newer version.&lt;/p&gt;
+&lt;p&gt;Rails programmers know, for example, that &lt;code&gt;patch&lt;/code&gt; version bumps require minimal effort. &lt;code&gt;minor&lt;/code&gt; bumps may introduce a new feature or a few changes here and there—maybe a couple of hours or days of work. But every Rails programmer know that a &lt;code&gt;major&lt;/code&gt; version bump can take either a few weeks, a few months, or—if you didn’t maintain your code and its dependencies very well—is not worth the effort at all. Rails programmers are familiar with this release cadence, and we’ve learned to map the version bump to amount of work required.&lt;/p&gt;
+&lt;p&gt;But in SemVer land, the change between version &lt;code&gt;77&lt;/code&gt; and &lt;code&gt;78&lt;/code&gt; may be so minute as to not be worth discussing, but &lt;code&gt;78&lt;/code&gt; to &lt;code&gt;79&lt;/code&gt; may have ground-breaking changes. It may be an entire re-write of the package. But most of the time, a &lt;code&gt;major&lt;/code&gt; is a small “backward incompatible” change. Our eyes glaze over when we see that some dependency was on version &lt;code&gt;14&lt;/code&gt; last week and is now on &lt;code&gt;17&lt;/code&gt;. We have to now read CHANGELOGs and READMEs to figure out how much work we have in front of us. In this sense the SemVer-ed version number has lost all meaning to the programmer.&lt;/p&gt;
+&lt;p&gt;Maybe package maintainers jump from &lt;code&gt;78&lt;/code&gt; to &lt;code&gt;100&lt;/code&gt; to convey big changes. But my point is that in making the &lt;code&gt;major&lt;/code&gt; part be &lt;em&gt;any&lt;/em&gt; breaking change, we’ve lost that information of what is &lt;em&gt;truly&lt;/em&gt; breaking from the programmer’s point-of-view, and what is a minor nuisance.&lt;/p&gt;
+&lt;p&gt;So in trying to use a single string to convey two meanings, we fail to both well.&lt;/p&gt;
+&lt;h2 id=&quot;the-solution&quot;&gt;The Solution&lt;/h2&gt;
+&lt;p&gt;I don’t have a solution; dependency management is a long-standing problem. But I suspect that a better solution lies in taking advantage of the type information provided by the packages, plus strong expectations that if the type of a function has not changed, then its computation has not either. This is of course easier to enforce in functional environments. Parametricity, for example, tells us that that a function of type &lt;code&gt;(a, b) -&amp;gt; a&lt;/code&gt; has exactly one implementation. It must be the function that returns the left side of the pair, since we have no idea what &lt;code&gt;a&lt;/code&gt; or &lt;code&gt;b&lt;/code&gt; are. (&lt;a href=&quot;https://www.youtube.com/watch?v=qBvFsA3dglk&quot;&gt;This is a good talk on parametricity&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;If we know that some package &lt;code&gt;vacuum-1.1.0&lt;/code&gt; uses a couple of methods in &lt;code&gt;left-pad-2.0.4&lt;/code&gt;, then perhaps we could statically analyze which newer versions of &lt;code&gt;left-pad&lt;/code&gt; we can use, given our &lt;em&gt;current&lt;/em&gt; usage of &lt;code&gt;left-pad&lt;/code&gt;. If &lt;code&gt;left-pad-2.1.0&lt;/code&gt; changed some function we never used, then it won’t affect us. We can build systems that auto-upgrade packages, and run our test suites against them. In essence this is what Haskell’s &lt;a href=&quot;https://www.stackage.org&quot;&gt;Stackage&lt;/a&gt; does, which provides a global snapshot of packages that are all compatible with each other. Maybe this is the way of the future—it’s easier to depend on one, global version than on many. But a public global snapshot does not solve private dependencies.&lt;/p&gt;
+&lt;p&gt;Ultimately, this kind of system would solve the programmatic problem that version numbers try to solve, and we can allow version numbers to speak more for humans than machines.&lt;/p&gt;
+&lt;p&gt;SemVer was a good attempt at trying to solve a big problem. But version numbers are fundamentally not well-suited to convey both its compatibility in relation to other packages, and the amount of work required by a programmer to upgrade. And when we try to use it to solve both, what we get is something rather muddled.&lt;/p&gt;</description>
+  </item>
+  
+  <item>
+  <link>https://elbenshira.com/blog/blog/art-philosophy-in-programming/</link>
+  <guid>https://elbenshira.com/blog/blog/art-philosophy-in-programming/</guid>
+  <pubDate>Sat, 13 Aug 2016 00:00:00 +0000</pubDate>
+  <title>Art and Philosophy in Programming</title>
+  <description>
+&lt;p&gt;If art does not console, and if philosophy does not teach, then what are they for?&lt;/p&gt;
+&lt;p&gt;I think as programmers, we can learn a whole lot from these things. Not just on how to be wiser people, but apply it in our day-to-day at the office and with our work. For that, let’s walk with two pieces: a painting by Vermeer and a philosophical thought experiment by Plato.&lt;/p&gt;
+&lt;h1 id=&quot;the-milkmaid&quot;&gt;The Milkmaid&lt;/h1&gt;
+&lt;p&gt;This is &lt;em&gt;The Milkmaid&lt;/em&gt; by Dutch artist Johannes Vermeer:&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/images/art-philosophy-stories/The Milkmaid - Vermeer.jpg&quot; title=&quot;The Milkmaid - Johannes Vermeer&quot; width=&quot;100%&quot;&gt;&lt;/p&gt;
+&lt;p&gt;You may have seen this painting before—it’s considered one of the great Dutch paintings.&lt;/p&gt;
+&lt;p&gt;What do you feel? Maybe warmth, or peace? Perhaps a sense of solitude, a steadfastness.&lt;/p&gt;
+&lt;p&gt;Here is an ordinary peasant pouring milk. The humblest of morning tasks. But look at her! Look at her peace, her pride, her poise. She is satisfied in the work itself. Her mind is not bewildered with what others think of her. She is, as is the popular term today, “in the flow.”&lt;/p&gt;
+&lt;p&gt;But have you ever wondered why Vermeer bothered to paint such an ordinary woman doing such an ordinary task? Surely he should have spent his time on grander projects that would have pleased the people and brought him wealth and fame. Instead, Vermeer died poor and unknown. So why did he paint this?&lt;/p&gt;
+&lt;p&gt;Because he wanted to show us something.&lt;/p&gt;
+&lt;p&gt;Through canvas and through death, Vermeer reaches out to us to say that a person’s work, however small or humble, has an intrinsic value greater than what we may see.&lt;/p&gt;
+&lt;p&gt;Vermeer tells us that whatever work we do, however minute or hidden, is valuable in itself, and that its value is not derived off how much “utility” it brings into society, or on what the market pays. Instead, the value is based off the intrinsic value of the person doing the work.&lt;/p&gt;
+&lt;p&gt;This idea is deeply Christian. If we are made in God’s image (that is, a bearer of the character and quality of God himself), then whether we are milkmaid, programmer or president, we are doing a work that God has deemed worthy. Jesus, after all, was a struggling carpenter, and Peter an illiterate fisherman.&lt;/p&gt;
+&lt;p&gt;What does this mean for us today?&lt;/p&gt;
+&lt;p&gt;I’m prone to judge people by their work, and perhaps you find this fault in yourself too. But Vermeer teaches us to undo this. As programmers, we can learn to value the work of our counterparts. We can learn to see the intrinsic value of the work done by our product managers, our marketing team, the delivery guy.&lt;/p&gt;
+&lt;p&gt;This does not excuse lazy work, but it invigorates respect and appreciation of others. If we can learn to do that, then we have learned from Vermeer.&lt;/p&gt;
+&lt;h1 id=&quot;allegory-of-the-cave&quot;&gt;Allegory of the Cave&lt;/h1&gt;
+&lt;p&gt;In Plato’s &lt;em&gt;Allegory of the Cave&lt;/em&gt;, we have a thought experiment.&lt;/p&gt;
+&lt;p&gt;You are a prisoner chained in a dark cave since birth. You face a wall, and the guards cast shadows of puppets on the wall with fire. The sounds from the guards echo off the wall, making you believe that the shadows are alive.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/images/art-philosophy-stories/Plato_Allegory_of_the_Cave.jpg&quot; title=&quot;Plato’s Cave&quot;&gt;&lt;/p&gt;
+&lt;p&gt;After decades of imprisonment and watching the living, talking shadows, the guards release you. You turn around and the light of the fire blind your eyes, and the shadows disappear. You are then brought into the day at noon, where there are no shadows. Would you prefer this new world, or the old?&lt;/p&gt;
+&lt;p&gt;Plato believed that this prisoner would hate the new world, for all he knew was the cave and the shadows. To him, realty is ugly and false, and he would retreat to the cave.&lt;/p&gt;
+&lt;p&gt;But as the sun begins to set, the prisoner learns how the light casts shadows on objects. He realizes that those shadows were an illusion. He begins, in other words, to &lt;em&gt;understand from first principles&lt;/em&gt; of how things work.&lt;/p&gt;
+&lt;p&gt;From this, I wonder if we all have our caves: ideas and assumptions that we run from because we want what we &lt;em&gt;feel&lt;/em&gt; and &lt;em&gt;prefer&lt;/em&gt; to be true. We hate the sun not because of the sun, but because of our ignorance and fear.&lt;/p&gt;
+&lt;p&gt;But if we observe and think from first principles, if we examine how the shadows are created, if we begin to think not in terms of what we’d prefer, either to protect or promote ourselves, but desiring truth above comfort, then we are learning to leave our caves.&lt;/p&gt;
+&lt;p&gt;In programming, ideas are thrown around us all the time. We learn to put filters and make quick judgements on what is good and bad. I think that’s often necessary; none of us have the time to thoroughly examine every new thing. But I wonder if we often miss out because we prefer the shadows to the real thing.&lt;/p&gt;
+&lt;p&gt;There are two ways we can be at fault here.&lt;/p&gt;
+&lt;p&gt;First, can we be too quick to accept the next new framework/language as the next-best-thing ever, simply because everyone else is saying it. We use it because everyone else is doing it, instead of actually understanding why it’s good, or how it’s built.&lt;/p&gt;
+&lt;p&gt;I hate database websites. They promise all three of CAP or whatever, and globally scalable, yet I say: show me the meat. I don’t remember who said this, but I remember the idea: I don’t want the UML diagrams. Just tell me the table schemas and I will understand the rest.&lt;/p&gt;
+&lt;p&gt;We must learn to understand from first principles, from the buildings blocks themselves. We need to see the trick behind the flash and bang. We must get away from the marketing page, and look for the meaty documentation. Often we’ll need to read the source code.&lt;/p&gt;
+&lt;p&gt;On the other hand, we can be too quick to dismiss ideas as bad without giving it a second of thought. This too is a problem: you’ll be stuck in your ancient ways (hey, there are many ancient things that are wonderful and should not be changed; see Vermeer and Plato) and miss out on new advances.&lt;/p&gt;
+&lt;p&gt;Why do we do this? Fundamentally I think it is the same reason: we prefer the comfort of what we know, damn the truth.&lt;/p&gt;
+&lt;p&gt;If we have learned from Plato, then our answer is not to readily accept everything as truth, nor to dismiss everything as false. Instead, we must learn to examine critically from the building blocks. That is, we must learn to truly understand.&lt;/p&gt;
+&lt;h2 id=&quot;the-return-to-the-cave&quot;&gt;The return to the cave&lt;/h2&gt;
+&lt;p&gt;In Plato’s cave, the prisoner eventually goes back into the cave. Not because he prefers the chains, but because he pities the other prisoners and wants to free them. But having been accustomed to the light, he stumbles blind into the cave. The other prisoners observe that the outside world has blinded him and, according to Plato, ignore the free man’s pleading and refuse to leave. The desire for comfort, once more, overwhelms truth.&lt;/p&gt;
+&lt;p&gt;What we can take away from this is &lt;em&gt;how&lt;/em&gt; we communicate new ideas is important.&lt;/p&gt;
+&lt;p&gt;I will use Elixir as an example, because it’s been #1 on HN for 30 days straight and has been the talk of many of my co-workers. Say you’re convinced Elixir is the next best thing. Well, I will not believe you, because I like my languages. And I have better things to do. What convinces would not be, “hey check out this blog post just 10 lines of Elixir for a Slack clone with 2 billion concurrent connections. And if things fail you just don’t worry and it auto-restarts and hypervisor and it works great. And WhatsApp uses Elixir—I mean Erlang—they have 8 billion users last I check.”&lt;/p&gt;
+&lt;p&gt;That is the argument of the stumbling, blind man trying to save his fellow prisoners. I would rather die in the cave.&lt;/p&gt;
+&lt;p&gt;What I need is a demonstration of how the shadows are created, how Erlang compares to other runtimes, how the scheduler works, and what “10 trillion threads” actually mean. I want to know what new problems may arise, what the tradeoffs are.&lt;/p&gt;
+&lt;p&gt;Sometimes all this information is unavailable. Projects like to hide these away as “internal implementation details.” This is out of good intention, but is wrong. To hide the details is to become the freed prisoner that refuses to help the other prisoners, fearing that they’d prefer their dying comfort.&lt;/p&gt;
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+&lt;p&gt;There are things we can learn from the old masters. Like all great ideas, theirs are universal; sometimes comforting, often humbling. From Vermeer we learn that the value of one’s work—indeed, one’s identity—is not rooted in market or societal forces, but in your sacrosanct value as a human being. From Plato we learn the power of understanding from first principles, and the dangers of preferring comfort over truth.&lt;/p&gt;
+&lt;p&gt;I hope I don’t sound like I’m lecturing. I’d rather let masters lecture. We can all learn from them.&lt;/p&gt;</description>
+  </item>
+  
+</channel>
+</rss>

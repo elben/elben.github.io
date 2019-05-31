@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Art and Philosophy in Programming - Elben Shira</title>
+        <script>
+          function getCookie(cname) {
+              var name = cname + "=";
+              var ca = document.cookie.split(';');
+              for(var i=0; i<ca.length; i++) {
+                  var c = ca[i];
+                  while (c.charAt(0)==' ') c = c.substring(1);
+                  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+              }
+              return "";
+          }
+
+          // If cookie set, assume font is cached, so load right away. May get
+          // cache miss sometimes (esp w/ GitHub pages 10 min cache), but that's OK.
+          if(getCookie("fonts-loaded") == "true") {
+              document.documentElement.className += " fonts-loaded";
+          }
+
+          if(getCookie("code-fonts-loaded") == "true") {
+              document.documentElement.className += " code-fonts-loaded";
+          }
+
+          window.addEventListener("load", function() {
+            var elems = document.getElementsByClassName("view-comments");
+            for (var i = 0; i < elems.length; ++i) {
+              elems[i].onclick =
+                function () {
+                  var disqus = document.getElementById("disqus-comments");
+                  if (disqus) {
+                    disqus.classList.remove("hide");
+                    this.classList.add("hide");
+                  }
+                }
+            }
+          });
+        </script>
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/default.css" />
+    </head>
+    <body>
+      <div id="structure">
+        <div id="header">
+          <h1 itemprop="name"><a href="/">Elben Shira</a></h1>
+          <span id="navigation">
+            <a href="/blog/">Blog</a>
+            <a href="/projects/">Projects</a>
+          </span>
+          <hr>
+        </div>
+
+        <div id="content">
+          <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title">Art and Philosophy in Programming</h1>
+
+    <div class="post-metadata">
+      <div class="date">
+        August 13, 2016
+         / <a href="/blog/tags/recommended/">recommended</a> 
+      </div>
+    </div>
+  </header>
+
+  
+<p>If art does not console, and if philosophy does not teach, then what are they for?</p>
+<p>I think as programmers, we can learn a whole lot from these things. Not just on how to be wiser people, but apply it in our day-to-day at the office and with our work. For that, let’s walk with two pieces: a painting by Vermeer and a philosophical thought experiment by Plato.</p>
+<h1 id="the-milkmaid">The Milkmaid</h1>
+<p>This is <em>The Milkmaid</em> by Dutch artist Johannes Vermeer:</p>
+<p><img src="/images/art-philosophy-stories/The Milkmaid - Vermeer.jpg" title="The Milkmaid - Johannes Vermeer" width="100%"></p>
+<p>You may have seen this painting before—it’s considered one of the great Dutch paintings.</p>
+<p>What do you feel? Maybe warmth, or peace? Perhaps a sense of solitude, a steadfastness.</p>
+<p>Here is an ordinary peasant pouring milk. The humblest of morning tasks. But look at her! Look at her peace, her pride, her poise. She is satisfied in the work itself. Her mind is not bewildered with what others think of her. She is, as is the popular term today, “in the flow.”</p>
+<p>But have you ever wondered why Vermeer bothered to paint such an ordinary woman doing such an ordinary task? Surely he should have spent his time on grander projects that would have pleased the people and brought him wealth and fame. Instead, Vermeer died poor and unknown. So why did he paint this?</p>
+<p>Because he wanted to show us something.</p>
+<p>Through canvas and through death, Vermeer reaches out to us to say that a person’s work, however small or humble, has an intrinsic value greater than what we may see.</p>
+<p>Vermeer tells us that whatever work we do, however minute or hidden, is valuable in itself, and that its value is not derived off how much “utility” it brings into society, or on what the market pays. Instead, the value is based off the intrinsic value of the person doing the work.</p>
+<p>This idea is deeply Christian. If we are made in God’s image (that is, a bearer of the character and quality of God himself), then whether we are milkmaid, programmer or president, we are doing a work that God has deemed worthy. Jesus, after all, was a struggling carpenter, and Peter an illiterate fisherman.</p>
+<p>What does this mean for us today?</p>
+<p>I’m prone to judge people by their work, and perhaps you find this fault in yourself too. But Vermeer teaches us to undo this. As programmers, we can learn to value the work of our counterparts. We can learn to see the intrinsic value of the work done by our product managers, our marketing team, the delivery guy.</p>
+<p>This does not excuse lazy work, but it invigorates respect and appreciation of others. If we can learn to do that, then we have learned from Vermeer.</p>
+<h1 id="allegory-of-the-cave">Allegory of the Cave</h1>
+<p>In Plato’s <em>Allegory of the Cave</em>, we have a thought experiment.</p>
+<p>You are a prisoner chained in a dark cave since birth. You face a wall, and the guards cast shadows of puppets on the wall with fire. The sounds from the guards echo off the wall, making you believe that the shadows are alive.</p>
+<p><img src="/images/art-philosophy-stories/Plato_Allegory_of_the_Cave.jpg" title="Plato’s Cave"></p>
+<p>After decades of imprisonment and watching the living, talking shadows, the guards release you. You turn around and the light of the fire blind your eyes, and the shadows disappear. You are then brought into the day at noon, where there are no shadows. Would you prefer this new world, or the old?</p>
+<p>Plato believed that this prisoner would hate the new world, for all he knew was the cave and the shadows. To him, realty is ugly and false, and he would retreat to the cave.</p>
+<p>But as the sun begins to set, the prisoner learns how the light casts shadows on objects. He realizes that those shadows were an illusion. He begins, in other words, to <em>understand from first principles</em> of how things work.</p>
+<p>From this, I wonder if we all have our caves: ideas and assumptions that we run from because we want what we <em>feel</em> and <em>prefer</em> to be true. We hate the sun not because of the sun, but because of our ignorance and fear.</p>
+<p>But if we observe and think from first principles, if we examine how the shadows are created, if we begin to think not in terms of what we’d prefer, either to protect or promote ourselves, but desiring truth above comfort, then we are learning to leave our caves.</p>
+<p>In programming, ideas are thrown around us all the time. We learn to put filters and make quick judgements on what is good and bad. I think that’s often necessary; none of us have the time to thoroughly examine every new thing. But I wonder if we often miss out because we prefer the shadows to the real thing.</p>
+<p>There are two ways we can be at fault here.</p>
+<p>First, can we be too quick to accept the next new framework/language as the next-best-thing ever, simply because everyone else is saying it. We use it because everyone else is doing it, instead of actually understanding why it’s good, or how it’s built.</p>
+<p>I hate database websites. They promise all three of CAP or whatever, and globally scalable, yet I say: show me the meat. I don’t remember who said this, but I remember the idea: I don’t want the UML diagrams. Just tell me the table schemas and I will understand the rest.</p>
+<p>We must learn to understand from first principles, from the buildings blocks themselves. We need to see the trick behind the flash and bang. We must get away from the marketing page, and look for the meaty documentation. Often we’ll need to read the source code.</p>
+<p>On the other hand, we can be too quick to dismiss ideas as bad without giving it a second of thought. This too is a problem: you’ll be stuck in your ancient ways (hey, there are many ancient things that are wonderful and should not be changed; see Vermeer and Plato) and miss out on new advances.</p>
+<p>Why do we do this? Fundamentally I think it is the same reason: we prefer the comfort of what we know, damn the truth.</p>
+<p>If we have learned from Plato, then our answer is not to readily accept everything as truth, nor to dismiss everything as false. Instead, we must learn to examine critically from the building blocks. That is, we must learn to truly understand.</p>
+<h2 id="the-return-to-the-cave">The return to the cave</h2>
+<p>In Plato’s cave, the prisoner eventually goes back into the cave. Not because he prefers the chains, but because he pities the other prisoners and wants to free them. But having been accustomed to the light, he stumbles blind into the cave. The other prisoners observe that the outside world has blinded him and, according to Plato, ignore the free man’s pleading and refuse to leave. The desire for comfort, once more, overwhelms truth.</p>
+<p>What we can take away from this is <em>how</em> we communicate new ideas is important.</p>
+<p>I will use Elixir as an example, because it’s been #1 on HN for 30 days straight and has been the talk of many of my co-workers. Say you’re convinced Elixir is the next best thing. Well, I will not believe you, because I like my languages. And I have better things to do. What convinces would not be, “hey check out this blog post just 10 lines of Elixir for a Slack clone with 2 billion concurrent connections. And if things fail you just don’t worry and it auto-restarts and hypervisor and it works great. And WhatsApp uses Elixir—I mean Erlang—they have 8 billion users last I check.”</p>
+<p>That is the argument of the stumbling, blind man trying to save his fellow prisoners. I would rather die in the cave.</p>
+<p>What I need is a demonstration of how the shadows are created, how Erlang compares to other runtimes, how the scheduler works, and what “10 trillion threads” actually mean. I want to know what new problems may arise, what the tradeoffs are.</p>
+<p>Sometimes all this information is unavailable. Projects like to hide these away as “internal implementation details.” This is out of good intention, but is wrong. To hide the details is to become the freed prisoner that refuses to help the other prisoners, fearing that they’d prefer their dying comfort.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>There are things we can learn from the old masters. Like all great ideas, theirs are universal; sometimes comforting, often humbling. From Vermeer we learn that the value of one’s work—indeed, one’s identity—is not rooted in market or societal forces, but in your sacrosanct value as a human being. From Plato we learn the power of understanding from first principles, and the dangers of preferring comfort over truth.</p>
+<p>I hope I don’t sound like I’m lecturing. I’d rather let masters lecture. We can all learn from them.</p>
+</article>
+
+<div class="post-content-end">
+  <hr>
+
+  <div class="view-comments">
+    <a>View comments</a>
+  </div>
+
+  <div id="disqus-comments" class="hide">
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+      var disqus_shortname = 'elbenshira';
+      var disqus_category_id = '2658740'; // "Blog" category.
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+         dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+         (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+       })();
+    </script>
+    <noscript>Enable JavaScript to view Disqus comments.</noscript>
+  </div>
+
+</div>
+
+        </div>
+      </div>
+
+      <script>
+        /* Font Face Observer v2.0.13 - © Bram Stein. License: BSD-3-Clause https://raw.githubusercontent.com/bramstein/fontfaceobserver */
+        (function(){'use strict';var f,g=[];function l(a){g.push(a);1==g.length&&f()}function m(){for(;g.length;)g[0](),g.shift()}f=function(){setTimeout(m)};function n(a){this.a=p;this.b=void 0;this.f=[];var b=this;try{a(function(a){q(b,a)},function(a){r(b,a)})}catch(c){r(b,c)}}var p=2;function t(a){return new n(function(b,c){c(a)})}function u(a){return new n(function(b){b(a)})}function q(a,b){if(a.a==p){if(b==a)throw new TypeError;var c=!1;try{var d=b&&b.then;if(null!=b&&"object"==typeof b&&"function"==typeof d){d.call(b,function(b){c||q(a,b);c=!0},function(b){c||r(a,b);c=!0});return}}catch(e){c||r(a,e);return}a.a=0;a.b=b;v(a)}}
+function r(a,b){if(a.a==p){if(b==a)throw new TypeError;a.a=1;a.b=b;v(a)}}function v(a){l(function(){if(a.a!=p)for(;a.f.length;){var b=a.f.shift(),c=b[0],d=b[1],e=b[2],b=b[3];try{0==a.a?"function"==typeof c?e(c.call(void 0,a.b)):e(a.b):1==a.a&&("function"==typeof d?e(d.call(void 0,a.b)):b(a.b))}catch(h){b(h)}}})}n.prototype.g=function(a){return this.c(void 0,a)};n.prototype.c=function(a,b){var c=this;return new n(function(d,e){c.f.push([a,b,d,e]);v(c)})};
+function w(a){return new n(function(b,c){function d(c){return function(d){h[c]=d;e+=1;e==a.length&&b(h)}}var e=0,h=[];0==a.length&&b(h);for(var k=0;k<a.length;k+=1)u(a[k]).c(d(k),c)})}function x(a){return new n(function(b,c){for(var d=0;d<a.length;d+=1)u(a[d]).c(b,c)})};window.Promise||(window.Promise=n,window.Promise.resolve=u,window.Promise.reject=t,window.Promise.race=x,window.Promise.all=w,window.Promise.prototype.then=n.prototype.c,window.Promise.prototype["catch"]=n.prototype.g);}());
+
+             (function(){function l(a,b){document.addEventListener?a.addEventListener("scroll",b,!1):a.attachEvent("scroll",b)}function m(a){document.body?a():document.addEventListener?document.addEventListener("DOMContentLoaded",function c(){document.removeEventListener("DOMContentLoaded",c);a()}):document.attachEvent("onreadystatechange",function k(){if("interactive"==document.readyState||"complete"==document.readyState)document.detachEvent("onreadystatechange",k),a()})};function r(a){this.a=document.createElement("div");this.a.setAttribute("aria-hidden","true");this.a.appendChild(document.createTextNode(a));this.b=document.createElement("span");this.c=document.createElement("span");this.h=document.createElement("span");this.f=document.createElement("span");this.g=-1;this.b.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.c.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+             this.f.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.h.style.cssText="display:inline-block;width:200%;height:200%;font-size:16px;max-width:none;";this.b.appendChild(this.h);this.c.appendChild(this.f);this.a.appendChild(this.b);this.a.appendChild(this.c)}
+             function t(a,b){a.a.style.cssText="max-width:none;min-width:20px;min-height:20px;display:inline-block;overflow:hidden;position:absolute;width:auto;margin:0;padding:0;top:-999px;white-space:nowrap;font-synthesis:none;font:"+b+";"}function y(a){var b=a.a.offsetWidth,c=b+100;a.f.style.width=c+"px";a.c.scrollLeft=c;a.b.scrollLeft=a.b.scrollWidth+100;return a.g!==b?(a.g=b,!0):!1}function z(a,b){function c(){var a=k;y(a)&&a.a.parentNode&&b(a.g)}var k=a;l(a.b,c);l(a.c,c);y(a)};function A(a,b){var c=b||{};this.family=a;this.style=c.style||"normal";this.weight=c.weight||"normal";this.stretch=c.stretch||"normal"}var B=null,C=null,E=null,F=null;function G(){if(null===C)if(J()&&/Apple/.test(window.navigator.vendor)){var a=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))(?:\.([0-9]+))/.exec(window.navigator.userAgent);C=!!a&&603>parseInt(a[1],10)}else C=!1;return C}function J(){null===F&&(F=!!document.fonts);return F}
+function K(){if(null===E){var a=document.createElement("div");try{a.style.font="condensed 100px sans-serif"}catch(b){}E=""!==a.style.font}return E}function L(a,b){return[a.style,a.weight,K()?a.stretch:"","100px",b].join(" ")}
+A.prototype.load=function(a,b){var c=this,k=a||"BESbswy",q=0,D=b||3E3,H=(new Date).getTime();return new Promise(function(a,b){if(J()&&!G()){var M=new Promise(function(a,b){function e(){(new Date).getTime()-H>=D?b():document.fonts.load(L(c,'"'+c.family+'"'),k).then(function(c){1<=c.length?a():setTimeout(e,25)},function(){b()})}e()}),N=new Promise(function(a,c){q=setTimeout(c,D)});Promise.race([N,M]).then(function(){clearTimeout(q);a(c)},function(){b(c)})}else m(function(){function u(){var b;if(b=-1!=
+  f&&-1!=g||-1!=f&&-1!=h||-1!=g&&-1!=h)(b=f!=g&&f!=h&&g!=h)||(null===B&&(b=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))/.exec(window.navigator.userAgent),B=!!b&&(536>parseInt(b[1],10)||536===parseInt(b[1],10)&&11>=parseInt(b[2],10))),b=B&&(f==v&&g==v&&h==v||f==w&&g==w&&h==w||f==x&&g==x&&h==x)),b=!b;b&&(d.parentNode&&d.parentNode.removeChild(d),clearTimeout(q),a(c))}function I(){if((new Date).getTime()-H>=D)d.parentNode&&d.parentNode.removeChild(d),b(c);else{var a=document.hidden;if(!0===a||void 0===a)f=e.a.offsetWidth,
+  g=n.a.offsetWidth,h=p.a.offsetWidth,u();q=setTimeout(I,50)}}var e=new r(k),n=new r(k),p=new r(k),f=-1,g=-1,h=-1,v=-1,w=-1,x=-1,d=document.createElement("div");d.dir="ltr";t(e,L(c,"sans-serif"));t(n,L(c,"serif"));t(p,L(c,"monospace"));d.appendChild(e.a);d.appendChild(n.a);d.appendChild(p.a);document.body.appendChild(d);v=e.a.offsetWidth;w=n.a.offsetWidth;x=p.a.offsetWidth;I();z(e,function(a){f=a;u()});t(e,L(c,'"'+c.family+'",sans-serif'));z(n,function(a){g=a;u()});t(n,L(c,'"'+c.family+'",serif'));
+z(p,function(a){h=a;u()});t(p,L(c,'"'+c.family+'",monospace'))})})};"object"===typeof module?module.exports=A:(window.FontFaceObserver=A,window.FontFaceObserver.prototype.load=A.prototype.load);}());
+
+(function(w) {
+  if(w.document.documentElement.className.indexOf("fonts-loaded") <= 0) {
+    // Fonts not yet loaded. Wait for them to load, then append the class that
+    // will set the loaded font.
+
+    var charterNN = new w.FontFaceObserver("Charter", { weight: "normal", style: "normal" });
+    var charterNI = new w.FontFaceObserver("Charter", { weight: "normal", style: "italic" });
+    var charterBN = new w.FontFaceObserver("Charter", { weight: "bold", style: "normal" });
+    var charterBI = new w.FontFaceObserver("Charter", { weight: "bold", style: "italic" });
+    w.Promise.all([
+      charterNN.load(null, 3000),
+      charterNI.load(null, 3000),
+      charterBN.load(null, 3000),
+      charterBI.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " fonts-loaded";
+      document.cookie="fonts-loaded=true";
+    });
+  }
+
+  if(w.document.documentElement.className.indexOf("code-fonts-loaded") <= 0) {
+    var sourceCodePro400N = new w.FontFaceObserver("Source Code Pro", { weight: "400", style: "normal" });
+    var sourceCodePro600N = new w.FontFaceObserver("Source Code Pro", { weight: "600", style: "normal" });
+    w.Promise.all([
+      sourceCodePro400N.load(null, 3000),
+      sourceCodePro600N.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " code-fonts-loaded";
+      document.cookie="code-fonts-loaded=true";
+    });
+  }
+}(this));
+      </script>
+    </body>
+</html>

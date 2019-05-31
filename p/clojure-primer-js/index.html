@@ -1,0 +1,85 @@
+<html>
+<head>
+<title>
+Clojure Primer in JavaScript - Elben Shira
+</title>
+<meta charset="utf-8">
+</head>
+<body>
+<p>Clojure examples compared to JavaScript counterparts.</p>
+<p>Defining vars:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb1-1" title="1">(<span class="bu">def</span><span class="fu"> age </span><span class="dv">100</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb2-1" title="1"><span class="co">// JavaScript</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="kw">var</span> age <span class="op">=</span> <span class="dv">100</span><span class="op">;</span></a></code></pre></div>
+<p>Creating maps:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb3-1" title="1">{<span class="at">:foo</span> <span class="dv">0</span> <span class="at">:bar</span> {<span class="at">:car</span> <span class="st">&quot;far&quot;</span>}}</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb4-1" title="1"><span class="co">// JavaScript</span></a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="op">{</span><span class="dt">foo</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">bar</span><span class="op">:</span> <span class="op">{</span><span class="dt">car</span><span class="op">:</span> <span class="st">&quot;far&quot;</span><span class="op">}}</span></a></code></pre></div>
+<p>Maps are functions:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb5-1" title="1">({<span class="at">:foo</span> <span class="dv">0</span> <span class="at">:bar</span> {<span class="at">:car</span> <span class="st">&quot;far&quot;</span>}} <span class="at">:foo</span>)</a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="co">;; ⇒ 0</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb6-1" title="1"><span class="co">// JavaScript</span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="kw">var</span> o <span class="op">=</span> <span class="op">{</span><span class="dt">foo</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">bar</span><span class="op">:</span> <span class="op">{</span><span class="dt">car</span><span class="op">:</span> <span class="st">&quot;far&quot;</span><span class="op">}};</span></a>
+<a class="sourceLine" id="cb6-3" title="3"><span class="va">o</span>.<span class="at">foo</span></a>
+<a class="sourceLine" id="cb6-4" title="4"><span class="co">// ⇒ 0</span></a></code></pre></div>
+<p>Functions are values:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb7-1" title="1">(<span class="kw">map</span> <span class="kw">inc</span> [<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span>])</a>
+<a class="sourceLine" id="cb7-2" title="2"><span class="co">;; ⇒ [2 3 4]</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb8-1" title="1"><span class="co">// With Underscore.js</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="va">_</span>.<span class="at">map</span>([<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span>]<span class="op">,</span> <span class="kw">function</span> (n) <span class="op">{</span> <span class="cf">return</span> n <span class="op">+</span> <span class="dv">1</span><span class="op">;</span> <span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="co">// ⇒ [2 3 4]</span></a></code></pre></div>
+<p>Defining and using functions:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb9-1" title="1">(<span class="bu">defn</span><span class="fu"> square </span>[x] (<span class="kw">*</span> x x))</a>
+<a class="sourceLine" id="cb9-2" title="2"></a>
+<a class="sourceLine" id="cb9-3" title="3">(square <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb9-4" title="4"><span class="co">;; ⇒ 9</span></a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb10-1" title="1"><span class="co">// JavaScript</span></a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="kw">function</span> <span class="at">square</span>(x) <span class="op">{</span> <span class="cf">return</span> x <span class="op">*</span> x<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="at">square</span>(<span class="dv">3</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="co">// ⇒ 9</span></a></code></pre></div>
+<p>Defining and using anonymous functions:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb11-1" title="1">((<span class="kw">fn</span> [x] (<span class="kw">*</span> x x)) <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="co">;; ⇒ 9</span></a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="co">;; % represents the first argument to the anonymous function.</span></a>
+<a class="sourceLine" id="cb11-5" title="5"><span class="co">;; We could have also used %1 to get at the first argument.</span></a>
+<a class="sourceLine" id="cb11-6" title="6"><span class="co">;; This function is the same as function above.</span></a>
+<a class="sourceLine" id="cb11-7" title="7">(#(<span class="kw">*</span> <span class="va">%</span> <span class="va">%</span>) <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb11-8" title="8"><span class="co">;; ⇒ 9</span></a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb12-1" title="1"><span class="co">// JavaScript</span></a>
+<a class="sourceLine" id="cb12-2" title="2">(<span class="kw">function</span> (x) <span class="op">{</span> <span class="cf">return</span> x <span class="op">*</span> x<span class="op">;</span> <span class="op">}</span>)(<span class="dv">3</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb12-3" title="3"><span class="co">// ⇒ 9</span></a></code></pre></div>
+<p>Clojure sequences are lazy:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb13-1" title="1"><span class="co">;; Take the first ten even numbers from a list of size one billion.</span></a>
+<a class="sourceLine" id="cb13-2" title="2"><span class="co">;; List is lazily built, so it never builds all billion elements.</span></a>
+<a class="sourceLine" id="cb13-3" title="3">(<span class="kw">take</span> <span class="dv">10</span> (<span class="kw">filter</span> <span class="kw">even?</span> (<span class="kw">range</span> <span class="dv">1000000000</span>)))</a>
+<a class="sourceLine" id="cb13-4" title="4"><span class="co">;; ⇒ (0 2 4 6 8 10 12 14 16 18)</span></a></code></pre></div>
+<p>The JavaScript counterpart may crash your browser:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb14-1" title="1"><span class="co">// With Underscore.js</span></a>
+<a class="sourceLine" id="cb14-2" title="2"><span class="va">_</span>.<span class="at">chain</span>(<span class="va">_</span>.<span class="at">range</span>(<span class="dv">1000000000</span>))</a>
+<a class="sourceLine" id="cb14-3" title="3"> .<span class="at">filter</span>(<span class="kw">function</span> (n) <span class="op">{</span> <span class="cf">return</span> n <span class="op">%</span> <span class="dv">2</span> <span class="op">==</span> <span class="dv">0</span><span class="op">;</span> <span class="op">}</span>)</a>
+<a class="sourceLine" id="cb14-4" title="4"> .<span class="at">take</span>(<span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb14-5" title="5"> .<span class="at">value</span>()<span class="op">;</span></a>
+<a class="sourceLine" id="cb14-6" title="6"><span class="co">// ⇒ ?</span></a></code></pre></div>
+<p>Defining and using functions, with a destructured map in function argument:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb15-1" title="1">(<span class="bu">defn</span><span class="fu"> my-function</span></a>
+<a class="sourceLine" id="cb15-2" title="2">  [{<span class="at">:keys</span> [<span class="kw">name</span> occupation]}]</a>
+<a class="sourceLine" id="cb15-3" title="3">  (<span class="kw">println</span> <span class="kw">name</span> <span class="st">&quot;is a&quot;</span> occupation))</a>
+<a class="sourceLine" id="cb15-4" title="4"></a>
+<a class="sourceLine" id="cb15-5" title="5">(my-function {<span class="at">:name</span>  <span class="st">&quot;Elben&quot;</span></a>
+<a class="sourceLine" id="cb15-6" title="6">              <span class="at">:phone</span> <span class="st">&quot;5555555&quot;</span></a>
+<a class="sourceLine" id="cb15-7" title="7">              <span class="at">:occupation</span> <span class="st">&quot;Farmer&quot;</span>})</a>
+<a class="sourceLine" id="cb15-8" title="8"><span class="co">;; ⇒ Elben is a Farmer</span></a></code></pre></div>
+<p>JavaScript doesn’t support destructuring:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">var</span> myFunction <span class="op">=</span> <span class="kw">function</span>(map) <span class="op">{</span></a>
+<a class="sourceLine" id="cb16-2" title="2">  <span class="va">console</span>.<span class="at">log</span>(<span class="va">map</span>.<span class="at">name</span> <span class="op">+</span> <span class="st">&quot; is a &quot;</span> <span class="op">+</span> <span class="va">map</span>.<span class="at">occupation</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb16-3" title="3"><span class="op">};</span></a>
+<a class="sourceLine" id="cb16-4" title="4"></a>
+<a class="sourceLine" id="cb16-5" title="5"><span class="at">myFunction</span>(<span class="op">{</span><span class="dt">name</span><span class="op">:</span>  <span class="st">&quot;Elben&quot;</span><span class="op">,</span></a>
+<a class="sourceLine" id="cb16-6" title="6">            <span class="dt">phone</span><span class="op">:</span> <span class="st">&quot;5555555&quot;</span><span class="op">,</span></a>
+<a class="sourceLine" id="cb16-7" title="7">            <span class="dt">occupation</span><span class="op">:</span> <span class="st">&quot;Farmer&quot;</span><span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb16-8" title="8"><span class="co">// ⇒ Elben is a Farmer</span></a></code></pre></div>
+<p>If you’re interested in learning more, I recommend <a href="http://joyofclojure.com/">Joy of Clojure</a>.</p>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>The Trifecta of ClojureScript, Om and core.async - Elben Shira</title>
+        <script>
+          function getCookie(cname) {
+              var name = cname + "=";
+              var ca = document.cookie.split(';');
+              for(var i=0; i<ca.length; i++) {
+                  var c = ca[i];
+                  while (c.charAt(0)==' ') c = c.substring(1);
+                  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+              }
+              return "";
+          }
+
+          // If cookie set, assume font is cached, so load right away. May get
+          // cache miss sometimes (esp w/ GitHub pages 10 min cache), but that's OK.
+          if(getCookie("fonts-loaded") == "true") {
+              document.documentElement.className += " fonts-loaded";
+          }
+
+          if(getCookie("code-fonts-loaded") == "true") {
+              document.documentElement.className += " code-fonts-loaded";
+          }
+
+          window.addEventListener("load", function() {
+            var elems = document.getElementsByClassName("view-comments");
+            for (var i = 0; i < elems.length; ++i) {
+              elems[i].onclick =
+                function () {
+                  var disqus = document.getElementById("disqus-comments");
+                  if (disqus) {
+                    disqus.classList.remove("hide");
+                    this.classList.add("hide");
+                  }
+                }
+            }
+          });
+        </script>
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/default.css" />
+    </head>
+    <body>
+      <div id="structure">
+        <div id="header">
+          <h1 itemprop="name"><a href="/">Elben Shira</a></h1>
+          <span id="navigation">
+            <a href="/blog/">Blog</a>
+            <a href="/projects/">Projects</a>
+          </span>
+          <hr>
+        </div>
+
+        <div id="content">
+          <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title">The Trifecta of ClojureScript, Om and core.async</h1>
+
+    <div class="post-metadata">
+      <div class="date">
+        October 20, 2014
+         / <a href="/blog/tags/clojure/">clojure</a> 
+      </div>
+    </div>
+  </header>
+
+  
+<p><em>This post is an adaptation of my lighting talk given at Austin JS and Austin Clojure Meetup.</em></p>
+<ul>
+<li>Introduction</li>
+<li><a href="#taking-back-control-of-your-state">Taking back control of your state</a></li>
+<li><a href="#om-and-react">Om and React</a></li>
+<li><a href="#how-to-communicate">How to communicate</a></li>
+</ul>
+<p>It’s too easy to build a front-end house of straw. Somehow the JavaScript and DOM manipulations we write turn into a fragile state machine glued together with cryptic callbacks. We start with good intentions and write modular, understandable code with clean lines of separation between our views and models. But as our app becomes more complex, and as more people touch the code, the lines often begin to blur.</p>
+<p>Our application state becomes difficult to reason about; they are barraged by asynchronous modifications, passed to and fro between different models, and are irresponsibly stored in our views as CSS classes. Our DOM crumbles, dependent on programmer incantation to wrangle it to the shape we want. And our code grows uncontrollably complex like wildfire, oblivious to the scorched state machine it leaves in its wake.</p>
+<p>But who is to blame? Naturally, ourselves. Laziness, ignorance, hurriedness, insipidness. With enough dedication, skill and discipline we can learn to build graceful systems. But I don’t think the fault is completely ours. Given the complexity of asynchronous user interfaces and the need to orchestrate state between many components, it may be that tools we have are unfit for the job. Perhaps we need better tools.</p>
+<p>Is there something better? Can we take back control of our state, erase the fragility of DOM manipulation and restrain ad-hoc, asynchronous messages?</p>
+<p>I think we can, through these means:</p>
+<ul>
+<li>Prevent wanton state changes.</li>
+<li>Give up control of DOM manipulation.</li>
+<li>Remove state management in callbacks.</li>
+</ul>
+<p>With ClojureScript, Om and core.async, we can do all three.</p>
+<p>I am not prophetic enough to declare that what I’m presenting here is <em>the</em> solution; it is never that easy. But I do think that the ideas brought by Clojure, Om (via React) and core.async are game changers. Their ideas are so good that it would be a shame for anyone to miss out on it.</p>
+<h2 id="taking-back-control-of-your-state">Taking back control of your state</h2>
+<p><em>If you’re not familiar with Clojure syntax, you may want to read <a href="/p/clojure-primer-js/">this quick primer</a>.</em></p>
+<p>Clojure (and ClojureScript) data structures are immutable. We prefer, for example, that the number <code>0</code> always stay the number <code>0</code>. This is because <code>0</code> is considered a <em>value</em>, and values cannot change. Clojure extends this idea to data structures like maps. You cannot, for example, modify a Clojure map by adding a new element to it; you must make a “copy”.</p>
+<p>To understand why this is important, let’s see how mutable JavaScript data structures behave. There is no good sense of object equality:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb1-1" title="1">o1 <span class="op">=</span> <span class="op">{</span><span class="dt">foo</span><span class="op">:</span> <span class="dv">0</span><span class="op">};</span></a>
+<a class="sourceLine" id="cb1-2" title="2">o2 <span class="op">=</span> <span class="op">{</span><span class="dt">foo</span><span class="op">:</span> <span class="dv">0</span><span class="op">};</span></a>
+<a class="sourceLine" id="cb1-3" title="3">o1 <span class="op">==</span> o2<span class="op">;</span></a>
+<a class="sourceLine" id="cb1-4" title="4"><span class="co">// false</span></a></code></pre></div>
+<p>And if you pass your object to some function, you have no idea what that other function may potentially do to your object.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb2-1" title="1">o <span class="op">=</span> <span class="op">{</span><span class="dt">foo</span><span class="op">:</span> <span class="dv">0</span><span class="op">};</span></a>
+<a class="sourceLine" id="cb2-2" title="2"><span class="at">g</span>(o)<span class="op">;</span>  <span class="co">// Your co-worker wrote this</span></a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="co">// What is o?</span></a></code></pre></div>
+<p>You can try cloning your object before passing it to <code>g</code>, but now you have to decide if you should do a shallow clone or a deep clone. And just how deep do we need to go? One level? Two? All the way until you hit primitives?</p>
+<p>Clojure’s immutable data structures, on the other hand, gives us meaningful equality:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb3-1" title="1">(<span class="kw">=</span> {<span class="at">:foo</span> <span class="dv">0</span> <span class="at">:bar</span> {<span class="at">:car</span> <span class="st">&quot;far&quot;</span>}}</a>
+<a class="sourceLine" id="cb3-2" title="2">   {<span class="at">:foo</span> <span class="dv">0</span> <span class="at">:bar</span> {<span class="at">:car</span> <span class="st">&quot;far&quot;</span>}})</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="co">;; ⇒ true</span></a>
+<a class="sourceLine" id="cb3-4" title="4"></a>
+<a class="sourceLine" id="cb3-5" title="5"><span class="co">;; Corresponding JavaScript object:</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="co">;; {foo: 0, bar: {car: &quot;far&quot;}}</span></a></code></pre></div>
+<p>And there is no need to clone:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb4-1" title="1">(<span class="bu">def</span><span class="fu"> o </span>{<span class="at">:foo</span> <span class="dv">0</span>})</a>
+<a class="sourceLine" id="cb4-2" title="2">(g o) <span class="co">; Corresponding JavaScript: g(o)</span></a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4"><span class="co">;; o is still o</span></a>
+<a class="sourceLine" id="cb4-5" title="5">(<span class="kw">=</span> o {<span class="at">:foo</span> <span class="dv">0</span>})</a>
+<a class="sourceLine" id="cb4-6" title="6"><span class="co">;; ⇒ true</span></a></code></pre></div>
+<p>Immutability seems restrictive at first, but just as an artist thrives off the constraints of a canvas, you’ll find that immutability frees you.</p>
+<p>Immutability frees us to treat objects like <em>values</em>, because they are. We all prefer that <code>0 == 0</code> and <code>"far" == "far"</code>. So why do we put up with <code>{foo: 0} != {foo: 0}</code>?</p>
+<p>Immutability also encourages modularity. When you can’t modify your data and override your local variables, you unwittingly focus less on state manipulation and more on writing smaller, more manageable functions.</p>
+<p>And lastly, immutability prevents you from building a spaghetti state monster. The Clojure map <code>{:name "Ayo", :email "ayo@example.com"}</code> is not a stateful object that anyone can add to, remove from or modify. That map is just a value, and the value is <code>{:name "Ayo", :email "ayo@example.com"}</code>.</p>
+<p>Mutable objects, on the other hand, allow undiscerning programmers to modify state at inopportune times. Consider, for example, the User model below:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">var</span> User <span class="op">=</span> <span class="kw">function</span> (name<span class="op">,</span> email) <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  <span class="kw">this</span>.<span class="at">name</span> <span class="op">=</span> name<span class="op">;</span></a>
+<a class="sourceLine" id="cb5-3" title="3">  <span class="kw">this</span>.<span class="at">email</span> <span class="op">=</span> email<span class="op">;</span></a>
+<a class="sourceLine" id="cb5-4" title="4"></a>
+<a class="sourceLine" id="cb5-5" title="5">  <span class="kw">this</span>.<span class="at">isValid</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-6" title="6">    <span class="cf">if</span> (<span class="kw">this</span>.<span class="va">name</span>.<span class="at">length</span> <span class="op">&gt;</span> <span class="dv">100</span> <span class="op">||</span></a>
+<a class="sourceLine" id="cb5-7" title="7">        <span class="kw">this</span>.<span class="va">email</span>.<span class="at">indexOf</span>(<span class="st">&quot;@&quot;</span>) <span class="op">===</span> <span class="dv">-1</span>) <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-8" title="8">      <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb5-9" title="9">    <span class="op">}</span></a>
+<a class="sourceLine" id="cb5-10" title="10">    <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb5-11" title="11">  <span class="op">};</span></a>
+<a class="sourceLine" id="cb5-12" title="12"></a>
+<a class="sourceLine" id="cb5-13" title="13">  <span class="kw">this</span>.<span class="at">resetEmail</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-14" title="14">    <span class="kw">this</span>.<span class="at">email</span> <span class="op">=</span> <span class="st">&quot;&quot;</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb5-15" title="15">  <span class="op">};</span></a>
+<a class="sourceLine" id="cb5-16" title="16"></a>
+<a class="sourceLine" id="cb5-17" title="17">  <span class="kw">this</span>.<span class="at">magic</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-18" title="18">    <span class="co">// lots of code here…</span></a>
+<a class="sourceLine" id="cb5-19" title="19">    <span class="kw">this</span>.<span class="at">resetEmail</span>()<span class="op">;</span></a>
+<a class="sourceLine" id="cb5-20" title="20">    <span class="co">// lots of code here…</span></a>
+<a class="sourceLine" id="cb5-21" title="21">  <span class="op">};</span></a>
+<a class="sourceLine" id="cb5-22" title="22"></a>
+<a class="sourceLine" id="cb5-23" title="23">  <span class="kw">this</span>.<span class="at">save</span> <span class="op">=</span> <span class="kw">function</span> () <span class="op">{</span> <span class="co">/* … */</span> <span class="op">};</span></a>
+<a class="sourceLine" id="cb5-24" title="24"></a>
+<a class="sourceLine" id="cb5-25" title="25">  <span class="cf">return</span> <span class="kw">this</span><span class="op">;</span></a>
+<a class="sourceLine" id="cb5-26" title="26"><span class="op">};</span></a></code></pre></div>
+<p>And now let’s use it:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb6-1" title="1"><span class="kw">var</span> u <span class="op">=</span> <span class="at">User</span>(<span class="st">&quot;Ayo&quot;</span><span class="op">,</span> <span class="st">&quot;ayo@example.com&quot;</span>)</a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="cf">if</span> (<span class="va">u</span>.<span class="at">isValid</span>()) <span class="op">{</span></a>
+<a class="sourceLine" id="cb6-3" title="3">  <span class="co">// …</span></a>
+<a class="sourceLine" id="cb6-4" title="4">  <span class="cf">if</span> (somePredicate) <span class="op">{</span> <span class="va">u</span>.<span class="at">magic</span>()<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb6-5" title="5">  <span class="co">// …</span></a>
+<a class="sourceLine" id="cb6-6" title="6">  <span class="va">u</span>.<span class="at">save</span>()<span class="op">;</span> <span class="co">// Oops, saved invalid email.</span></a>
+<a class="sourceLine" id="cb6-7" title="7"><span class="op">}</span></a></code></pre></div>
+<p>Obviously this is a contrived example, but in a large code base with many collaborators, mistakes like this are common.</p>
+<p>And yes, we can do a number of things to mitigate disasters like the one above. We can emphasize good coding styles. We can enforce code reads that will hopefully catch such errors. These things are possible, but hard to do. For example, what if the commit was adding the single expression <code>u.magic()</code>? Is the code reader expected to know what <code>magic()</code> does through and through? But with immutable data structures, the data structures and compiler enforces all of this for you, for free.</p>
+<p>The conclusion is simple:</p>
+<ol type="1">
+<li>Immutability prevents you from doing stupid things.</li>
+<li>Immutability frees you to do the correct thing.</li>
+</ol>
+<h2 id="om-and-react">Om and React</h2>
+<p>Given a page number of a book, you know that the contents will be the same <em>every single time</em>. Books are immutable. If you take the page number as your input, and your fingers flipping to the page as your function, you get:</p>
+<p>%%%\mathit{fingers}(\mathit{page}) \Rightarrow \mathit{contents}%%%</p>
+<p>Can we do the same with our programs? Can we pass in a state and get the UI at that given state?</p>
+<p>With Om, you can.</p>
+<p>Om is a ClojureScript library for React. While there are a lot of good <a href="http://blog.getprismatic.com/om-sweet-om-high-functional-frontend-engineering-with-clojurescript-and-react/">articles</a> and <a href="https://www.youtube.com/watch?v=DMtwq3QtddY">videos</a> that explain <a href="http://swannodette.github.io/2013/12/17/the-future-of-javascript-mvcs/">Om</a> and <a href="http://2013.jsconf.eu/speakers/pete-hunt-react-rethinking-best-practices.html">React</a>, I like to think of an Om application as a function %%f%% that takes your global application state %%s%% and returns a %%DOM%%.</p>
+<p>%%%f(s) \Rightarrow DOM%%%</p>
+<p>Your application state %%s%% is one giant, immutable map that contains all the necessary data for your UI to render. But naturally our UI needs to transition state at some point (e.g. when a user clicks something, or when an AJAX request comes back). To do this, we enclose our immutable map in a Clojure <code>atom</code>, like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb7-1" title="1">(<span class="bu">def</span><span class="fu"> my-state </span>(<span class="kw">atom</span> {<span class="at">:my-data</span> {} <span class="at">:users</span> [] <span class="at">:foo</span> <span class="dv">0</span>}))</a></code></pre></div>
+<p>An atom is like a box. You can replace the thing inside the box, but you can’t ever modify the content itself (because it’s immutable). To get the value inside of the box, you must deference it using <code>@</code>. To “modify” an atom, use <code>swap!</code> or <code>reset!</code>. Like this:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb8-1" title="1"><span class="at">@my-state</span></a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="co">;; ⇒ {:my-data {} :users [] :foo 0}</span></a>
+<a class="sourceLine" id="cb8-3" title="3"></a>
+<a class="sourceLine" id="cb8-4" title="4">(<span class="kw">reset!</span> my-state {<span class="at">:bar</span> <span class="dv">1</span>})</a>
+<a class="sourceLine" id="cb8-5" title="5"><span class="at">@my-state</span></a>
+<a class="sourceLine" id="cb8-6" title="6"><span class="co">;; ⇒ {:bar 1}</span></a>
+<a class="sourceLine" id="cb8-7" title="7"></a>
+<a class="sourceLine" id="cb8-8" title="8">(<span class="kw">swap!</span> my-state <span class="kw">merge</span> {<span class="at">:far</span> <span class="dv">2</span>})</a>
+<a class="sourceLine" id="cb8-9" title="9"><span class="at">@my-state</span></a>
+<a class="sourceLine" id="cb8-10" title="10"><span class="co">;; ⇒ {:bar 1 :far 2}</span></a></code></pre></div>
+<h3 id="virtual-dom">Virtual DOM</h3>
+<p>In Om (and React), instead of writing raw HTML, you build virtual DOM elements. For example:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb9-1" title="1"><span class="co">;; Renders &quot;Hello `name`&quot;, where `name` is retrieved</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="co">;; from the global state.</span></a>
+<a class="sourceLine" id="cb9-3" title="3">(dom/div</a>
+<a class="sourceLine" id="cb9-4" title="4">  #js {<span class="at">:className</span> <span class="st">&quot;greeting&quot;</span>}</a>
+<a class="sourceLine" id="cb9-5" title="5">  (<span class="kw">str</span> <span class="st">&quot;Hello&quot;</span> (<span class="at">:name</span> my-state)))</a></code></pre></div>
+<p>In React JSX, this may look like this:</p>
+<pre><code>&lt;div className=&quot;greeting&quot;&gt;Hello {this.props.name}&lt;/div&gt;;
+
+// Compiled JS:
+// React.DOM.div({className: &quot;greeting&quot;}, &quot;Hello &quot;, this.props.name);</code></pre>
+<p>The virtual DOM is just a bunch of JavaScript objects—objects controlled by the React framework. At every predefined tick, React will take your virtual DOM, check which elements have changed, and render only those elements. React’s <a href="http://facebook.github.io/react/docs/reconciliation.html">Reconciliation</a> page describes in detail the optimizations made under the hood to make these renders fast. In short, React tries its best to only render changed components.</p>
+<p>But Om has one distinct advantage against React: ClojureScript data structures are immutable. The rocket fuel, as David Nolen, creator of Om, calls it.</p>
+<p>Let’s see how this rocket fuel works. Say you have a custom component that renders a list of users and their names. Our state may look something like this:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb11-1" title="1"><span class="at">@my-state</span></a>
+<a class="sourceLine" id="cb11-2" title="2"><span class="co">;; ⇒ {:users [{:name &quot;Ayo&quot;} {:name &quot;Zoey&quot;}]}</span></a></code></pre></div>
+<p>The virtual DOM may look something like this (simplified for brevity):</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb12-1" title="1">(ul</a>
+<a class="sourceLine" id="cb12-2" title="2">  (li <span class="st">&quot;Ayo&quot;</span>)</a>
+<a class="sourceLine" id="cb12-3" title="3">  (li <span class="st">&quot;Zoey&quot;</span>))</a></code></pre></div>
+<p>At the next render phase, React will ask our component, “should I re-render you?” If our state were mutable objects, we would have to self-reconcile our state between two render phases, via the usual prescription of a recursive equality check or some hand-tuned mechanism. But because our state is immutable, we have only have to do a reference equality check, via Om <a href="https://github.com/swannodette/om/wiki/Cursors">cursors</a>.</p>
+<p>David Nolen’s <a href="http://swannodette.github.io/2013/12/17/the-future-of-javascript-mvcs/">article</a> goes in depth.</p>
+<h3 id="state-over-time">State over time</h3>
+<p>As your program’s state changes over time, Om automatically re-renders the components that depend on the changed state, producing the DOM represented by your state. We can think of it like this:</p>
+<p>%%%f(s_0) \Rightarrow \mathit{DOM}_0%%%</p>
+<p>%%%f(s_1) \Rightarrow \mathit{DOM}_1%%%</p>
+<p>%%%f(s_2) \Rightarrow \mathit{DOM}_2%%%</p>
+<p>What a refreshing way of thinking!</p>
+<p>Other than a marvelous elegance, you also get features like snapshots for free. The famous example is this: say we save a snapshot of our states over time, %%[s_0, s_1, s_2, …]%%. Then choose any state, pass that into your program, and <em>bam</em> your UI is rendered as expected.</p>
+<p>This makes <a href="http://swannodette.github.io/2013/12/31/time-travel/">time travel</a> (e.g. undo/redo) easy. <a href="http://elbenshira.com/p/planjure/">Planjure</a>, Om <a href="http://swannodette.github.io/todomvc/labs/architecture-examples/om-undo/index.html">TodoMVC</a> and <a href="http://jackschaedler.github.io/goya/">Goya</a> are three example apps that implement undo/redo, all with just a few lines of code.</p>
+<p>With Om, the complexity of state management, writing error-prone code to make sure that component A knows that component B knows that component C got a mouse click and is waiting for an AJAX response—all of that goes away. You find yourself astonished, really, at how simple everything can be.</p>
+<p>I don’t mean, of course, that your programs will be bug or frustration free. But I do think that Om obliterates the state monster and leads you towards the better path.</p>
+<h2 id="how-to-communicate">How to communicate</h2>
+<p>JavaScript environments are asynchronous—we use callbacks to handle events. Let’s say we’re building a document editor and we want to save the document either when the user clicks <code>[Save]</code> or <code>[Exit]</code>. Saving a document may take several seconds, so we should ignore new save requests if the current one is in-flight (e.g. the user clicks <code>[Save]</code> and <code>[Exit]</code> consecutively).</p>
+<p>If we were writing this in Backbone.js, we may have components that look like this</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">var</span> SaveButtonView <span class="op">=</span> <span class="va">Backbone</span>.<span class="va">View</span>.<span class="at">Extend</span>(<span class="op">{</span></a>
+<a class="sourceLine" id="cb13-2" title="2">  <span class="dt">events</span><span class="op">:</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb13-3" title="3">    <span class="st">&#39;click .save-button&#39;</span><span class="op">:</span> <span class="st">&#39;save&#39;</span></a>
+<a class="sourceLine" id="cb13-4" title="4">  <span class="op">},</span></a>
+<a class="sourceLine" id="cb13-5" title="5">  <span class="dt">save</span><span class="op">:</span> <span class="kw">function</span> () <span class="op">{</span> <span class="kw">this</span>.<span class="va">model</span>.<span class="at">save</span>()<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb13-7" title="7"></a>
+<a class="sourceLine" id="cb13-8" title="8"><span class="kw">var</span> ExitButtonView <span class="op">=</span> <span class="va">Backbone</span>.<span class="va">View</span>.<span class="at">Extend</span>(<span class="op">{</span></a>
+<a class="sourceLine" id="cb13-9" title="9">  <span class="dt">events</span><span class="op">:</span> <span class="op">{</span></a>
+<a class="sourceLine" id="cb13-10" title="10">    <span class="st">&#39;click .exit-button&#39;</span><span class="op">:</span> <span class="st">&#39;save&#39;</span></a>
+<a class="sourceLine" id="cb13-11" title="11">  <span class="op">},</span></a>
+<a class="sourceLine" id="cb13-12" title="12">  <span class="dt">save</span><span class="op">:</span> <span class="kw">function</span> () <span class="op">{</span> <span class="kw">this</span>.<span class="va">model</span>.<span class="at">save</span>()<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb13-13" title="13"><span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb13-14" title="14"></a>
+<a class="sourceLine" id="cb13-15" title="15"><span class="kw">var</span> SaveButtonModel <span class="op">=</span> <span class="va">Backbone</span>.<span class="va">Model</span>.<span class="at">Extend</span>(<span class="op">{</span></a>
+<a class="sourceLine" id="cb13-16" title="16">  <span class="dt">save</span><span class="op">:</span> <span class="kw">function</span> () <span class="op">{</span> <span class="kw">this</span>.<span class="va">document</span>.<span class="at">save</span>()<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb13-17" title="17"><span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb13-18" title="18"></a>
+<a class="sourceLine" id="cb13-19" title="19"><span class="kw">var</span> ExitButtonModel <span class="op">=</span> <span class="va">Backbone</span>.<span class="va">Model</span>.<span class="at">Extend</span>(<span class="op">{</span></a>
+<a class="sourceLine" id="cb13-20" title="20">  <span class="dt">save</span><span class="op">:</span> <span class="kw">function</span> () <span class="op">{</span> <span class="kw">this</span>.<span class="va">document</span>.<span class="at">save</span>()<span class="op">;</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb13-21" title="21"><span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb13-22" title="22"></a>
+<a class="sourceLine" id="cb13-23" title="23"><span class="kw">var</span> DocumentModel <span class="op">=</span> <span class="va">Backbone</span>.<span class="va">Model</span>.<span class="at">Extend</span>(<span class="op">{</span></a>
+<a class="sourceLine" id="cb13-24" title="24">  <span class="dt">save</span><span class="op">:</span> <span class="kw">function</span> () <span class="op">{</span> <span class="co">/* complex logic */</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb13-25" title="25"><span class="op">}</span>)<span class="op">;</span></a></code></pre></div>
+<p>But now let’s say we want <em>two</em> GET requests to succeed before we print <code>Done!</code>. Furthermore, print <code>Failed!</code> on failure if one of the requests fail. The naive approach is</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode javascript"><code class="sourceCode javascript"><a class="sourceLine" id="cb14-1" title="1"><span class="va">$</span>.<span class="at">get</span>(opts1<span class="op">,</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb14-2" title="2">	<span class="va">$</span>.<span class="at">get</span>(opts2<span class="op">,</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb14-3" title="3">    <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Done!&quot;</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb14-4" title="4">  <span class="op">},</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb14-5" title="5">    <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Failed!&quot;</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb14-6" title="6">  <span class="op">}</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb14-7" title="7"><span class="op">},</span> <span class="kw">function</span> () <span class="op">{</span></a>
+<a class="sourceLine" id="cb14-8" title="8">  <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;Failed!&quot;</span>)<span class="op">;</span></a>
+<a class="sourceLine" id="cb14-9" title="9"><span class="op">}</span>)<span class="op">;</span></a></code></pre></div>
+<p>Even from the code above, and from many of our experiences, we realize that callbacks become unwieldy and cumbersome as our logic increases in complexity. Callback hell, it’s often called. Many go to <em>promises</em> to ease the pain. But as the name implies, given a promise, you must know how to fulfill your promise. Why must this be?</p>
+<p>Your boss may promise to give you a raise, but she may not actually know <em>how</em> to put more money in your bank account. Most likely, she will send an email to someone else who knows how to put the money into your bank account. Notice that email is a communication channel.</p>
+<p>Our code works in the same way—if some module A gets a promise, why should we assume that module A knows how handle this? And let’s not just pass the promise to some module B that knows how to handle it. Why should A even know about B? Your boss does not walk over to accounting, interrupt someone, tell them to change your salary, and watch them type out the number on the screen. No, your boss just sends an asynchronous email and continues with her work.</p>
+<p>In the document app example, we said that our app should save the document whenever we click [Save] or [Exit]. Let’s introduce a new method, Ctrl+S. Why should both the keyboard handler and the mouse handler have to hold a reference to the save module which does some complicated logic?</p>
+<p><a href="https://github.com/clojure/core.async">core.async</a> erases this problem by introducing channels. Your app now holds a save channel. Any handler or module that wants to save the document simply puts a signal into the channel (any value would work). The save module, then, saves the document whenever a new value is found in the channel. Any module, including not-yet-written modules, may produce and consume from the channel. Just like email.</p>
+<p>In essence, core.async simplifies cross-module communication by putting channels between them. <a href="https://www.youtube.com/watch?v=dGVqrGmwOAw">Rich</a> and <a href="https://www.youtube.com/watch?v=enwIIGzhahw">Timothy</a> goes in depth.</p>
+<h2 id="moving-forward">Moving forward</h2>
+<p>In the beginning, I asserted that we could improve our applications by removing complex state modifications and by abstracting away the DOM. We saw the power of immutable data structures and of thinking about the DOM as an output to a function, instead of a stateful object to be modified. ClojureScript, Om and core.async are a trifecta of tools that help us realize these goals.</p>
+<p>But If you’re not ready to take the plunge into Clojure, try out Facebook’s <a href="https://github.com/facebook/immutable-js">immutable-js</a> and <a href="http://facebook.github.io/react">React</a> instead.</p>
+<p>At the end, we know that UI development is messy, and often times broken. We want to solve this, but it will require us to try out new ideas and new ways of thought. Both the JavaScript and Clojure communities, it seems, have benefited and learned from each other. So if the ideas presented here seem too foreign, don’t balk. If they seem too radical, don’t dismiss it. Let these ideas simmer. And if you want, try it out; play with it. But I think you’ll find these tools to be brilliant, powerful and, frankly, a lot of fun.</p>
+<h1 id="references">References</h1>
+<p><a href="https://www.youtube.com/watch?v=DMtwq3QtddY">David Nolen: The Final Frontier</a></p>
+<p><a href="http://swannodette.github.io/2013/12/17/the-future-of-javascript-mvcs/">David Nolen: The future of JavaScript MVCs</a></p>
+<p><a href="http://swannodette.github.io/2013/12/31/time-travel/">David Nolen: Time Travel</a></p>
+<p><a href="https://github.com/facebook/immutable-js">Facebook: Immutable Data Structures</a></p>
+<p><a href="http://facebook.github.io/react/docs/reconciliation.html">Facebook: React’s Reconciliation</a></p>
+<p><a href="http://blog.getprismatic.com/om-sweet-om-high-functional-frontend-engineering-with-clojurescript-and-react/">Prismatic: Om sweet Om</a></p>
+<p><a href="https://www.youtube.com/watch?v=dGVqrGmwOAw">Rich Hickey: Clojure Concurrency (video)</a></p>
+<p><a href="http://www.infoq.com/presentations/clojure-core-async">Rich Hickey: Clojure core.async (video)</a></p>
+<p><a href="https://www.youtube.com/watch?v=enwIIGzhahw">Timothy Baldridge: Core.Async (video)</a></p>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)'], ['%%', '%%']],
+    displayMath: [['$$','$$'], ["\\[","\\]"], ['%%%', '%%%']]
+  }
+});
+</script>
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</article>
+
+<div class="post-content-end">
+  <hr>
+
+  <div class="view-comments">
+    <a>View comments</a>
+  </div>
+
+  <div id="disqus-comments" class="hide">
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+      var disqus_shortname = 'elbenshira';
+      var disqus_category_id = '2658740'; // "Blog" category.
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+         dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+         (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+       })();
+    </script>
+    <noscript>Enable JavaScript to view Disqus comments.</noscript>
+  </div>
+
+</div>
+
+        </div>
+      </div>
+
+      <script>
+        /* Font Face Observer v2.0.13 - © Bram Stein. License: BSD-3-Clause https://raw.githubusercontent.com/bramstein/fontfaceobserver */
+        (function(){'use strict';var f,g=[];function l(a){g.push(a);1==g.length&&f()}function m(){for(;g.length;)g[0](),g.shift()}f=function(){setTimeout(m)};function n(a){this.a=p;this.b=void 0;this.f=[];var b=this;try{a(function(a){q(b,a)},function(a){r(b,a)})}catch(c){r(b,c)}}var p=2;function t(a){return new n(function(b,c){c(a)})}function u(a){return new n(function(b){b(a)})}function q(a,b){if(a.a==p){if(b==a)throw new TypeError;var c=!1;try{var d=b&&b.then;if(null!=b&&"object"==typeof b&&"function"==typeof d){d.call(b,function(b){c||q(a,b);c=!0},function(b){c||r(a,b);c=!0});return}}catch(e){c||r(a,e);return}a.a=0;a.b=b;v(a)}}
+function r(a,b){if(a.a==p){if(b==a)throw new TypeError;a.a=1;a.b=b;v(a)}}function v(a){l(function(){if(a.a!=p)for(;a.f.length;){var b=a.f.shift(),c=b[0],d=b[1],e=b[2],b=b[3];try{0==a.a?"function"==typeof c?e(c.call(void 0,a.b)):e(a.b):1==a.a&&("function"==typeof d?e(d.call(void 0,a.b)):b(a.b))}catch(h){b(h)}}})}n.prototype.g=function(a){return this.c(void 0,a)};n.prototype.c=function(a,b){var c=this;return new n(function(d,e){c.f.push([a,b,d,e]);v(c)})};
+function w(a){return new n(function(b,c){function d(c){return function(d){h[c]=d;e+=1;e==a.length&&b(h)}}var e=0,h=[];0==a.length&&b(h);for(var k=0;k<a.length;k+=1)u(a[k]).c(d(k),c)})}function x(a){return new n(function(b,c){for(var d=0;d<a.length;d+=1)u(a[d]).c(b,c)})};window.Promise||(window.Promise=n,window.Promise.resolve=u,window.Promise.reject=t,window.Promise.race=x,window.Promise.all=w,window.Promise.prototype.then=n.prototype.c,window.Promise.prototype["catch"]=n.prototype.g);}());
+
+             (function(){function l(a,b){document.addEventListener?a.addEventListener("scroll",b,!1):a.attachEvent("scroll",b)}function m(a){document.body?a():document.addEventListener?document.addEventListener("DOMContentLoaded",function c(){document.removeEventListener("DOMContentLoaded",c);a()}):document.attachEvent("onreadystatechange",function k(){if("interactive"==document.readyState||"complete"==document.readyState)document.detachEvent("onreadystatechange",k),a()})};function r(a){this.a=document.createElement("div");this.a.setAttribute("aria-hidden","true");this.a.appendChild(document.createTextNode(a));this.b=document.createElement("span");this.c=document.createElement("span");this.h=document.createElement("span");this.f=document.createElement("span");this.g=-1;this.b.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.c.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+             this.f.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.h.style.cssText="display:inline-block;width:200%;height:200%;font-size:16px;max-width:none;";this.b.appendChild(this.h);this.c.appendChild(this.f);this.a.appendChild(this.b);this.a.appendChild(this.c)}
+             function t(a,b){a.a.style.cssText="max-width:none;min-width:20px;min-height:20px;display:inline-block;overflow:hidden;position:absolute;width:auto;margin:0;padding:0;top:-999px;white-space:nowrap;font-synthesis:none;font:"+b+";"}function y(a){var b=a.a.offsetWidth,c=b+100;a.f.style.width=c+"px";a.c.scrollLeft=c;a.b.scrollLeft=a.b.scrollWidth+100;return a.g!==b?(a.g=b,!0):!1}function z(a,b){function c(){var a=k;y(a)&&a.a.parentNode&&b(a.g)}var k=a;l(a.b,c);l(a.c,c);y(a)};function A(a,b){var c=b||{};this.family=a;this.style=c.style||"normal";this.weight=c.weight||"normal";this.stretch=c.stretch||"normal"}var B=null,C=null,E=null,F=null;function G(){if(null===C)if(J()&&/Apple/.test(window.navigator.vendor)){var a=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))(?:\.([0-9]+))/.exec(window.navigator.userAgent);C=!!a&&603>parseInt(a[1],10)}else C=!1;return C}function J(){null===F&&(F=!!document.fonts);return F}
+function K(){if(null===E){var a=document.createElement("div");try{a.style.font="condensed 100px sans-serif"}catch(b){}E=""!==a.style.font}return E}function L(a,b){return[a.style,a.weight,K()?a.stretch:"","100px",b].join(" ")}
+A.prototype.load=function(a,b){var c=this,k=a||"BESbswy",q=0,D=b||3E3,H=(new Date).getTime();return new Promise(function(a,b){if(J()&&!G()){var M=new Promise(function(a,b){function e(){(new Date).getTime()-H>=D?b():document.fonts.load(L(c,'"'+c.family+'"'),k).then(function(c){1<=c.length?a():setTimeout(e,25)},function(){b()})}e()}),N=new Promise(function(a,c){q=setTimeout(c,D)});Promise.race([N,M]).then(function(){clearTimeout(q);a(c)},function(){b(c)})}else m(function(){function u(){var b;if(b=-1!=
+  f&&-1!=g||-1!=f&&-1!=h||-1!=g&&-1!=h)(b=f!=g&&f!=h&&g!=h)||(null===B&&(b=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))/.exec(window.navigator.userAgent),B=!!b&&(536>parseInt(b[1],10)||536===parseInt(b[1],10)&&11>=parseInt(b[2],10))),b=B&&(f==v&&g==v&&h==v||f==w&&g==w&&h==w||f==x&&g==x&&h==x)),b=!b;b&&(d.parentNode&&d.parentNode.removeChild(d),clearTimeout(q),a(c))}function I(){if((new Date).getTime()-H>=D)d.parentNode&&d.parentNode.removeChild(d),b(c);else{var a=document.hidden;if(!0===a||void 0===a)f=e.a.offsetWidth,
+  g=n.a.offsetWidth,h=p.a.offsetWidth,u();q=setTimeout(I,50)}}var e=new r(k),n=new r(k),p=new r(k),f=-1,g=-1,h=-1,v=-1,w=-1,x=-1,d=document.createElement("div");d.dir="ltr";t(e,L(c,"sans-serif"));t(n,L(c,"serif"));t(p,L(c,"monospace"));d.appendChild(e.a);d.appendChild(n.a);d.appendChild(p.a);document.body.appendChild(d);v=e.a.offsetWidth;w=n.a.offsetWidth;x=p.a.offsetWidth;I();z(e,function(a){f=a;u()});t(e,L(c,'"'+c.family+'",sans-serif'));z(n,function(a){g=a;u()});t(n,L(c,'"'+c.family+'",serif'));
+z(p,function(a){h=a;u()});t(p,L(c,'"'+c.family+'",monospace'))})})};"object"===typeof module?module.exports=A:(window.FontFaceObserver=A,window.FontFaceObserver.prototype.load=A.prototype.load);}());
+
+(function(w) {
+  if(w.document.documentElement.className.indexOf("fonts-loaded") <= 0) {
+    // Fonts not yet loaded. Wait for them to load, then append the class that
+    // will set the loaded font.
+
+    var charterNN = new w.FontFaceObserver("Charter", { weight: "normal", style: "normal" });
+    var charterNI = new w.FontFaceObserver("Charter", { weight: "normal", style: "italic" });
+    var charterBN = new w.FontFaceObserver("Charter", { weight: "bold", style: "normal" });
+    var charterBI = new w.FontFaceObserver("Charter", { weight: "bold", style: "italic" });
+    w.Promise.all([
+      charterNN.load(null, 3000),
+      charterNI.load(null, 3000),
+      charterBN.load(null, 3000),
+      charterBI.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " fonts-loaded";
+      document.cookie="fonts-loaded=true";
+    });
+  }
+
+  if(w.document.documentElement.className.indexOf("code-fonts-loaded") <= 0) {
+    var sourceCodePro400N = new w.FontFaceObserver("Source Code Pro", { weight: "400", style: "normal" });
+    var sourceCodePro600N = new w.FontFaceObserver("Source Code Pro", { weight: "600", style: "normal" });
+    w.Promise.all([
+      sourceCodePro400N.load(null, 3000),
+      sourceCodePro600N.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " code-fonts-loaded";
+      document.cookie="code-fonts-loaded=true";
+    });
+  }
+}(this));
+      </script>
+    </body>
+</html>

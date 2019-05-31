@@ -1,0 +1,17 @@
+<h1 id="clustering">Clustering</h1>
+<p>We will implement a clustering algorithm in JavaScript. Provided for you is a canvas where you can draw points and call your clustering methods on. All the drawing has been implemented for you (but feel free to modify). You simply have to implement <code>lib/clustering.js</code>.</p>
+<p><strong>data/</strong> contains two data files that you can use to load either the world at night or the United States at night.</p>
+<p><strong>images/</strong> contains the original images and scripts I used to convert the images to data points.</p>
+<p>You shouldn’t need to modify <strong>js/app.js</strong> and <strong>js/canvas.js</strong>, as these are the files that draw the canvas for you. You’ll need to modify them if you do the project extensions, however.</p>
+<h1 id="clustering-1">Clustering</h1>
+<p>The <code>Clustering</code> class in <code>js/clustering.js</code> contain only a handful of helper methods and starting instance variables. See how <code>Clustering</code> is used in <code>js/canvas.js</code> to know what the unimplemented methods in <code>Clustering</code> should do.</p>
+<h1 id="extensions-optional">Extensions (optional)</h1>
+<p><strong>Cost function</strong></p>
+<p>A clustering algorithm may converge to different solutions. Some of them are better than others. We can mathematically define how good a solution is by using a <em>cost function</em>. The cost function for a clustering algorithm is the sum of the distance between each point and their designated center.</p>
+<p>Calculate and display the cost somewhere in the canvas.</p>
+<p><strong>Minimize cost</strong></p>
+<p>Build a runner that will run your algorithm multiple times, and choose the best solution (i.e. select the solution that minimizes the cost).</p>
+<p><strong>Selecting cluster size</strong></p>
+<p>Build a feature that will intelligently and automatically select the starting number of clusters for you using the “elbow” method as described in the lecture.</p>
+<p><strong>Multi-dimensional Clustering</strong></p>
+<p>We implemented a two-dimensional algorithm because it’s easy to visualize. But in theory, you can cluster on data points of any dimension. Change your <code>Clustering</code> to support arbitrary dimension sizes.</p>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>The Simplicity of Haskell - Elben Shira</title>
+        <script>
+          function getCookie(cname) {
+              var name = cname + "=";
+              var ca = document.cookie.split(';');
+              for(var i=0; i<ca.length; i++) {
+                  var c = ca[i];
+                  while (c.charAt(0)==' ') c = c.substring(1);
+                  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+              }
+              return "";
+          }
+
+          // If cookie set, assume font is cached, so load right away. May get
+          // cache miss sometimes (esp w/ GitHub pages 10 min cache), but that's OK.
+          if(getCookie("fonts-loaded") == "true") {
+              document.documentElement.className += " fonts-loaded";
+          }
+
+          if(getCookie("code-fonts-loaded") == "true") {
+              document.documentElement.className += " code-fonts-loaded";
+          }
+
+          window.addEventListener("load", function() {
+            var elems = document.getElementsByClassName("view-comments");
+            for (var i = 0; i < elems.length; ++i) {
+              elems[i].onclick =
+                function () {
+                  var disqus = document.getElementById("disqus-comments");
+                  if (disqus) {
+                    disqus.classList.remove("hide");
+                    this.classList.add("hide");
+                  }
+                }
+            }
+          });
+        </script>
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/default.css" />
+    </head>
+    <body>
+      <div id="structure">
+        <div id="header">
+          <h1 itemprop="name"><a href="/">Elben Shira</a></h1>
+          <span id="navigation">
+            <a href="/blog/">Blog</a>
+            <a href="/projects/">Projects</a>
+          </span>
+          <hr>
+        </div>
+
+        <div id="content">
+          <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title">The Simplicity of Haskell</h1>
+
+    <div class="post-metadata">
+      <div class="date">
+        January 11, 2019
+         / <a href="/blog/tags/haskell/">haskell</a>  / <a href="/blog/tags/programming-languages/">programming-languages</a> 
+      </div>
+    </div>
+  </header>
+
+  
+<p>What makes Haskell difficult to learn? The building blocks of Haskell are the same as any other language: primitive values, containers, and functions. When we list them out like that, it’s quite simple. But Haskell combines these elements—specifically, functions—in unfamiliar ways.</p>
+<p>Many of us are now unfazed when we see functions passed around like values:</p>
+<pre><code>function f(g, n) {
+  return g(n) + g(n+1)
+}
+
+function triple(x) {
+  return x * 3
+}
+
+f(triple, 5)</code></pre>
+<p>But when we first saw something like this, we probably traced these “complicated” functions into their fundamental values. “So <code>f</code> is a function that takes <code>g</code>, which is any function that the user has chosen. We call that user-given function twice, passing in the user-given <code>n</code> and then <code>n+1</code>. So when we call <code>f(triple, 5)</code>, what’s happening is that we call <code>triple</code> twice. We first feed <code>5</code> to <code>triple</code>, and then <code>6</code>.” We were playing interpreter.</p>
+<p>After a while, we got comfortable with treating functions as values and we didn’t have to play out the interpreter as often.</p>
+<p>Likewise, Haskell composes functions in ways we’re not familiar with. Things can feel foreign and confusing, and we may wonder why things have to be so complicated. The truth is that we are <em>forced</em> to do things this way because of the restrictions Haskell has placed on itself—it is the byproduct of its purity. Whereas other languages “cheat” and use mutable variables or impure functions when things get complicated, Haskell does not.</p>
+<p>So if Haskell is just function composition, what we need to do is decompose them, over and over. Manually break out dense code into its “raw” form. Figure out how your values are manipulated. It’s a slow process, and you’ll get mixed up and frustrated many times. It’s OK—that’s normal. But the better we are at translating between the different layers of abstraction, the better our understanding. The practice of going up-and-down between these different layers is what produces deep, intuitive knowledge.</p>
+<p>This is why I don’t really buy into the idea that “Haskell programmers think in terms of types.” Types describe the underlying values or behavior. But when you don’t understand what the values are doing to begin with, the focus on types is misplaced. So when the types confuse you, ignore the types and start looking at the values instead.</p>
+<h2 id="example-dependency-injection">Example: Dependency Injection</h2>
+<p>Let’s practice this together by looking at common problem: dependency injection.</p>
+<p>Let’s say we have these two functions:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb2-1" title="1"><span class="ot">foo ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-2" title="2">foo n <span class="ot">=</span> n <span class="op">+</span> <span class="dv">10</span></a>
+<a class="sourceLine" id="cb2-3" title="3"></a>
+<a class="sourceLine" id="cb2-4" title="4"><span class="ot">bar ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb2-5" title="5">bar n <span class="ot">=</span> n <span class="op">*</span> <span class="dv">2</span></a></code></pre></div>
+<p>That we combine and use like this:</p>
+<pre><code>&gt;&gt;&gt; bar (foo 2)
+24</code></pre>
+<p>But what if we want to make the hard-coded values <code>10</code> and <code>2</code> configurable? Say we have a <code>Config</code> data structure that contains configuration loaded from a YAML file.</p>
+<pre><code>data Config = Config {
+    getIncr :: Int
+  , getMult :: Int
+}
+
+config :: Config
+config = Config { getIncr = 10, getMult = 2 }</code></pre>
+<p>We could re-write <code>foo</code> and <code>bar</code> to accept a <code>Config</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb5-1" title="1"><span class="ot">foo ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb5-2" title="2">foo n <span class="ot">=</span> \c <span class="ot">-&gt;</span> n <span class="op">+</span> getIncr c</a>
+<a class="sourceLine" id="cb5-3" title="3"></a>
+<a class="sourceLine" id="cb5-4" title="4"><span class="ot">bar ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> (<span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>)</a>
+<a class="sourceLine" id="cb5-5" title="5">bar n <span class="ot">=</span> \c <span class="ot">-&gt;</span> n <span class="op">*</span> getMult c</a></code></pre></div>
+<pre><code>&gt;&gt;&gt; (bar (foo 2 config) config)
+24</code></pre>
+<p>Note that we could have placed the <code>Config</code> argument either first or second in the argument list, but I’ve chosen to place it in the second position (the last argument). Placing <code>Config</code> as the last argument will allow us to compose these functions in a better way, which we will see below.</p>
+<p>We can write a function <code>(&gt;&gt;==)</code> (let’s pronounce it “pipe”) that combines two <code>Config</code>-awaiting functions together.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb7-1" title="1"><span class="ot">(&gt;&gt;==) ::</span> (<span class="dt">Config</span> <span class="ot">-&gt;</span> a)</a>
+<a class="sourceLine" id="cb7-2" title="2">       <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> (<span class="dt">Config</span> <span class="ot">-&gt;</span> b))</a>
+<a class="sourceLine" id="cb7-3" title="3">       <span class="ot">-&gt;</span> (<span class="dt">Config</span> <span class="ot">-&gt;</span> b)</a>
+<a class="sourceLine" id="cb7-4" title="4">(<span class="op">&gt;&gt;==</span>) g f <span class="ot">=</span> \c <span class="ot">-&gt;</span> f (g c) c</a></code></pre></div>
+<p>And now we can combine the functions like this:</p>
+<pre><code>&gt;&gt;&gt; (foo 2 &gt;&gt;== bar) config
+24</code></pre>
+<p>Compare the above to what we had previously, <code>(bar (foo 2 config) config)</code>. With the <code>&gt;&gt;==</code> version, we only had to pass in <code>config</code> once, at the end. Check out its type:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb9-1" title="1"><span class="op">&gt;&gt;&gt;</span> <span class="op">:</span><span class="kw">type</span> (foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar)</a>
+<a class="sourceLine" id="cb9-2" title="2">(foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar)<span class="ot"> ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a></code></pre></div>
+<p>A longer pipeline also works:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb10-1" title="1"><span class="op">&gt;&gt;&gt;</span> <span class="op">:</span><span class="kw">type</span> (foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar <span class="op">&gt;&gt;==</span> foo <span class="op">&gt;&gt;==</span> bar)</a>
+<a class="sourceLine" id="cb10-2" title="2">(foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar <span class="op">&gt;&gt;==</span> foo <span class="op">&gt;&gt;==</span> bar)<span class="ot"> ::</span> <span class="dt">Config</span> <span class="ot">-&gt;</span> <span class="dt">Int</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4"><span class="op">&gt;&gt;&gt;</span> (foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar <span class="op">&gt;&gt;==</span> foo <span class="op">&gt;&gt;==</span> bar) config</a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="dv">68</span></a></code></pre></div>
+<p>Using <code>&gt;&gt;==</code> makes sense visually, but how does it work exactly? How was <code>&gt;&gt;==</code> able to combine different functions that all expected a <code>Config</code> in such a way that we only needed to pass <code>Config</code> once, at the end?</p>
+<p>Let’s play interpreter and break <code>foo 2 &gt;&gt;== bar</code> down. First, let’s substitute <code>&gt;&gt;==</code> with its definition:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb11-1" title="1"><span class="co">-- Starting with</span></a>
+<a class="sourceLine" id="cb11-2" title="2">foo <span class="dv">2</span> <span class="op">&gt;&gt;==</span> bar</a>
+<a class="sourceLine" id="cb11-3" title="3"></a>
+<a class="sourceLine" id="cb11-4" title="4"><span class="co">-- Where</span></a>
+<a class="sourceLine" id="cb11-5" title="5">g <span class="op">&gt;&gt;==</span> f <span class="ot">=</span> \c <span class="ot">-&gt;</span> f (g c) c</a>
+<a class="sourceLine" id="cb11-6" title="6"></a>
+<a class="sourceLine" id="cb11-7" title="7"><span class="co">-- Becomes</span></a>
+<a class="sourceLine" id="cb11-8" title="8">\c <span class="ot">-&gt;</span> bar ((foo <span class="dv">2</span>) c) c</a></code></pre></div>
+<p>You can see already that <code>&gt;&gt;==</code> sets up the left and right functions to accept the passed-in <code>Config</code>, and that the left side gets evaluated before the right.</p>
+<p>What about <code>foo 2 &gt;&gt;== bar &gt;&gt;== foo &gt;&gt;== bar</code>?</p>
+<pre><code>-- Starting with
+foo 2 &gt;&gt;== bar &gt;&gt;== foo &gt;&gt;== bar
+
+-- Where
+g &gt;&gt;== f = \c -&gt; f (g c) c
+
+-- Replacing the first &gt;&gt;== with its definition.
+(\c -&gt; bar ((foo 2) c) c) &gt;&gt;== foo &gt;&gt;== bar</code></pre>
+<p>That looks a bit confusing, but let’s continue and replace the other two <code>&gt;&gt;==</code>. Note that we call the <em>new</em> <code>Config</code> argument <code>c2</code> because it’s a different variable than the original <code>c</code>.</p>
+<pre><code>-- Starting with
+(\c -&gt; bar ((foo 2) c) c) &gt;&gt;== foo &gt;&gt;== bar
+
+-- Replacing the next &gt;&gt;== with its definition.
+(\c2 -&gt; foo ((\c -&gt; bar ((foo 2) c) c&#39;) c2) c2) &gt;&gt;= bar</code></pre>
+<p>And the last <code>&gt;&gt;==</code>:</p>
+<pre><code>-- Starting with
+(\c2 -&gt; foo ((\c -&gt; bar ((foo 2) c) c&#39;) c2) c2) &gt;&gt;= bar
+
+-- Replacing &gt;&gt;== with its definition.
+(\c3 -&gt; bar ((\c2 -&gt; foo ((\c -&gt; bar ((foo 2) c) c) c2) c2) c3) c3)</code></pre>
+<p>We can clean this up a bit by doing some function application:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb15-1" title="1"><span class="co">-- Starting with</span></a>
+<a class="sourceLine" id="cb15-2" title="2">(\c3 <span class="ot">-&gt;</span> bar ((\c2 <span class="ot">-&gt;</span> foo ((\c <span class="ot">-&gt;</span> bar ((foo <span class="dv">2</span>) c) c) c2) c2) c3) c3)</a>
+<a class="sourceLine" id="cb15-3" title="3"></a>
+<a class="sourceLine" id="cb15-4" title="4"><span class="co">-- Substituting c, c2 and c3.</span></a>
+<a class="sourceLine" id="cb15-5" title="5">(\c3 <span class="ot">-&gt;</span> bar (foo (bar ((foo <span class="dv">2</span>) c3) c3) c3) c3)</a></code></pre></div>
+<p>Piping a bunch of <code>Config</code>-awaiting functions together with <code>&gt;&gt;==</code> resulted in a giant, nested function that is <em>also</em> waiting for a <code>Config</code>. Once you give it a <code>Config</code>, this mess will “unwind” and run inside-out, starting with <code>(foo 2) c3</code> (the inner-most expression). So once <code>(foo 2) c3</code> is evaluated to a value, that value <strong>and the same <code>Config</code></strong> will be passed into the next method in line, <code>bar</code>.</p>
+<p><code>foo 2 &gt;&gt;== bar &gt;&gt;== foo &gt;&gt;== bar</code> may look like there’s magic happening, but it’s quite simple when you discover what’s underneath.</p>
+<p>So when things get confusing, remember that it’s just primitive values, boxes of stuff, and functions at the end of the day. Start digging, and perhaps you’ll find that things aren’t as complicated as they first seem.</p>
+<h2 id="appendix-1-the-reader-monad">Appendix 1: The Reader Monad</h2>
+<p>What we did above is a well-known pattern, known as <code>Reader</code>. The <code>Reader</code> data type is just a box with a function inside, which is exactly what we were doing.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">newtype</span> <span class="dt">Reader</span> r a <span class="ot">=</span> <span class="dt">Reader</span> (r <span class="ot">-&gt;</span> a)</a></code></pre></div>
+<p>In our example, the type variable <code>r</code> was our <code>Config</code>, and the type variable <code>a</code> was an <code>Int</code>.</p>
+<p><code>Reader</code> comes with a helper method to unbox the function:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb17-1" title="1"><span class="ot">runReader ::</span> <span class="dt">Reader</span> r a <span class="ot">-&gt;</span> (r <span class="ot">-&gt;</span> a)</a>
+<a class="sourceLine" id="cb17-2" title="2">runReader (<span class="dt">Reader</span> f) <span class="ot">=</span> f</a></code></pre></div>
+<p><code>Reader</code> also defines an instance of <code>Monad</code>:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Reader</span> r) <span class="kw">where</span></a>
+<a class="sourceLine" id="cb18-2" title="2">  <span class="co">-- return a :: a -&gt; Reader r a</span></a>
+<a class="sourceLine" id="cb18-3" title="3">  <span class="fu">return</span> a <span class="ot">=</span> <span class="dt">Reader</span> (\r <span class="ot">-&gt;</span> a)</a>
+<a class="sourceLine" id="cb18-4" title="4"></a>
+<a class="sourceLine" id="cb18-5" title="5">  <span class="co">-- (&gt;&gt;=) :: Reader r a -&gt; (a -&gt; Reader r b) -&gt; Reader r b</span></a>
+<a class="sourceLine" id="cb18-6" title="6">  m <span class="op">&gt;&gt;=</span> f <span class="ot">=</span> <span class="dt">Reader</span> (\r <span class="ot">-&gt;</span> runReader (f ((runReader m) r)) r)</a></code></pre></div>
+<p>And a helper method <code>ask</code> to get the dependency-injected value (<code>r</code>):</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb19-1" title="1"><span class="ot">ask ::</span> <span class="dt">Reader</span> r r</a>
+<a class="sourceLine" id="cb19-2" title="2">ask <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> r</a></code></pre></div>
+<p>The <code>Reader</code> version of <code>foo</code> and <code>bar</code> looks like:</p>
+<pre><code>fooR :: Int -&gt; Reader Config Int
+fooR n = ask &gt;&gt;= (\c -&gt; n + return (getIncr c))
+
+barR :: Int -&gt; Reader Config Int
+barR n = ask &gt;&gt;= (\c -&gt; n * return (getMult c))</code></pre>
+<p>Using them:</p>
+<pre><code>&gt;&gt;&gt; runReader (fooR 2 &gt;&gt;= barR) config
+24</code></pre>
+<h2 id="appendix-2-unboxing-foor">Appendix 2: Unboxing <code>fooR</code></h2>
+<p>Let’s try to unbox <code>fooR</code> to its primitive values. Taking <code>fooR</code>, let’s put <code>(&gt;&gt;=)</code> in front:</p>
+<pre><code>fooRa n = (&gt;&gt;=) ask (\c -&gt; return (n + getIncr c))</code></pre>
+<p>Substituting <code>(&gt;&gt;=) m f</code> with its definition <code>Reader $ \r -&gt; runReader (f ((runReader m) r)) r</code>:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb23-1" title="1">fooRb n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> runReader ((\c <span class="ot">-&gt;</span> <span class="fu">return</span> (n <span class="op">+</span> getIncr c)) ((runReader ask) r)) r</a></code></pre></div>
+<p>Substituting <code>ask</code> with <code>(Reader $ \r2 -&gt; r2)</code>:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb24-1" title="1">fooRc n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> runReader ((\c <span class="ot">-&gt;</span> <span class="fu">return</span> (n <span class="op">+</span> getIncr c)) ((runReader (<span class="dt">Reader</span> <span class="op">$</span> \r2 <span class="ot">-&gt;</span> r2)) r)) r</a></code></pre></div>
+<p>All of <code>((runReader (Reader $ \r2 -&gt; r2)) r)</code> can be simplified to just <code>r</code>:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb25-1" title="1">fooRd n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> runReader ((\c <span class="ot">-&gt;</span> <span class="fu">return</span> (n <span class="op">+</span> getIncr c)) r) r</a></code></pre></div>
+<p>Now let’s substitute <code>return (n + getIncr c)</code> with <code>(Reader (\r3 -&gt; (n + getIncr c)))</code>:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb26-1" title="1">fooRe n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> runReader ((\c <span class="ot">-&gt;</span> (<span class="dt">Reader</span> (\r3 <span class="ot">-&gt;</span> (n <span class="op">+</span> getIncr c)))) r) r</a></code></pre></div>
+<p>Simplifying <code>((\c -&gt; (Reader (\r3 -&gt; (n + getIncr c)))) r)</code> to <code>(Reader (\r3 -&gt; (n + getIncr r)))</code>:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb27-1" title="1">fooRf n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> runReader (<span class="dt">Reader</span> (\r3 <span class="ot">-&gt;</span> (n <span class="op">+</span> getIncr r))) r</a></code></pre></div>
+<p>Simplifying <code>runReader (Reader (\r3 -&gt; (n + getIncr r))) r</code> to <code>(n + getIncr r)</code>:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode haskell"><code class="sourceCode haskell"><a class="sourceLine" id="cb28-1" title="1">fooRg n <span class="ot">=</span> <span class="dt">Reader</span> <span class="op">$</span> \r <span class="ot">-&gt;</span> (n <span class="op">+</span> getIncr r)</a></code></pre></div>
+<p>So at the end of the day, when we defined <code>fooR</code>, we got a bunch of functions that can be reduced down to the above, in <code>fooRg</code>.</p>
+<pre><code>&gt;&gt;&gt; runReader (fooRg 2) config
+12</code></pre>
+</article>
+
+<div class="post-content-end">
+  <hr>
+
+  <div class="view-comments">
+    <a>View comments</a>
+  </div>
+
+  <div id="disqus-comments" class="hide">
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+      var disqus_shortname = 'elbenshira';
+      var disqus_category_id = '2658740'; // "Blog" category.
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+         dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+         (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+       })();
+    </script>
+    <noscript>Enable JavaScript to view Disqus comments.</noscript>
+  </div>
+
+</div>
+
+        </div>
+      </div>
+
+      <script>
+        /* Font Face Observer v2.0.13 - © Bram Stein. License: BSD-3-Clause https://raw.githubusercontent.com/bramstein/fontfaceobserver */
+        (function(){'use strict';var f,g=[];function l(a){g.push(a);1==g.length&&f()}function m(){for(;g.length;)g[0](),g.shift()}f=function(){setTimeout(m)};function n(a){this.a=p;this.b=void 0;this.f=[];var b=this;try{a(function(a){q(b,a)},function(a){r(b,a)})}catch(c){r(b,c)}}var p=2;function t(a){return new n(function(b,c){c(a)})}function u(a){return new n(function(b){b(a)})}function q(a,b){if(a.a==p){if(b==a)throw new TypeError;var c=!1;try{var d=b&&b.then;if(null!=b&&"object"==typeof b&&"function"==typeof d){d.call(b,function(b){c||q(a,b);c=!0},function(b){c||r(a,b);c=!0});return}}catch(e){c||r(a,e);return}a.a=0;a.b=b;v(a)}}
+function r(a,b){if(a.a==p){if(b==a)throw new TypeError;a.a=1;a.b=b;v(a)}}function v(a){l(function(){if(a.a!=p)for(;a.f.length;){var b=a.f.shift(),c=b[0],d=b[1],e=b[2],b=b[3];try{0==a.a?"function"==typeof c?e(c.call(void 0,a.b)):e(a.b):1==a.a&&("function"==typeof d?e(d.call(void 0,a.b)):b(a.b))}catch(h){b(h)}}})}n.prototype.g=function(a){return this.c(void 0,a)};n.prototype.c=function(a,b){var c=this;return new n(function(d,e){c.f.push([a,b,d,e]);v(c)})};
+function w(a){return new n(function(b,c){function d(c){return function(d){h[c]=d;e+=1;e==a.length&&b(h)}}var e=0,h=[];0==a.length&&b(h);for(var k=0;k<a.length;k+=1)u(a[k]).c(d(k),c)})}function x(a){return new n(function(b,c){for(var d=0;d<a.length;d+=1)u(a[d]).c(b,c)})};window.Promise||(window.Promise=n,window.Promise.resolve=u,window.Promise.reject=t,window.Promise.race=x,window.Promise.all=w,window.Promise.prototype.then=n.prototype.c,window.Promise.prototype["catch"]=n.prototype.g);}());
+
+             (function(){function l(a,b){document.addEventListener?a.addEventListener("scroll",b,!1):a.attachEvent("scroll",b)}function m(a){document.body?a():document.addEventListener?document.addEventListener("DOMContentLoaded",function c(){document.removeEventListener("DOMContentLoaded",c);a()}):document.attachEvent("onreadystatechange",function k(){if("interactive"==document.readyState||"complete"==document.readyState)document.detachEvent("onreadystatechange",k),a()})};function r(a){this.a=document.createElement("div");this.a.setAttribute("aria-hidden","true");this.a.appendChild(document.createTextNode(a));this.b=document.createElement("span");this.c=document.createElement("span");this.h=document.createElement("span");this.f=document.createElement("span");this.g=-1;this.b.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.c.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+             this.f.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.h.style.cssText="display:inline-block;width:200%;height:200%;font-size:16px;max-width:none;";this.b.appendChild(this.h);this.c.appendChild(this.f);this.a.appendChild(this.b);this.a.appendChild(this.c)}
+             function t(a,b){a.a.style.cssText="max-width:none;min-width:20px;min-height:20px;display:inline-block;overflow:hidden;position:absolute;width:auto;margin:0;padding:0;top:-999px;white-space:nowrap;font-synthesis:none;font:"+b+";"}function y(a){var b=a.a.offsetWidth,c=b+100;a.f.style.width=c+"px";a.c.scrollLeft=c;a.b.scrollLeft=a.b.scrollWidth+100;return a.g!==b?(a.g=b,!0):!1}function z(a,b){function c(){var a=k;y(a)&&a.a.parentNode&&b(a.g)}var k=a;l(a.b,c);l(a.c,c);y(a)};function A(a,b){var c=b||{};this.family=a;this.style=c.style||"normal";this.weight=c.weight||"normal";this.stretch=c.stretch||"normal"}var B=null,C=null,E=null,F=null;function G(){if(null===C)if(J()&&/Apple/.test(window.navigator.vendor)){var a=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))(?:\.([0-9]+))/.exec(window.navigator.userAgent);C=!!a&&603>parseInt(a[1],10)}else C=!1;return C}function J(){null===F&&(F=!!document.fonts);return F}
+function K(){if(null===E){var a=document.createElement("div");try{a.style.font="condensed 100px sans-serif"}catch(b){}E=""!==a.style.font}return E}function L(a,b){return[a.style,a.weight,K()?a.stretch:"","100px",b].join(" ")}
+A.prototype.load=function(a,b){var c=this,k=a||"BESbswy",q=0,D=b||3E3,H=(new Date).getTime();return new Promise(function(a,b){if(J()&&!G()){var M=new Promise(function(a,b){function e(){(new Date).getTime()-H>=D?b():document.fonts.load(L(c,'"'+c.family+'"'),k).then(function(c){1<=c.length?a():setTimeout(e,25)},function(){b()})}e()}),N=new Promise(function(a,c){q=setTimeout(c,D)});Promise.race([N,M]).then(function(){clearTimeout(q);a(c)},function(){b(c)})}else m(function(){function u(){var b;if(b=-1!=
+  f&&-1!=g||-1!=f&&-1!=h||-1!=g&&-1!=h)(b=f!=g&&f!=h&&g!=h)||(null===B&&(b=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))/.exec(window.navigator.userAgent),B=!!b&&(536>parseInt(b[1],10)||536===parseInt(b[1],10)&&11>=parseInt(b[2],10))),b=B&&(f==v&&g==v&&h==v||f==w&&g==w&&h==w||f==x&&g==x&&h==x)),b=!b;b&&(d.parentNode&&d.parentNode.removeChild(d),clearTimeout(q),a(c))}function I(){if((new Date).getTime()-H>=D)d.parentNode&&d.parentNode.removeChild(d),b(c);else{var a=document.hidden;if(!0===a||void 0===a)f=e.a.offsetWidth,
+  g=n.a.offsetWidth,h=p.a.offsetWidth,u();q=setTimeout(I,50)}}var e=new r(k),n=new r(k),p=new r(k),f=-1,g=-1,h=-1,v=-1,w=-1,x=-1,d=document.createElement("div");d.dir="ltr";t(e,L(c,"sans-serif"));t(n,L(c,"serif"));t(p,L(c,"monospace"));d.appendChild(e.a);d.appendChild(n.a);d.appendChild(p.a);document.body.appendChild(d);v=e.a.offsetWidth;w=n.a.offsetWidth;x=p.a.offsetWidth;I();z(e,function(a){f=a;u()});t(e,L(c,'"'+c.family+'",sans-serif'));z(n,function(a){g=a;u()});t(n,L(c,'"'+c.family+'",serif'));
+z(p,function(a){h=a;u()});t(p,L(c,'"'+c.family+'",monospace'))})})};"object"===typeof module?module.exports=A:(window.FontFaceObserver=A,window.FontFaceObserver.prototype.load=A.prototype.load);}());
+
+(function(w) {
+  if(w.document.documentElement.className.indexOf("fonts-loaded") <= 0) {
+    // Fonts not yet loaded. Wait for them to load, then append the class that
+    // will set the loaded font.
+
+    var charterNN = new w.FontFaceObserver("Charter", { weight: "normal", style: "normal" });
+    var charterNI = new w.FontFaceObserver("Charter", { weight: "normal", style: "italic" });
+    var charterBN = new w.FontFaceObserver("Charter", { weight: "bold", style: "normal" });
+    var charterBI = new w.FontFaceObserver("Charter", { weight: "bold", style: "italic" });
+    w.Promise.all([
+      charterNN.load(null, 3000),
+      charterNI.load(null, 3000),
+      charterBN.load(null, 3000),
+      charterBI.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " fonts-loaded";
+      document.cookie="fonts-loaded=true";
+    });
+  }
+
+  if(w.document.documentElement.className.indexOf("code-fonts-loaded") <= 0) {
+    var sourceCodePro400N = new w.FontFaceObserver("Source Code Pro", { weight: "400", style: "normal" });
+    var sourceCodePro600N = new w.FontFaceObserver("Source Code Pro", { weight: "600", style: "normal" });
+    w.Promise.all([
+      sourceCodePro400N.load(null, 3000),
+      sourceCodePro600N.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " code-fonts-loaded";
+      document.cookie="code-fonts-loaded=true";
+    });
+  }
+}(this));
+      </script>
+    </body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Understanding Transducers - Elben Shira</title>
+        <script>
+          function getCookie(cname) {
+              var name = cname + "=";
+              var ca = document.cookie.split(';');
+              for(var i=0; i<ca.length; i++) {
+                  var c = ca[i];
+                  while (c.charAt(0)==' ') c = c.substring(1);
+                  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+              }
+              return "";
+          }
+
+          // If cookie set, assume font is cached, so load right away. May get
+          // cache miss sometimes (esp w/ GitHub pages 10 min cache), but that's OK.
+          if(getCookie("fonts-loaded") == "true") {
+              document.documentElement.className += " fonts-loaded";
+          }
+
+          if(getCookie("code-fonts-loaded") == "true") {
+              document.documentElement.className += " code-fonts-loaded";
+          }
+
+          window.addEventListener("load", function() {
+            var elems = document.getElementsByClassName("view-comments");
+            for (var i = 0; i < elems.length; ++i) {
+              elems[i].onclick =
+                function () {
+                  var disqus = document.getElementById("disqus-comments");
+                  if (disqus) {
+                    disqus.classList.remove("hide");
+                    this.classList.add("hide");
+                  }
+                }
+            }
+          });
+        </script>
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/default.css" />
+    </head>
+    <body>
+      <div id="structure">
+        <div id="header">
+          <h1 itemprop="name"><a href="/">Elben Shira</a></h1>
+          <span id="navigation">
+            <a href="/blog/">Blog</a>
+            <a href="/projects/">Projects</a>
+          </span>
+          <hr>
+        </div>
+
+        <div id="content">
+          <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title">Understanding Transducers</h1>
+
+    <div class="post-metadata">
+      <div class="date">
+        September 15, 2014
+         / <a href="/blog/tags/recommended/">recommended</a>  / <a href="/blog/tags/clojure/">clojure</a> 
+      </div>
+    </div>
+  </header>
+
+  
+<p>What are transducers? Using transducers is easy enough—but how do they work underneath the hood?</p>
+<p>This article explores transducers by ignoring transducers. Instead we will examine two ordinary functions, <code>map</code> and <code>filter</code>. We’ll play with them and scrutinize them. And we’ll marvel at the power of higher-order functions as we apply abstractions. And perhaps, if we’re lucky, we’ll bump into transducers along the way.</p>
+<p>And since we ignore transducers, you won’t need to know what transducers are to follow along. If you don’t know Clojure or a Lisp, <a href="/p/clojure-primer-js/">this quick primer</a> may help.</p>
+<p>Lastly, I encourage you to type these examples into your REPL, or use <a href="http://clojurescript.net/">clojurescript.net</a>. The source code from this post can be found <a href="https://gist.github.com/elben/da8864e120c373e5fcf0">here</a>.</p>
+<h2 id="power-of-reduce">Power of reduce</h2>
+<p>You are probably familiar with <code>map</code> and <code>filter</code>, and know that we can combine them together, like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb1-1" title="1">(<span class="kw">map</span> <span class="kw">inc</span> (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="co">; ⇒ (1 2 3 4 5 6 7 8 9 10)</span></a>
+<a class="sourceLine" id="cb1-3" title="3"></a>
+<a class="sourceLine" id="cb1-4" title="4">(<span class="kw">filter</span> <span class="kw">even?</span> &#39;(<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> <span class="dv">4</span> <span class="dv">5</span> <span class="dv">6</span> <span class="dv">7</span> <span class="dv">8</span> <span class="dv">9</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb1-5" title="5"><span class="co">; ⇒ (2 4 6 8 10)</span></a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7">(<span class="kw">filter</span> <span class="kw">even?</span> (<span class="kw">map</span> <span class="kw">inc</span> (<span class="kw">range</span> <span class="dv">10</span>)))</a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="co">; ⇒ (2 4 6 8 10)</span></a></code></pre></div>
+<p>A key insight, however, is that <code>map</code> and <code>filter</code> can be defined using <code>reduce</code>. Let’s implement the expression <code>(map inc (range 10))</code> in terms of <code>reduce</code>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb2-1" title="1">(<span class="bu">defn</span><span class="fu"> map-inc-reducer</span></a>
+<a class="sourceLine" id="cb2-2" title="2">  [result input]</a>
+<a class="sourceLine" id="cb2-3" title="3">  (<span class="kw">conj</span> result (<span class="kw">inc</span> input)))</a>
+<a class="sourceLine" id="cb2-4" title="4"></a>
+<a class="sourceLine" id="cb2-5" title="5">(<span class="kw">reduce</span> map-inc-reducer [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb2-6" title="6"><span class="co">; ⇒ [1 2 3 4 5 6 7 8 9 10]</span></a></code></pre></div>
+<p>But note <code>map-inc-reducer</code>’s explicit use of <code>inc</code> as its transformer. What if we extract that out and let the user pass in whatever function they want? We can define a new function that takes a transforming function like <code>inc</code> and returns a new function.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb3-1" title="1">(<span class="bu">defn</span><span class="fu"> map-reducer</span></a>
+<a class="sourceLine" id="cb3-2" title="2">  [f]</a>
+<a class="sourceLine" id="cb3-3" title="3">  (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb3-4" title="4">    (<span class="kw">conj</span> result (f input))))</a>
+<a class="sourceLine" id="cb3-5" title="5"></a>
+<a class="sourceLine" id="cb3-6" title="6">(<span class="kw">reduce</span> (map-reducer <span class="kw">inc</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb3-7" title="7"><span class="co">; ⇒ [1 2 3 4 5 6 7 8 9 10]</span></a></code></pre></div>
+<p>Functions like <code>map-reducer</code> are called higher-order functions because they accept functions and return functions. Let’s play around:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb4-1" title="1">(<span class="kw">reduce</span> (map-reducer <span class="kw">dec</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="co">; ⇒ [-1 0 1 2 3 4 5 6 7 8]</span></a>
+<a class="sourceLine" id="cb4-3" title="3"></a>
+<a class="sourceLine" id="cb4-4" title="4">(<span class="kw">reduce</span> (map-reducer #(<span class="kw">*</span> <span class="va">%</span> <span class="va">%</span>)) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb4-5" title="5"><span class="co">; ⇒ [0 1 4 9 16 25 36 49 64 81]</span></a></code></pre></div>
+<p>Let’s also implement the expression <code>(filter even? '(1 2 3 4 5 6 7 8 9 10))</code> in terms of <code>reduce</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb5-1" title="1">(<span class="bu">defn</span><span class="fu"> filter-even-reducer</span></a>
+<a class="sourceLine" id="cb5-2" title="2">  [result input]</a>
+<a class="sourceLine" id="cb5-3" title="3">  (<span class="kw">if</span> (<span class="kw">even?</span> input)</a>
+<a class="sourceLine" id="cb5-4" title="4">    (<span class="kw">conj</span> result input)</a>
+<a class="sourceLine" id="cb5-5" title="5">    result))</a>
+<a class="sourceLine" id="cb5-6" title="6"></a>
+<a class="sourceLine" id="cb5-7" title="7">(<span class="kw">reduce</span> filter-even-reducer [] &#39;(<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> <span class="dv">4</span> <span class="dv">5</span> <span class="dv">6</span> <span class="dv">7</span> <span class="dv">8</span> <span class="dv">9</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb5-8" title="8"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>Again, notice that <code>filter-even-reducer</code> explicitly uses <code>even?</code> as its predicate. As before, let’s extract that out and let the user pass in whatever they want.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb6-1" title="1">(<span class="bu">defn</span><span class="fu"> filter-reducer</span></a>
+<a class="sourceLine" id="cb6-2" title="2">  [predicate]</a>
+<a class="sourceLine" id="cb6-3" title="3">  (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb6-4" title="4">    (<span class="kw">if</span> (predicate input)</a>
+<a class="sourceLine" id="cb6-5" title="5">      (<span class="kw">conj</span> result input)</a>
+<a class="sourceLine" id="cb6-6" title="6">      result)))</a>
+<a class="sourceLine" id="cb6-7" title="7"></a>
+<a class="sourceLine" id="cb6-8" title="8">(<span class="kw">reduce</span> (filter-reducer <span class="kw">even?</span>) [] &#39;(<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span> <span class="dv">4</span> <span class="dv">5</span> <span class="dv">6</span> <span class="dv">7</span> <span class="dv">8</span> <span class="dv">9</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb6-9" title="9"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>We can even compose <code>map-reducer</code> and <code>filter-reducer</code> together:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb7-1" title="1">(<span class="kw">reduce</span></a>
+<a class="sourceLine" id="cb7-2" title="2">  (filter-reducer <span class="kw">even?</span>)</a>
+<a class="sourceLine" id="cb7-3" title="3">  []</a>
+<a class="sourceLine" id="cb7-4" title="4">  (<span class="kw">reduce</span></a>
+<a class="sourceLine" id="cb7-5" title="5">    (map-reducer <span class="kw">inc</span>)</a>
+<a class="sourceLine" id="cb7-6" title="6">    []</a>
+<a class="sourceLine" id="cb7-7" title="7">    (<span class="kw">range</span> <span class="dv">10</span>)))</a>
+<a class="sourceLine" id="cb7-8" title="8"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>The expression above is equivalent (ignoring vectors versus lists) to the expression below.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb8-1" title="1">(<span class="kw">filter</span> <span class="kw">even?</span> (<span class="kw">map</span> <span class="kw">inc</span> (<span class="kw">range</span> <span class="dv">10</span>)))</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="co">; ⇒ (2 4 6 8 10)</span></a></code></pre></div>
+<p>We see that with higher-order functions, we are able to define <code>map</code> and <code>filter</code> in terms of <code>reduce</code>.</p>
+<p>Both versions, however, required intermediate vectors—one for map and one for filter. One important property of transducers is that they should employ only one collection regardless of the number of transformations. How can we accomplish that?</p>
+<h2 id="another-step-in-abstraction">Another step in abstraction</h2>
+<p>Let’s scrutinize <code>map-reducer</code> and <code>filter-reducer</code>. Here they are again:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb9-1" title="1">(<span class="bu">defn</span><span class="fu"> map-reducer</span></a>
+<a class="sourceLine" id="cb9-2" title="2">  [f]</a>
+<a class="sourceLine" id="cb9-3" title="3">  (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb9-4" title="4">    (<span class="kw">conj</span> result (f input))))</a>
+<a class="sourceLine" id="cb9-5" title="5"></a>
+<a class="sourceLine" id="cb9-6" title="6">(<span class="bu">defn</span><span class="fu"> filter-reducer</span></a>
+<a class="sourceLine" id="cb9-7" title="7">  [predicate]</a>
+<a class="sourceLine" id="cb9-8" title="8">  (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb9-9" title="9">    (<span class="kw">if</span> (predicate input)</a>
+<a class="sourceLine" id="cb9-10" title="10">      (<span class="kw">conj</span> result input)</a>
+<a class="sourceLine" id="cb9-11" title="11">      result)))</a></code></pre></div>
+<p>What do you observe? <code>conj</code> is used in both of them. Why? What’s so special about it? Can we use other functions in place of <code>conj</code>?</p>
+<p>Well, notice that <code>result</code> and <code>input</code> can be of any type. If <code>result</code> is <code>10</code> and <code>input</code> is <code>1</code>, <code>conj</code> would not work here; <code>(conj 10 1)</code> throws an error. Instead of <code>conj</code>, we would want something like <code>+</code>, because <code>(+ 10 1)</code> makes sense.</p>
+<p>We can say that <code>conj</code> and <code>+</code> are both <strong>reducing functions</strong>. Reducing functions have the type <code>result, input -&gt; result</code>; they take a result and an input, and returns a <em>new</em> result. For example:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb10-1" title="1">(<span class="kw">conj</span> [<span class="dv">1</span> <span class="dv">2</span> <span class="dv">3</span>] <span class="dv">4</span>)</a>
+<a class="sourceLine" id="cb10-2" title="2"><span class="co">; ⇒ [1 2 3 4]</span></a>
+<a class="sourceLine" id="cb10-3" title="3"></a>
+<a class="sourceLine" id="cb10-4" title="4">(<span class="kw">+</span> <span class="dv">10</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="co">; ⇒ 11</span></a></code></pre></div>
+<p>Now, instead of always using <code>conj</code> in <code>map-reducer</code> and <code>filter-reducer</code>, what if we let the user pass in whatever reducing function they want?</p>
+<p>This will result in another higher-order function that takes our map’s transform function and filter’s predicate function, as usual. But we now will return a function that accepts a reducing function. Let’s use the names <code>mapping</code> and <code>filtering</code> for our new functions.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb11-1" title="1">(<span class="bu">defn</span><span class="fu"> mapping</span></a>
+<a class="sourceLine" id="cb11-2" title="2">  [f]</a>
+<a class="sourceLine" id="cb11-3" title="3">  (<span class="kw">fn</span> [reducing]</a>
+<a class="sourceLine" id="cb11-4" title="4">    (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb11-5" title="5">      (reducing result (f input)))))</a>
+<a class="sourceLine" id="cb11-6" title="6"></a>
+<a class="sourceLine" id="cb11-7" title="7">(<span class="bu">defn</span><span class="fu"> filtering</span></a>
+<a class="sourceLine" id="cb11-8" title="8">  [predicate]</a>
+<a class="sourceLine" id="cb11-9" title="9">  (<span class="kw">fn</span> [reducing]</a>
+<a class="sourceLine" id="cb11-10" title="10">    (<span class="kw">fn</span> [result input]</a>
+<a class="sourceLine" id="cb11-11" title="11">      (<span class="kw">if</span> (predicate input)</a>
+<a class="sourceLine" id="cb11-12" title="12">        (reducing result input)</a>
+<a class="sourceLine" id="cb11-13" title="13">        result))))</a></code></pre></div>
+<p>And now let’s use them as before:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb12-1" title="1">(<span class="kw">reduce</span></a>
+<a class="sourceLine" id="cb12-2" title="2">  ((filtering <span class="kw">even?</span>) <span class="kw">conj</span>)</a>
+<a class="sourceLine" id="cb12-3" title="3">  []</a>
+<a class="sourceLine" id="cb12-4" title="4">  (<span class="kw">reduce</span></a>
+<a class="sourceLine" id="cb12-5" title="5">    ((mapping <span class="kw">inc</span>) <span class="kw">conj</span>)</a>
+<a class="sourceLine" id="cb12-6" title="6">    []</a>
+<a class="sourceLine" id="cb12-7" title="7">    (<span class="kw">range</span> <span class="dv">10</span>)))</a>
+<a class="sourceLine" id="cb12-8" title="8"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>We see here that we can <em>choose</em> the reducing function. In this case, we choose <code>conj</code>.</p>
+<h2 id="arriving-at-transducers">Arriving at transducers</h2>
+<p>Take note of the functions <code>((mapping inc) conj)</code> and <code>((filtering even?) conj)</code>. Their types are <code>result, input -&gt; result</code>. We can test this:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb13-1" title="1">(((mapping <span class="kw">inc</span>) <span class="kw">conj</span>) [] <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb13-2" title="2"><span class="co">; ⇒ [2]</span></a>
+<a class="sourceLine" id="cb13-3" title="3"></a>
+<a class="sourceLine" id="cb13-4" title="4">(((mapping <span class="kw">inc</span>) <span class="kw">conj</span>) [<span class="dv">2</span>] <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb13-5" title="5"><span class="co">; ⇒ [2 3]</span></a>
+<a class="sourceLine" id="cb13-6" title="6"></a>
+<a class="sourceLine" id="cb13-7" title="7">(((mapping <span class="kw">inc</span>) <span class="kw">conj</span>) [<span class="dv">2</span> <span class="dv">3</span>] <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb13-8" title="8"><span class="co">; ⇒ [2 3 4]</span></a>
+<a class="sourceLine" id="cb13-9" title="9"></a>
+<a class="sourceLine" id="cb13-10" title="10">(((filtering <span class="kw">even?</span>) <span class="kw">conj</span>) [<span class="dv">2</span> <span class="dv">4</span>] <span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb13-11" title="11"><span class="co">; ⇒ [2 4]</span></a>
+<a class="sourceLine" id="cb13-12" title="12"></a>
+<a class="sourceLine" id="cb13-13" title="13">(((filtering <span class="kw">even?</span>) <span class="kw">conj</span>) [<span class="dv">2</span> <span class="dv">4</span>] <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb13-14" title="14"><span class="co">; ⇒ [2 4 6]</span></a></code></pre></div>
+<p>This means that <code>((mapping inc) conj)</code> and <code>((filtering even?) conj)</code> <strong>are also reducing functions</strong>, just like <code>conj</code> and <code>+</code>.</p>
+<p>So what happens if we compose these two functions like this:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb14-1" title="1">((mapping <span class="kw">inc</span>) ((filtering <span class="kw">even?</span>) <span class="kw">conj</span>))</a></code></pre></div>
+<p>This is also a function. But what is its type? Go on, evaluate it.</p>
+<p>It turns out, this function <em>also</em> has the type <code>result, input -&gt; result</code>. It is also a reducing function. This means that we can use it via <code>reduce</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb15-1" title="1">(<span class="kw">reduce</span> ((mapping <span class="kw">inc</span>) ((filtering <span class="kw">even?</span>) <span class="kw">conj</span>)) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb15-2" title="2"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>This is a bit messy, so let’s clean it up by using <code>comp</code> instead. Recall that <code>(comp a b c d)</code> returns the function</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb16-1" title="1">(<span class="kw">fn</span> [r] (a (b (c (d r)))))</a></code></pre></div>
+<p>Here’s the cleaned up version, using <code>comp</code>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb17-1" title="1">(<span class="bu">def</span><span class="fu"> xform</span></a>
+<a class="sourceLine" id="cb17-2" title="2">  (<span class="kw">comp</span></a>
+<a class="sourceLine" id="cb17-3" title="3">    (mapping <span class="kw">inc</span>)</a>
+<a class="sourceLine" id="cb17-4" title="4">    (filtering <span class="kw">even?</span>)))</a>
+<a class="sourceLine" id="cb17-5" title="5"></a>
+<a class="sourceLine" id="cb17-6" title="6">(<span class="kw">reduce</span> (xform <span class="kw">conj</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb17-7" title="7"><span class="co">; ⇒ [2 4 6 8 10]</span></a></code></pre></div>
+<p>And what about something more complex:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb18-1" title="1">(<span class="bu">defn</span><span class="fu"> square </span>[x] (<span class="kw">*</span> x x))</a>
+<a class="sourceLine" id="cb18-2" title="2"></a>
+<a class="sourceLine" id="cb18-3" title="3">(<span class="bu">def</span><span class="fu"> xform</span></a>
+<a class="sourceLine" id="cb18-4" title="4">  (<span class="kw">comp</span></a>
+<a class="sourceLine" id="cb18-5" title="5">    (filtering <span class="kw">even?</span>) </a>
+<a class="sourceLine" id="cb18-6" title="6">    (filtering #(<span class="kw">&lt;</span> <span class="va">%</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb18-7" title="7">    (mapping square)</a>
+<a class="sourceLine" id="cb18-8" title="8">    (mapping <span class="kw">inc</span>)))</a>
+<a class="sourceLine" id="cb18-9" title="9"></a>
+<a class="sourceLine" id="cb18-10" title="10">(<span class="kw">reduce</span> (xform <span class="kw">conj</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb18-11" title="11"><span class="co">; ⇒ [1 5 17 37 65]</span></a></code></pre></div>
+<p>Beautiful.</p>
+<p>But we were talking about transducers. Where are our transducers?</p>
+<p>It turns out, <code>mapping</code> and <code>filtering</code> are transducer-returning functions. The functions <code>(mapping inc)</code>, <code>(filtering even?)</code> and <code>xform</code> <strong>are the very transducers we were looking for.</strong></p>
+<p>Transducers are functions that accept a reducing function and return a reducing function. For example, the function <code>(mapping inc)</code> is a transducer because it accepts a reducing function like <code>conj</code>, and returns another reducing function, as we observed above. As Rich Hickey pointed out in <a href="http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming">Transducers are coming</a>, transducers have the type</p>
+<pre><code>(result, input -&gt; result) -&gt; (result, input -&gt; result)</code></pre>
+<p>Also observe that no intermediate collections are created when we evaluate <code>(reduce (xform conj) [] (range 10))</code>, other than the initial vector. This satisfies our goal of not allocating intermediate collections.</p>
+<h2 id="a-more-intuitive-understanding">A more intuitive understanding</h2>
+<p>It may be difficult to understand why the <code>xform</code> transducer works because it’s quite complicated. Let’s try to get a better understanding. Here’s <code>xform</code> as before:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb20-1" title="1">(<span class="bu">defn</span><span class="fu"> square </span>[x] (<span class="kw">*</span> x x))</a>
+<a class="sourceLine" id="cb20-2" title="2"></a>
+<a class="sourceLine" id="cb20-3" title="3">(<span class="bu">def</span><span class="fu"> xform</span></a>
+<a class="sourceLine" id="cb20-4" title="4">  (<span class="kw">comp</span></a>
+<a class="sourceLine" id="cb20-5" title="5">    (filtering <span class="kw">even?</span>)</a>
+<a class="sourceLine" id="cb20-6" title="6">    (filtering #(<span class="kw">&lt;</span> <span class="va">%</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb20-7" title="7">    (mapping square)</a>
+<a class="sourceLine" id="cb20-8" title="8">    (mapping <span class="kw">inc</span>)))</a></code></pre></div>
+<p>Say we invoke this composed function by passing in some reducing function, perhaps our favorite, <code>conj</code>. This would be passed to the transducer <code>(mapping inc)</code>, and we would have <code>((mapping inc) conj)</code>. We know that this returns <em>another</em> reducing function. This new reducing function is then passed into the function <code>(mapping square)</code>, which is another transducer. Naturally, this returns <em>another</em> reducing function. And we do this all the way to the first transducer in our composition, <code>(filtering even?)</code>.</p>
+<p>This means that when we give a reducing function to <code>xform</code>, like <code>(xform conj)</code>, we get back a function that will apply the left-most reducing function first, then down the stack until the last reducing function, <code>conj</code>, is applied to the current result and input.</p>
+<p>Imagine this transducer is being used in some reduce function, and we have so far collected in our results the vector <code>[1 5 17]</code>. Say the current input in question is <code>12</code>. Since <code>12</code> is even, it will pass the first filter. Instead of terminating early and returning the current <code>result</code>, the first filter will call its reducing function, passing in <code>[1 5 17]</code> and <code>12</code>. In this case, the reducing function is the “rest” of the transformation, which is the second filter <code>#(&lt; % 10)</code>. Since <code>12</code> fails the second filter, the third reducing function is <em>not</em> called, and the result-so-far <code>[1 5 17]</code> is returned.</p>
+<p>But if the input in question is <code>6</code>, it would pass both filters and arrive at the mapping transforms, which will transform <code>6</code> to <code>37</code>. We then pass this input to the final reducing function, <code>conj</code>, which will join <code>[1 5 17]</code> with the new value <code>37</code>.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb21-1" title="1">((xform <span class="kw">conj</span>) [<span class="dv">1</span> <span class="dv">5</span> <span class="dv">17</span>] <span class="dv">12</span>)</a>
+<a class="sourceLine" id="cb21-2" title="2"><span class="co">; ⇒ [1 5 17]</span></a>
+<a class="sourceLine" id="cb21-3" title="3"></a>
+<a class="sourceLine" id="cb21-4" title="4">((xform <span class="kw">conj</span>) [<span class="dv">1</span> <span class="dv">5</span> <span class="dv">17</span>] <span class="dv">6</span>)</a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="co">; ⇒ [1 5 17 37]</span></a>
+<a class="sourceLine" id="cb21-6" title="6"></a>
+<a class="sourceLine" id="cb21-7" title="7">(<span class="kw">reduce</span> (xform <span class="kw">conj</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb21-8" title="8"><span class="co">; ⇒ [1 5 17 37 65]</span></a></code></pre></div>
+<p>Being able to compose transducers is important. We see that it’s quite simple to do, and that ordinary functions power all of it.</p>
+<h2 id="transducers-in-core.async">Transducers in core.async</h2>
+<p>Another major selling point of transducers is that a transducer can work across core.async channels. For example, we should be able to take our <code>xform</code> transducer and use it to filter and transform items in a channel.</p>
+<p>Using Clojure’s transducer library:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb22-1" title="1">(<span class="bu">defn</span><span class="fu"> square </span>[x] (<span class="kw">*</span> x x))</a>
+<a class="sourceLine" id="cb22-2" title="2"></a>
+<a class="sourceLine" id="cb22-3" title="3">(<span class="bu">def</span><span class="fu"> xform</span></a>
+<a class="sourceLine" id="cb22-4" title="4">  (<span class="kw">comp</span></a>
+<a class="sourceLine" id="cb22-5" title="5">    (<span class="kw">filter</span> <span class="kw">even?</span>)</a>
+<a class="sourceLine" id="cb22-6" title="6">    (<span class="kw">filter</span> #(<span class="kw">&lt;</span> <span class="va">%</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb22-7" title="7">    (<span class="kw">map</span> square)</a>
+<a class="sourceLine" id="cb22-8" title="8">    (<span class="kw">map</span> <span class="kw">inc</span>)))</a>
+<a class="sourceLine" id="cb22-9" title="9"></a>
+<a class="sourceLine" id="cb22-10" title="10">(<span class="bu">def</span><span class="fu"> my-chan </span>(async/chan <span class="dv">1</span> xform))</a>
+<a class="sourceLine" id="cb22-11" title="11"></a>
+<a class="sourceLine" id="cb22-12" title="12"><span class="co">; Waiting for an item to print...</span></a>
+<a class="sourceLine" id="cb22-13" title="13">(async/take! my-chan <span class="kw">println</span>)</a>
+<a class="sourceLine" id="cb22-14" title="14"></a>
+<a class="sourceLine" id="cb22-15" title="15">(async/put! my-chan <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb22-16" title="16"><span class="co">; nothing printed to screen, since 3 is not even</span></a>
+<a class="sourceLine" id="cb22-17" title="17"></a>
+<a class="sourceLine" id="cb22-18" title="18">(async/put! my-chan <span class="dv">4</span>)</a>
+<a class="sourceLine" id="cb22-19" title="19"><span class="co">; &quot;17&quot; printed to screen, since 4 is even and less than 10</span></a></code></pre></div>
+<p>How do transducers work across core.async channels?</p>
+<p>First, note that channel buffers are linked lists underneath (in fact, <code>java.util.LinkedList</code>s). When you put an item into a channel, the internal helper method <code>add!</code> is called to add your item into the buffer.</p>
+<p>But if a transducer <code>xform</code> is supplied, core.async will use <code>add!</code> as the reducing function passed into <code>xform</code>:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb23-1" title="1">(xform add!)</a></code></pre></div>
+<p>This means that any item put into a channel will first be transformed by our transducer. And if the transducer filters out an item (e.g. due to <code>(filter even?)</code>), then the final reducing function <code>add!</code> is never called. Thus the item is never added to the channel’s buffer and no takers ever see it.</p>
+<p>The pertinent code can be found in the core.async sources, <a href="https://github.com/clojure/core.async/blob/ac0f1bfb40237a18dc0f03c0db5df41657cd23a6/src/main/clojure/clojure/core/async/impl/channels.clj#L287">here</a>.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>We’ve come a long ways. We started with regular <code>map</code> and <code>filter</code> and observed how they can be implemented using <code>reduce</code>. We then abstracted our reducing functions until we found ourselves with transducer-building functions, <code>mapping</code> and <code>filtering</code>.</p>
+<p>By building, analyzing and using transducers, I hope that you gained a better understanding of how they work. They are, after all, just functions.</p>
+<h1 id="problem-sets">Problem sets</h1>
+<p>If you’re interested in learning more, I encourage you to tackle the problems below. <a href="https://gist.github.com/elben/da8864e120c373e5fcf0#file-understanding-transducers-clj-L204">Solutions can be found here</a>.</p>
+<p><strong>Write a <code>transduce</code> helper function</strong></p>
+<p>Right now, our use of <code>reduce</code> is a bit clunky. Write a function <code>transduce</code> that will allow us to use transducers like this:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb24-1" title="1">(transduce xform <span class="kw">conj</span> [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb24-2" title="2"><span class="co">; ⇒ [5 17 37 65]</span></a></code></pre></div>
+<p><strong>The Caesar Cipher</strong></p>
+<p>In our examples above, we used <code>conj</code> and <code>+</code> as reducing functions. Let’s write a more complex one.</p>
+<p>Given a string, use transducers to:</p>
+<ul>
+<li>Filter out vowels and non-ASCII characters</li>
+<li>Filter out upper-case characters</li>
+<li>Rotate all remaining characters via a <a href="http://en.wikipedia.org/wiki/Caesar_cipher">Caesar cipher</a>,</li>
+<li>And reduce the rotated characters into a map counting the number of occurrences of each character.</li>
+</ul>
+<p>Example:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb25-1" title="1">(<span class="bu">defn</span><span class="fu"> caesar-count</span></a>
+<a class="sourceLine" id="cb25-2" title="2">  [string cipher]</a>
+<a class="sourceLine" id="cb25-3" title="3">  ???)</a>
+<a class="sourceLine" id="cb25-4" title="4"></a>
+<a class="sourceLine" id="cb25-5" title="5">(caesar-count <span class="st">&quot;abc&quot;</span> <span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb25-6" title="6"><span class="co">; ⇒ {\c 1, \b 1}</span></a>
+<a class="sourceLine" id="cb25-7" title="7"></a>
+<a class="sourceLine" id="cb25-8" title="8">(caesar-count <span class="st">&quot;abc&quot;</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb25-9" title="9"><span class="co">; ⇒ {\d 1, \c 1}</span></a>
+<a class="sourceLine" id="cb25-10" title="10"></a>
+<a class="sourceLine" id="cb25-11" title="11">(caesar-count <span class="st">&quot;hello world&quot;</span> <span class="dv">0</span>)</a>
+<a class="sourceLine" id="cb25-12" title="12"><span class="co">; ⇒ {\d 1, \r 1, \w 1, \l 3, \h 1}</span></a>
+<a class="sourceLine" id="cb25-13" title="13"></a>
+<a class="sourceLine" id="cb25-14" title="14">(caesar-count <span class="st">&quot;hello world&quot;</span> <span class="dv">13</span>)</a>
+<a class="sourceLine" id="cb25-15" title="15"><span class="co">; ⇒ {\q 1, \e 1, \j 1, \y 3, \u 1}</span></a></code></pre></div>
+<p><strong>Write a <code>mapcat</code> transducer</strong></p>
+<p>Write <code>mapcatting</code>, a function that returns a <code>mapcat</code> transducer.</p>
+<p>Examples of <code>mapcat</code> (no transducers):</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb26-1" title="1">(<span class="bu">defn</span><span class="fu"> twins </span>[x] [x x])</a>
+<a class="sourceLine" id="cb26-2" title="2"></a>
+<a class="sourceLine" id="cb26-3" title="3">(<span class="kw">mapcat</span> twins (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb26-4" title="4"><span class="co">; ⇒ (0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9)</span></a></code></pre></div>
+<p>The transducer should work like this:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb27-1" title="1">(<span class="bu">defn</span><span class="fu"> mapcatting </span>[f] ???)</a>
+<a class="sourceLine" id="cb27-2" title="2"></a>
+<a class="sourceLine" id="cb27-3" title="3">(<span class="kw">reduce</span> ((mapcatting twins) <span class="kw">conj</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb27-4" title="4"><span class="co">; ⇒ [0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9]</span></a></code></pre></div>
+<p><strong>Write a <code>take</code> transducer</strong></p>
+<p>Write <code>taking</code>, a function that returns a <code>take</code> transducer.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode clojure"><code class="sourceCode clojure"><a class="sourceLine" id="cb28-1" title="1">(<span class="bu">defn</span><span class="fu"> taking </span>[n] ???)</a>
+<a class="sourceLine" id="cb28-2" title="2"></a>
+<a class="sourceLine" id="cb28-3" title="3">(<span class="kw">reduce</span> ((taking <span class="dv">3</span>) <span class="kw">conj</span>) [] (<span class="kw">range</span> <span class="dv">10</span>))</a>
+<a class="sourceLine" id="cb28-4" title="4"><span class="co">; ⇒ [0 1 2]</span></a></code></pre></div>
+<p>Note that you may need to keep some state for this one.</p>
+<h1 id="references">References</h1>
+<p><a href="https://gist.github.com/elben/da8864e120c373e5fcf0">Source code for this post</a></p>
+<p><a href="http://phuu.net/2014/08/31/csp-and-transducers.html">Tom Ashworth: CSP and transducers in JavaScript</a>. This is the original blog post that helped me understand transducers.</p>
+<p><a href="http://blog.cognitect.com/blog/2014/8/6/transducers-are-coming">Rich Hickey: Transducers are coming</a></p>
+</article>
+
+<div class="post-content-end">
+  <hr>
+
+  <div class="view-comments">
+    <a>View comments</a>
+  </div>
+
+  <div id="disqus-comments" class="hide">
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+      var disqus_shortname = 'elbenshira';
+      var disqus_category_id = '2658740'; // "Blog" category.
+
+      /* * * DON'T EDIT BELOW THIS LINE * * */
+      (function() {
+         var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+         dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+         (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+       })();
+    </script>
+    <noscript>Enable JavaScript to view Disqus comments.</noscript>
+  </div>
+
+</div>
+
+        </div>
+      </div>
+
+      <script>
+        /* Font Face Observer v2.0.13 - © Bram Stein. License: BSD-3-Clause https://raw.githubusercontent.com/bramstein/fontfaceobserver */
+        (function(){'use strict';var f,g=[];function l(a){g.push(a);1==g.length&&f()}function m(){for(;g.length;)g[0](),g.shift()}f=function(){setTimeout(m)};function n(a){this.a=p;this.b=void 0;this.f=[];var b=this;try{a(function(a){q(b,a)},function(a){r(b,a)})}catch(c){r(b,c)}}var p=2;function t(a){return new n(function(b,c){c(a)})}function u(a){return new n(function(b){b(a)})}function q(a,b){if(a.a==p){if(b==a)throw new TypeError;var c=!1;try{var d=b&&b.then;if(null!=b&&"object"==typeof b&&"function"==typeof d){d.call(b,function(b){c||q(a,b);c=!0},function(b){c||r(a,b);c=!0});return}}catch(e){c||r(a,e);return}a.a=0;a.b=b;v(a)}}
+function r(a,b){if(a.a==p){if(b==a)throw new TypeError;a.a=1;a.b=b;v(a)}}function v(a){l(function(){if(a.a!=p)for(;a.f.length;){var b=a.f.shift(),c=b[0],d=b[1],e=b[2],b=b[3];try{0==a.a?"function"==typeof c?e(c.call(void 0,a.b)):e(a.b):1==a.a&&("function"==typeof d?e(d.call(void 0,a.b)):b(a.b))}catch(h){b(h)}}})}n.prototype.g=function(a){return this.c(void 0,a)};n.prototype.c=function(a,b){var c=this;return new n(function(d,e){c.f.push([a,b,d,e]);v(c)})};
+function w(a){return new n(function(b,c){function d(c){return function(d){h[c]=d;e+=1;e==a.length&&b(h)}}var e=0,h=[];0==a.length&&b(h);for(var k=0;k<a.length;k+=1)u(a[k]).c(d(k),c)})}function x(a){return new n(function(b,c){for(var d=0;d<a.length;d+=1)u(a[d]).c(b,c)})};window.Promise||(window.Promise=n,window.Promise.resolve=u,window.Promise.reject=t,window.Promise.race=x,window.Promise.all=w,window.Promise.prototype.then=n.prototype.c,window.Promise.prototype["catch"]=n.prototype.g);}());
+
+             (function(){function l(a,b){document.addEventListener?a.addEventListener("scroll",b,!1):a.attachEvent("scroll",b)}function m(a){document.body?a():document.addEventListener?document.addEventListener("DOMContentLoaded",function c(){document.removeEventListener("DOMContentLoaded",c);a()}):document.attachEvent("onreadystatechange",function k(){if("interactive"==document.readyState||"complete"==document.readyState)document.detachEvent("onreadystatechange",k),a()})};function r(a){this.a=document.createElement("div");this.a.setAttribute("aria-hidden","true");this.a.appendChild(document.createTextNode(a));this.b=document.createElement("span");this.c=document.createElement("span");this.h=document.createElement("span");this.f=document.createElement("span");this.g=-1;this.b.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.c.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+             this.f.style.cssText="max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";this.h.style.cssText="display:inline-block;width:200%;height:200%;font-size:16px;max-width:none;";this.b.appendChild(this.h);this.c.appendChild(this.f);this.a.appendChild(this.b);this.a.appendChild(this.c)}
+             function t(a,b){a.a.style.cssText="max-width:none;min-width:20px;min-height:20px;display:inline-block;overflow:hidden;position:absolute;width:auto;margin:0;padding:0;top:-999px;white-space:nowrap;font-synthesis:none;font:"+b+";"}function y(a){var b=a.a.offsetWidth,c=b+100;a.f.style.width=c+"px";a.c.scrollLeft=c;a.b.scrollLeft=a.b.scrollWidth+100;return a.g!==b?(a.g=b,!0):!1}function z(a,b){function c(){var a=k;y(a)&&a.a.parentNode&&b(a.g)}var k=a;l(a.b,c);l(a.c,c);y(a)};function A(a,b){var c=b||{};this.family=a;this.style=c.style||"normal";this.weight=c.weight||"normal";this.stretch=c.stretch||"normal"}var B=null,C=null,E=null,F=null;function G(){if(null===C)if(J()&&/Apple/.test(window.navigator.vendor)){var a=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))(?:\.([0-9]+))/.exec(window.navigator.userAgent);C=!!a&&603>parseInt(a[1],10)}else C=!1;return C}function J(){null===F&&(F=!!document.fonts);return F}
+function K(){if(null===E){var a=document.createElement("div");try{a.style.font="condensed 100px sans-serif"}catch(b){}E=""!==a.style.font}return E}function L(a,b){return[a.style,a.weight,K()?a.stretch:"","100px",b].join(" ")}
+A.prototype.load=function(a,b){var c=this,k=a||"BESbswy",q=0,D=b||3E3,H=(new Date).getTime();return new Promise(function(a,b){if(J()&&!G()){var M=new Promise(function(a,b){function e(){(new Date).getTime()-H>=D?b():document.fonts.load(L(c,'"'+c.family+'"'),k).then(function(c){1<=c.length?a():setTimeout(e,25)},function(){b()})}e()}),N=new Promise(function(a,c){q=setTimeout(c,D)});Promise.race([N,M]).then(function(){clearTimeout(q);a(c)},function(){b(c)})}else m(function(){function u(){var b;if(b=-1!=
+  f&&-1!=g||-1!=f&&-1!=h||-1!=g&&-1!=h)(b=f!=g&&f!=h&&g!=h)||(null===B&&(b=/AppleWebKit\/([0-9]+)(?:\.([0-9]+))/.exec(window.navigator.userAgent),B=!!b&&(536>parseInt(b[1],10)||536===parseInt(b[1],10)&&11>=parseInt(b[2],10))),b=B&&(f==v&&g==v&&h==v||f==w&&g==w&&h==w||f==x&&g==x&&h==x)),b=!b;b&&(d.parentNode&&d.parentNode.removeChild(d),clearTimeout(q),a(c))}function I(){if((new Date).getTime()-H>=D)d.parentNode&&d.parentNode.removeChild(d),b(c);else{var a=document.hidden;if(!0===a||void 0===a)f=e.a.offsetWidth,
+  g=n.a.offsetWidth,h=p.a.offsetWidth,u();q=setTimeout(I,50)}}var e=new r(k),n=new r(k),p=new r(k),f=-1,g=-1,h=-1,v=-1,w=-1,x=-1,d=document.createElement("div");d.dir="ltr";t(e,L(c,"sans-serif"));t(n,L(c,"serif"));t(p,L(c,"monospace"));d.appendChild(e.a);d.appendChild(n.a);d.appendChild(p.a);document.body.appendChild(d);v=e.a.offsetWidth;w=n.a.offsetWidth;x=p.a.offsetWidth;I();z(e,function(a){f=a;u()});t(e,L(c,'"'+c.family+'",sans-serif'));z(n,function(a){g=a;u()});t(n,L(c,'"'+c.family+'",serif'));
+z(p,function(a){h=a;u()});t(p,L(c,'"'+c.family+'",monospace'))})})};"object"===typeof module?module.exports=A:(window.FontFaceObserver=A,window.FontFaceObserver.prototype.load=A.prototype.load);}());
+
+(function(w) {
+  if(w.document.documentElement.className.indexOf("fonts-loaded") <= 0) {
+    // Fonts not yet loaded. Wait for them to load, then append the class that
+    // will set the loaded font.
+
+    var charterNN = new w.FontFaceObserver("Charter", { weight: "normal", style: "normal" });
+    var charterNI = new w.FontFaceObserver("Charter", { weight: "normal", style: "italic" });
+    var charterBN = new w.FontFaceObserver("Charter", { weight: "bold", style: "normal" });
+    var charterBI = new w.FontFaceObserver("Charter", { weight: "bold", style: "italic" });
+    w.Promise.all([
+      charterNN.load(null, 3000),
+      charterNI.load(null, 3000),
+      charterBN.load(null, 3000),
+      charterBI.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " fonts-loaded";
+      document.cookie="fonts-loaded=true";
+    });
+  }
+
+  if(w.document.documentElement.className.indexOf("code-fonts-loaded") <= 0) {
+    var sourceCodePro400N = new w.FontFaceObserver("Source Code Pro", { weight: "400", style: "normal" });
+    var sourceCodePro600N = new w.FontFaceObserver("Source Code Pro", { weight: "600", style: "normal" });
+    w.Promise.all([
+      sourceCodePro400N.load(null, 3000),
+      sourceCodePro600N.load(null, 3000)
+    ]).then(function() {
+      w.document.documentElement.className += " code-fonts-loaded";
+      document.cookie="code-fonts-loaded=true";
+    });
+  }
+}(this));
+      </script>
+    </body>
+</html>
