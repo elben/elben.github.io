@@ -1,0 +1,6 @@
+packages: .
+
+-- Pin the Hackage index for reproducible builds. Bump this when you need
+-- newer packages. Must be at or after the upload time of any dependency
+-- version you require (e.g. pencil 1.0.2, uploaded 2026-09-20).
+index-state: 2026-09-20T21:00:00Z
